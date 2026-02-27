@@ -37,20 +37,11 @@ export function calculateChargeScore(
   site: SiteAnalysis,
   stations: NearbyStation[]
 ): ChargeScoreBreakdown {
-  // Competition gap (30%) — fewer nearby stations = higher score
   const stationsWithin3Miles = stations.filter(s => s.distanceMiles <= 3).length;
   const competitionGap = Math.max(0, Math.min(100, 100 - stationsWithin3Miles * 15));
-
-  // Traffic indicator (25%)
   const trafficIndicator = TRAFFIC_SCORES[site.propertyType] || 50;
-
-  // Electrical feasibility (20%)
   const electricalFeasibility = ELECTRICAL_FEASIBILITY[site.electricalService] || 40;
-
-  // Incentive availability (15%)
   const incentiveAvailability = getIncentiveScore(site.state);
-
-  // EV adoption (10%)
   const evAdoption = getEvAdoptionScore(site.state);
 
   const total = Math.round(
@@ -62,7 +53,6 @@ export function calculateChargeScore(
   );
 
   const verdict = getVerdict(total, competitionGap, trafficIndicator);
-
   return { competitionGap, trafficIndicator, electricalFeasibility, incentiveAvailability, evAdoption, total, verdict };
 }
 
@@ -90,7 +80,7 @@ function getEvAdoptionScore(state: string): number {
   return 40;
 }
 
-// --- Financial Projection ---
+// --- Constants ---
 
 const L2_KWH_PER_DAY = 30;
 const DCFC_KWH_PER_DAY = 250;
@@ -103,7 +93,89 @@ const MAINTENANCE_RATE = 0.03;
 const L2_PEAK_KW = 7.7;
 const DCFC_PEAK_KW = 150;
 
+// Tesla Supercharger for Business constants
+const TESLA_COST_PER_STALL = 42500; // ~$40-45k per stall
+const TESLA_INSTALL_PER_STALL = 15000; // Site prep, civil works, grid connection per stall
+const TESLA_KWH_PER_STALL_PER_DAY = 200; // Avg utilization per stall
+const TESLA_PEAK_KW_PER_STALL = 250; // V3.5: 250kW max
+const TESLA_LOAD_MGMT_FACTOR = 0.55; // Tesla's power sharing reduces peak demand ~45%
+
+// --- Financial Projection ---
+
 export function calculateFinancials(site: SiteAnalysis, incentives: Incentive[]): FinancialProjection {
+  if (site.chargingModel === 'tesla') {
+    return calculateTeslaFinancials(site, incentives);
+  }
+  return calculateGenericFinancials(site, incentives);
+}
+
+function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): FinancialProjection {
+  const stalls = Math.max(4, site.teslaStalls);
+  const dailyKwh = stalls * TESLA_KWH_PER_STALL_PER_DAY;
+  const grossDailyRevenue = dailyKwh * site.pricePerKwh;
+  const teslaServiceFeeDaily = dailyKwh * site.teslaServiceFeePerKwh;
+  const dailyRevenue = grossDailyRevenue; // We show gross, deduct Tesla fee in operating costs
+  const monthlyRevenue = dailyRevenue * 30;
+  const annualRevenue = monthlyRevenue * 12;
+  const teslaServiceFeeAnnual = teslaServiceFeeDaily * 365;
+
+  const totalHardwareCost = stalls * TESLA_COST_PER_STALL;
+  const totalInstallationCost = stalls * TESLA_INSTALL_PER_STALL;
+
+  const needsUpgrade = (site.electricalService === 'unknown' || site.electricalService === '200a-208v' || site.electricalService === '400a-208v') && stalls > 4;
+  const electricalUpgradeCost: [number, number] = needsUpgrade ? [75000, 150000] : [0, 0];
+
+  const monthlyElectricityCost = dailyKwh * 30 * site.electricityCostPerKwh;
+  // Tesla load management reduces effective peak demand
+  const peakKw = stalls * TESLA_PEAK_KW_PER_STALL * TESLA_LOAD_MGMT_FACTOR;
+  const monthlyDemandCharge = peakKw * site.demandChargePerKw;
+  // Tesla handles maintenance — $0 for business owner
+  const annualMaintenance = 0;
+  // Tesla handles networking
+  const monthlyNetworkingCost = 0;
+
+  const totalAnnualOperatingCost =
+    (monthlyElectricityCost + monthlyDemandCharge) * 12 + teslaServiceFeeAnnual;
+
+  const totalProjectCost = totalHardwareCost + totalInstallationCost + (needsUpgrade ? electricalUpgradeCost[0] : 0);
+
+  const totalIncentiveAmount = incentives
+    .filter(i => i.eligible)
+    .reduce((sum, i) => {
+      const match = i.amount.match(/[\d,]+/);
+      if (match) return sum + parseInt(match[0].replace(/,/g, ''), 10);
+      return sum;
+    }, 0);
+
+  const estimatedIncentives = Math.min(totalIncentiveAmount, totalProjectCost * 0.5);
+  const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
+  const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
+  const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
+
+  const cumulativeCashFlow: number[] = [];
+  for (let year = 1; year <= 5; year++) {
+    const prev = year === 1 ? -netInvestment : cumulativeCashFlow[year - 2];
+    cumulativeCashFlow.push(prev + annualNetRevenue);
+  }
+
+  const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : 0;
+
+  return {
+    chargingModel: 'tesla',
+    dailyKwhL2: 0, dailyKwhDcfc: dailyKwh,
+    dailyRevenue, monthlyRevenue, annualRevenue,
+    teslaServiceFeeAnnual,
+    hardwareCostL2: 0, hardwareCostDcfc: totalHardwareCost, totalHardwareCost,
+    installationCostL2: 0, installationCostDcfc: totalInstallationCost, totalInstallationCost,
+    electricalUpgradeNeeded: needsUpgrade, electricalUpgradeCost,
+    monthlyElectricityCost, monthlyDemandCharge, monthlyNetworkingCost,
+    annualMaintenance, totalAnnualOperatingCost,
+    totalProjectCost, estimatedIncentives, netInvestment,
+    annualNetRevenue, paybackMonths, fiveYearRoi, cumulativeCashFlow,
+  };
+}
+
+function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[]): FinancialProjection {
   const dailyKwhL2 = site.l2Chargers * L2_KWH_PER_DAY;
   const dailyKwhDcfc = site.dcfcChargers * DCFC_KWH_PER_DAY;
   const totalDailyKwh = dailyKwhL2 + dailyKwhDcfc;
@@ -141,7 +213,6 @@ export function calculateFinancials(site: SiteAnalysis, incentives: Incentive[])
       return sum;
     }, 0);
 
-  // Simplified: cap incentives at project cost
   const estimatedIncentives = Math.min(totalIncentiveAmount, totalProjectCost * 0.5);
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
@@ -156,11 +227,12 @@ export function calculateFinancials(site: SiteAnalysis, incentives: Incentive[])
   const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : 0;
 
   return {
+    chargingModel: 'generic',
     dailyKwhL2, dailyKwhDcfc, dailyRevenue, monthlyRevenue, annualRevenue,
+    teslaServiceFeeAnnual: 0,
     hardwareCostL2, hardwareCostDcfc, totalHardwareCost,
     installationCostL2, installationCostDcfc, totalInstallationCost,
-    electricalUpgradeNeeded: needsUpgrade,
-    electricalUpgradeCost,
+    electricalUpgradeNeeded: needsUpgrade, electricalUpgradeCost,
     monthlyElectricityCost, monthlyDemandCharge, monthlyNetworkingCost,
     annualMaintenance, totalAnnualOperatingCost,
     totalProjectCost, estimatedIncentives, netInvestment,
@@ -174,7 +246,9 @@ export function calculateParkingImpact(site: SiteAnalysis): ParkingAnalysis {
   const peakUsed = Math.round(site.totalParkingSpaces * (site.peakUtilization / 100));
   const available = site.totalParkingSpaces - peakUsed;
   const recommendedEv = Math.round(available * 0.75);
-  const requestedChargers = site.l2Chargers + site.dcfcChargers;
+  const requestedChargers = site.chargingModel === 'tesla'
+    ? site.teslaStalls
+    : site.l2Chargers + site.dcfcChargers;
 
   return {
     totalSpaces: site.totalParkingSpaces,
@@ -189,22 +263,43 @@ export function calculateParkingImpact(site: SiteAnalysis): ParkingAnalysis {
 // --- Demand Charge Analysis ---
 
 export function calculateDemandCharge(site: SiteAnalysis): DemandChargeAnalysis {
-  const peakDemandKw = site.l2Chargers * L2_PEAK_KW + site.dcfcChargers * DCFC_PEAK_KW;
-  const totalDailyKwh = site.l2Chargers * L2_KWH_PER_DAY + site.dcfcChargers * DCFC_KWH_PER_DAY;
+  let peakDemandKw: number;
+  let totalDailyKwh: number;
+
+  if (site.chargingModel === 'tesla') {
+    const stalls = Math.max(4, site.teslaStalls);
+    peakDemandKw = stalls * TESLA_PEAK_KW_PER_STALL * TESLA_LOAD_MGMT_FACTOR;
+    totalDailyKwh = stalls * TESLA_KWH_PER_STALL_PER_DAY;
+  } else {
+    peakDemandKw = site.l2Chargers * L2_PEAK_KW + site.dcfcChargers * DCFC_PEAK_KW;
+    totalDailyKwh = site.l2Chargers * L2_KWH_PER_DAY + site.dcfcChargers * DCFC_KWH_PER_DAY;
+  }
+
   const monthlyEnergyCost = totalDailyKwh * 30 * site.electricityCostPerKwh;
   const monthlyDemandCharge = peakDemandKw * site.demandChargePerKw;
   const totalElectricity = monthlyEnergyCost + monthlyDemandCharge;
   const demandChargePercent = totalElectricity > 0 ? (monthlyDemandCharge / totalElectricity) * 100 : 0;
 
   const recommendations: string[] = [];
-  if (demandChargePercent > 40) {
-    recommendations.push('Consider load management software to stagger charger output and reduce peak demand');
-  }
-  if (site.dcfcChargers > 4) {
-    recommendations.push('Battery energy storage could reduce demand charges by 40-60%');
-  }
-  if (peakDemandKw > 100) {
-    recommendations.push('Contact your utility about EV-specific commercial rates that may reduce demand charges');
+
+  if (site.chargingModel === 'tesla') {
+    recommendations.push('Tesla\'s built-in load management dynamically shares power across stalls, reducing peak demand by ~45%');
+    if (site.teslaStalls > 8) {
+      recommendations.push('Battery energy storage could further reduce demand charges by 30-50% for larger installations');
+    }
+    if (peakDemandKw > 100) {
+      recommendations.push('Contact your utility about EV-specific commercial rates — many offer reduced demand charges for EV charging');
+    }
+  } else {
+    if (demandChargePercent > 40) {
+      recommendations.push('Consider load management software to stagger charger output and reduce peak demand');
+    }
+    if (site.dcfcChargers > 4) {
+      recommendations.push('Battery energy storage could reduce demand charges by 40-60%');
+    }
+    if (peakDemandKw > 100) {
+      recommendations.push('Contact your utility about EV-specific commercial rates that may reduce demand charges');
+    }
   }
   if (recommendations.length === 0) {
     recommendations.push('Your current configuration has manageable demand charges');
@@ -257,8 +352,15 @@ const STATE_INCENTIVES: Record<string, StateIncentive[]> = {
 
 export function getIncentives(site: SiteAnalysis): Incentive[] {
   const incentives: Incentive[] = [];
-  const totalProjectCost = site.l2Chargers * (L2_HARDWARE_COST + L2_INSTALL_COST) + site.dcfcChargers * (DCFC_HARDWARE_COST + DCFC_INSTALL_COST);
-  const totalPorts = site.l2Chargers + site.dcfcChargers;
+
+  const totalPorts = site.chargingModel === 'tesla'
+    ? site.teslaStalls
+    : site.l2Chargers + site.dcfcChargers;
+
+  const totalProjectCost = site.chargingModel === 'tesla'
+    ? site.teslaStalls * (TESLA_COST_PER_STALL + TESLA_INSTALL_PER_STALL)
+    : site.l2Chargers * (L2_HARDWARE_COST + L2_INSTALL_COST) + site.dcfcChargers * (DCFC_HARDWARE_COST + DCFC_INSTALL_COST);
+
   const maxPerPort = 100000;
   const federal30cAmount = Math.min(totalProjectCost * 0.3, totalPorts * maxPerPort);
 
@@ -278,8 +380,8 @@ export function getIncentives(site: SiteAnalysis): Incentive[] {
     name: 'NEVI Formula Program',
     description: 'Up to 80% of project costs for highway corridor locations',
     amount: `$${Math.round(totalProjectCost * 0.8).toLocaleString()}`,
-    eligible: null,
-    details: 'National Electric Vehicle Infrastructure program covers up to 80% of costs for qualifying Alternative Fuel Corridor locations. Requires minimum 4 DCFC ports at 150kW+.',
+    eligible: site.chargingModel === 'tesla' && site.teslaStalls >= 4 ? null : null,
+    details: `National Electric Vehicle Infrastructure program covers up to 80% of costs for qualifying Alternative Fuel Corridor locations. Requires minimum 4 DCFC ports at 150kW+.${site.chargingModel === 'tesla' ? ' Tesla Superchargers meet the 150kW+ requirement.' : ''}`,
     category: 'federal',
   });
 

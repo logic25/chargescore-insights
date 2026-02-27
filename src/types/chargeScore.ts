@@ -1,3 +1,5 @@
+export type ChargingModel = 'tesla' | 'generic';
+
 export interface SiteAnalysis {
   address: string;
   lat: number;
@@ -8,11 +10,16 @@ export interface SiteAnalysis {
   totalParkingSpaces: number;
   peakUtilization: number;
   electricalService: ElectricalService;
+  chargingModel: ChargingModel;
+  // Tesla model: number of Supercharger stalls (min 4)
+  teslaStalls: number;
+  // Generic model
   l2Chargers: number;
   dcfcChargers: number;
   pricePerKwh: number;
   electricityCostPerKwh: number;
   demandChargePerKw: number;
+  teslaServiceFeePerKwh: number;
 }
 
 export type PropertyType =
@@ -69,12 +76,15 @@ export interface NearbyStation {
 }
 
 export interface FinancialProjection {
+  chargingModel: ChargingModel;
   // Revenue
   dailyKwhL2: number;
   dailyKwhDcfc: number;
   dailyRevenue: number;
   monthlyRevenue: number;
   annualRevenue: number;
+  // Tesla-specific
+  teslaServiceFeeAnnual: number;
   // Costs
   hardwareCostL2: number;
   hardwareCostDcfc: number;

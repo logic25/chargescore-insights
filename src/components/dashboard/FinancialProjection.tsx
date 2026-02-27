@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Info, DollarSign, Award } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Info, DollarSign, Award, Zap } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Tooltip as UITooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { FinancialProjection as FP, Incentive, SiteAnalysis } from '@/types/chargeScore';
@@ -17,6 +17,7 @@ const fmt = (n: number) => {
 
 const FinancialProjection = ({ financials, incentives, site }: Props) => {
   const [incentiveExpanded, setIncentiveExpanded] = useState<string | null>(null);
+  const isTesla = financials.chargingModel === 'tesla';
 
   const chartData = financials.cumulativeCashFlow.map((val, i) => ({
     year: `Year ${i + 1}`,
@@ -25,8 +26,11 @@ const FinancialProjection = ({ financials, incentives, site }: Props) => {
 
   return (
     <div className="glass-card-dark">
-      <div className="border-b border-white/10 p-4">
-        <h2 className="font-heading text-sm font-semibold text-foreground">Financial Projection</h2>
+      <div className="flex items-center gap-2 border-b border-white/10 p-4">
+        {isTesla && <Zap className="h-4 w-4 text-primary" />}
+        <h2 className="font-heading text-sm font-semibold text-foreground">
+          {isTesla ? 'Tesla Supercharger for Business — Financial Projection' : 'Financial Projection'}
+        </h2>
       </div>
 
       <div className="grid gap-6 p-4 lg:grid-cols-3">
@@ -36,11 +40,22 @@ const FinancialProjection = ({ financials, incentives, site }: Props) => {
             <TrendingUp className="h-3.5 w-3.5" /> Revenue
           </h3>
           <div className="space-y-2">
-            <Row label="Daily kWh (L2)" value={`${Math.round(financials.dailyKwhL2)} kWh`} />
-            <Row label="Daily kWh (DCFC)" value={`${Math.round(financials.dailyKwhDcfc)} kWh`} />
-            <Row label="Daily Revenue" value={fmt(financials.dailyRevenue)} />
-            <Row label="Monthly Revenue" value={fmt(financials.monthlyRevenue)} highlight />
-            <Row label="Annual Revenue" value={fmt(financials.annualRevenue)} highlight />
+            {isTesla ? (
+              <>
+                <Row label={`Daily kWh (${site.teslaStalls} stalls)`} value={`${Math.round(financials.dailyKwhDcfc)} kWh`} />
+                <Row label="Daily Gross Revenue" value={fmt(financials.dailyRevenue)} />
+                <Row label="Monthly Gross Revenue" value={fmt(financials.monthlyRevenue)} highlight />
+                <Row label="Annual Gross Revenue" value={fmt(financials.annualRevenue)} highlight />
+              </>
+            ) : (
+              <>
+                <Row label="Daily kWh (L2)" value={`${Math.round(financials.dailyKwhL2)} kWh`} />
+                <Row label="Daily kWh (DCFC)" value={`${Math.round(financials.dailyKwhDcfc)} kWh`} />
+                <Row label="Daily Revenue" value={fmt(financials.dailyRevenue)} />
+                <Row label="Monthly Revenue" value={fmt(financials.monthlyRevenue)} highlight />
+                <Row label="Annual Revenue" value={fmt(financials.annualRevenue)} highlight />
+              </>
+            )}
           </div>
         </div>
 
@@ -50,30 +65,61 @@ const FinancialProjection = ({ financials, incentives, site }: Props) => {
             <DollarSign className="h-3.5 w-3.5" /> Costs
           </h3>
           <div className="space-y-2">
-            <Row label={`L2 Hardware (${site.l2Chargers}×)`} value={fmt(financials.hardwareCostL2)} />
-            <Row label={`DCFC Hardware (${site.dcfcChargers}×)`} value={fmt(financials.hardwareCostDcfc)} />
-            <Row label="Installation (L2)" value={fmt(financials.installationCostL2)} />
-            <Row label="Installation (DCFC)" value={fmt(financials.installationCostDcfc)} />
-            {financials.electricalUpgradeNeeded && (
-              <div className="flex items-center gap-1 rounded bg-amber/10 p-1.5 text-xs text-amber">
-                <AlertTriangle className="h-3 w-3 flex-shrink-0" />
-                <span>Likely transformer upgrade: {fmt(financials.electricalUpgradeCost[0])}–{fmt(financials.electricalUpgradeCost[1])}</span>
-              </div>
+            {isTesla ? (
+              <>
+                <Row label={`Supercharger Hardware (${site.teslaStalls}×)`} value={fmt(financials.totalHardwareCost)} />
+                <Row label="Site Prep & Installation" value={fmt(financials.totalInstallationCost)} />
+                {financials.electricalUpgradeNeeded && (
+                  <div className="flex items-center gap-1 rounded bg-amber/10 p-1.5 text-xs text-amber">
+                    <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                    <span>Likely transformer upgrade: {fmt(financials.electricalUpgradeCost[0])}–{fmt(financials.electricalUpgradeCost[1])}</span>
+                  </div>
+                )}
+                <Row label="Monthly Electricity" value={fmt(financials.monthlyElectricityCost)} />
+                <div className="flex items-center gap-1">
+                  <Row label="Monthly Demand Charge" value={fmt(financials.monthlyDemandCharge)} />
+                  <UITooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-primary" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs">
+                      Tesla's built-in load management reduces peak demand by ~45%, significantly lowering demand charges compared to unmanaged chargers.
+                    </TooltipContent>
+                  </UITooltip>
+                </div>
+                <Row label="Tesla Service Fee (Annual)" value={fmt(financials.teslaServiceFeeAnnual)} />
+                <div className="mt-1 rounded bg-primary/10 p-1.5 text-[10px] text-primary">
+                  ✓ Maintenance & networking included by Tesla
+                </div>
+              </>
+            ) : (
+              <>
+                <Row label={`L2 Hardware (${site.l2Chargers}×)`} value={fmt(financials.hardwareCostL2)} />
+                <Row label={`DCFC Hardware (${site.dcfcChargers}×)`} value={fmt(financials.hardwareCostDcfc)} />
+                <Row label="Installation (L2)" value={fmt(financials.installationCostL2)} />
+                <Row label="Installation (DCFC)" value={fmt(financials.installationCostDcfc)} />
+                {financials.electricalUpgradeNeeded && (
+                  <div className="flex items-center gap-1 rounded bg-amber/10 p-1.5 text-xs text-amber">
+                    <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                    <span>Likely transformer upgrade: {fmt(financials.electricalUpgradeCost[0])}–{fmt(financials.electricalUpgradeCost[1])}</span>
+                  </div>
+                )}
+                <Row label="Monthly Electricity" value={fmt(financials.monthlyElectricityCost)} />
+                <div className="flex items-center gap-1">
+                  <Row label="Monthly Demand Charge" value={fmt(financials.monthlyDemandCharge)} />
+                  <UITooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-amber pulse-warning" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs">
+                      Demand charges can represent 30-70% of your electricity bill. This is the #1 hidden cost of EV charging.
+                    </TooltipContent>
+                  </UITooltip>
+                </div>
+                <Row label="Monthly Networking" value={fmt(financials.monthlyNetworkingCost)} />
+                <Row label="Annual Maintenance" value={fmt(financials.annualMaintenance)} />
+              </>
             )}
-            <Row label="Monthly Electricity" value={fmt(financials.monthlyElectricityCost)} />
-            <div className="flex items-center gap-1">
-              <Row label="Monthly Demand Charge" value={fmt(financials.monthlyDemandCharge)} />
-              <UITooltip>
-                <TooltipTrigger>
-                  <Info className="h-3 w-3 text-amber pulse-warning" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs text-xs">
-                  Demand charges can represent 30-70% of your electricity bill. This is the #1 hidden cost of EV charging.
-                </TooltipContent>
-              </UITooltip>
-            </div>
-            <Row label="Monthly Networking" value={fmt(financials.monthlyNetworkingCost)} />
-            <Row label="Annual Maintenance" value={fmt(financials.annualMaintenance)} />
           </div>
         </div>
 
@@ -115,6 +161,9 @@ const FinancialProjection = ({ financials, incentives, site }: Props) => {
           <div className="space-y-2">
             <SummaryRow label="Annual Gross Revenue" value={fmt(financials.annualRevenue)} className="text-success" bold />
             <SummaryRow label="Annual Operating Costs" value={`-${fmt(financials.totalAnnualOperatingCost)}`} className="text-destructive" />
+            {isTesla && (
+              <SummaryRow label="  └ Tesla Service Fee" value={`-${fmt(financials.teslaServiceFeeAnnual)}`} className="text-muted-foreground" />
+            )}
             <div className="my-2 border-t border-white/10" />
             <SummaryRow label="Annual Net Profit" value={fmt(financials.annualNetRevenue)} className={financials.annualNetRevenue >= 0 ? 'text-success' : 'text-destructive'} bold />
             <div className="my-2 border-t border-white/10" />
