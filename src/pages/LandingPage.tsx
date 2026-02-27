@@ -59,12 +59,15 @@ const LandingPage = () => {
             transition={{ duration: 0.7 }}
             className="mx-auto max-w-3xl text-center"
           >
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+              ⚡ Tesla Supercharger for Business
+            </div>
             <h1 className="font-heading text-4xl font-extrabold leading-tight tracking-tight text-foreground md:text-6xl">
-              Is your parking lot leaving{' '}
-              <span className="text-primary">money on the table?</span>
+              Turn your parking lot into a{' '}
+              <span className="text-primary">revenue engine</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground md:text-xl">
-              Get your free EV charging site analysis in 60 seconds. See your ChargeScore, financial projection, and every available incentive.
+              See if your property qualifies for a Tesla Supercharger installation. Get your ChargeScore, full revenue projection, and every available incentive — in 60 seconds.
             </p>
 
             <div className="mx-auto mt-10 flex max-w-xl flex-col gap-3 sm:flex-row">
@@ -104,18 +107,18 @@ const LandingPage = () => {
             {[
               {
                 icon: Zap,
-                title: 'Site Score in 60 Seconds',
-                desc: 'Our ChargeScore algorithm analyzes competition, traffic, electrical feasibility, and incentives to rate your site instantly.',
+                title: 'Tesla-Ready Site Score',
+                desc: 'Our ChargeScore algorithm evaluates your property for Tesla Supercharger viability — competition, traffic, electrical capacity, and more.',
               },
               {
                 icon: DollarSign,
                 title: 'Find Every Incentive',
-                desc: 'Federal, state, and utility programs can cover 50-100% of your project cost. We surface every dollar available to you.',
+                desc: 'Federal 30C tax credits, NEVI funding, and state programs can cover 30-80% of your Supercharger investment. We find every dollar.',
               },
               {
                 icon: BarChart3,
                 title: 'Full Revenue Projection',
-                desc: 'See your 5-year ROI with detailed cost breakdowns, demand charge analysis, and parking impact — all in real-time.',
+                desc: 'See your 5-year ROI with Tesla\'s pricing model — hardware costs, built-in load management, and service fees all calculated.',
               },
             ].map((prop, i) => (
               <motion.div
@@ -170,10 +173,10 @@ const LandingPage = () => {
       <section className="border-t border-border/50 bg-primary/5">
         <div className="container py-20 text-center">
           <h2 className="font-heading text-3xl font-bold text-foreground">
-            Ready to unlock your property's EV potential?
+            Ready to host Tesla Superchargers?
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
-            Join hundreds of property owners who've discovered hidden revenue opportunities with ChargeScore.
+            Join property owners discovering how Tesla's Supercharger for Business program can turn idle parking spaces into consistent revenue.
           </p>
           <Button
             className="mt-8 h-14 px-10 text-base font-semibold"

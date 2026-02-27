@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { SiteAnalysis, PropertyType, ElectricalService } from '@/types/chargeScore';
+import type { SiteAnalysis, PropertyType, ElectricalService, ChargingModel } from '@/types/chargeScore';
 import { PROPERTY_TYPE_LABELS, ELECTRICAL_SERVICE_LABELS } from '@/types/chargeScore';
 
 interface PropertyInputsProps {
@@ -20,6 +20,8 @@ const PropertyInputs = ({ site, onChange }: PropertyInputsProps) => {
     onChange({ ...site, ...partial });
   };
 
+  const isTesla = site.chargingModel === 'tesla';
+
   return (
     <div className="glass-card-dark">
       <button
@@ -32,6 +34,35 @@ const PropertyInputs = ({ site, onChange }: PropertyInputsProps) => {
 
       {expanded && (
         <div className="space-y-4 border-t border-white/10 p-4">
+          {/* Charging Model Toggle */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Charging Model</Label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => update({ chargingModel: 'tesla' })}
+                className={`flex-1 rounded-lg border px-3 py-2.5 text-xs font-semibold transition-all ${
+                  isTesla
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10'
+                }`}
+              >
+                ⚡ Tesla Supercharger
+                <span className="block text-[10px] font-normal opacity-70 mt-0.5">for Business</span>
+              </button>
+              <button
+                onClick={() => update({ chargingModel: 'generic' })}
+                className={`flex-1 rounded-lg border px-3 py-2.5 text-xs font-semibold transition-all ${
+                  !isTesla
+                    ? 'border-primary bg-primary/15 text-primary'
+                    : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10'
+                }`}
+              >
+                🔌 Generic / Other
+                <span className="block text-[10px] font-normal opacity-70 mt-0.5">L2 + DCFC</span>
+              </button>
+            </div>
+          </div>
+
           {/* Row 1 */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -100,27 +131,43 @@ const PropertyInputs = ({ site, onChange }: PropertyInputsProps) => {
           </div>
 
           {/* Charger Config */}
-          <div className="grid gap-4 sm:grid-cols-2">
+          {isTesla ? (
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Level 2 Chargers</Label>
+              <Label className="text-xs text-muted-foreground">
+                Supercharger Stalls <span className="text-[10px] text-muted-foreground/70">(min 4)</span>
+              </Label>
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ l2Chargers: Math.max(0, site.l2Chargers - 1) })}>−</Button>
-                <span className="w-10 text-center font-mono text-sm">{site.l2Chargers}</span>
-                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ l2Chargers: Math.min(50, site.l2Chargers + 1) })}>+</Button>
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ teslaStalls: Math.max(4, site.teslaStalls - 1) })}>−</Button>
+                <span className="w-10 text-center font-mono text-sm">{site.teslaStalls}</span>
+                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ teslaStalls: Math.min(24, site.teslaStalls + 1) })}>+</Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground/60">
+                Tesla V3.5 Supercharger — 250kW max, built-in load management
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Level 2 Chargers</Label>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ l2Chargers: Math.max(0, site.l2Chargers - 1) })}>−</Button>
+                  <span className="w-10 text-center font-mono text-sm">{site.l2Chargers}</span>
+                  <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ l2Chargers: Math.min(50, site.l2Chargers + 1) })}>+</Button>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">DC Fast Chargers</Label>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ dcfcChargers: Math.max(0, site.dcfcChargers - 1) })}>−</Button>
+                  <span className="w-10 text-center font-mono text-sm">{site.dcfcChargers}</span>
+                  <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ dcfcChargers: Math.min(20, site.dcfcChargers + 1) })}>+</Button>
+                </div>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">DC Fast Chargers</Label>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ dcfcChargers: Math.max(0, site.dcfcChargers - 1) })}>−</Button>
-                <span className="w-10 text-center font-mono text-sm">{site.dcfcChargers}</span>
-                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ dcfcChargers: Math.min(20, site.dcfcChargers + 1) })}>+</Button>
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Pricing */}
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className={`grid gap-4 ${isTesla ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Price/kWh ($)</Label>
               <Input
@@ -151,6 +198,18 @@ const PropertyInputs = ({ site, onChange }: PropertyInputsProps) => {
                 onChange={(e) => update({ demandChargePerKw: parseFloat(e.target.value) || 0 })}
               />
             </div>
+            {isTesla && (
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Tesla Fee $/kWh</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  className="amber-input h-9 font-mono text-sm"
+                  value={site.teslaServiceFeePerKwh}
+                  onChange={(e) => update({ teslaServiceFeePerKwh: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
