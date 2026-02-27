@@ -1,0 +1,88 @@
+import type { NearbyStation } from '@/types/chargeScore';
+
+export function generateMockStations(lat: number, lng: number): NearbyStation[] {
+  const stations: NearbyStation[] = [
+    {
+      id: '1',
+      name: 'ChargePoint Station - Walmart',
+      network: 'ChargePoint',
+      chargerType: 'L2',
+      numPorts: 4,
+      lat: lat + 0.012,
+      lng: lng - 0.015,
+      distanceMiles: 0.8,
+    },
+    {
+      id: '2',
+      name: 'EVgo Fast Charger',
+      network: 'EVgo',
+      chargerType: 'DCFC',
+      numPorts: 2,
+      lat: lat - 0.02,
+      lng: lng + 0.025,
+      distanceMiles: 1.9,
+    },
+    {
+      id: '3',
+      name: 'Tesla Supercharger - Mall',
+      network: 'Tesla',
+      chargerType: 'Tesla',
+      numPorts: 8,
+      lat: lat + 0.035,
+      lng: lng + 0.01,
+      distanceMiles: 2.5,
+    },
+    {
+      id: '4',
+      name: 'Blink Level 2',
+      network: 'Blink',
+      chargerType: 'L2',
+      numPorts: 2,
+      lat: lat - 0.008,
+      lng: lng - 0.03,
+      distanceMiles: 1.2,
+    },
+    {
+      id: '5',
+      name: 'Electrify America',
+      network: 'Electrify America',
+      chargerType: 'DCFC',
+      numPorts: 6,
+      lat: lat + 0.05,
+      lng: lng - 0.04,
+      distanceMiles: 3.8,
+    },
+    {
+      id: '6',
+      name: 'SemaConnect',
+      network: 'SemaConnect',
+      chargerType: 'L2',
+      numPorts: 3,
+      lat: lat - 0.04,
+      lng: lng + 0.05,
+      distanceMiles: 4.1,
+    },
+    {
+      id: '7',
+      name: 'Tesla Supercharger - Highway',
+      network: 'Tesla',
+      chargerType: 'Tesla',
+      numPorts: 12,
+      lat: lat + 0.06,
+      lng: lng + 0.03,
+      distanceMiles: 4.6,
+    },
+    {
+      id: '8',
+      name: 'ChargePoint Express',
+      network: 'ChargePoint',
+      chargerType: 'DCFC',
+      numPorts: 2,
+      lat: lat - 0.015,
+      lng: lng - 0.05,
+      distanceMiles: 3.2,
+    },
+  ];
+
+  return stations;
+}
