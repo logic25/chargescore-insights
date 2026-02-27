@@ -113,11 +113,14 @@ const FinancialProjection = ({ financials, incentives, site }: Props) => {
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
           <h3 className="mb-3 font-heading text-sm font-semibold text-primary">Investment Summary</h3>
           <div className="space-y-2">
+            <SummaryRow label="Annual Gross Revenue" value={fmt(financials.annualRevenue)} className="text-success" bold />
+            <SummaryRow label="Annual Operating Costs" value={`-${fmt(financials.totalAnnualOperatingCost)}`} className="text-destructive" />
+            <div className="my-2 border-t border-white/10" />
+            <SummaryRow label="Annual Net Profit" value={fmt(financials.annualNetRevenue)} className={financials.annualNetRevenue >= 0 ? 'text-success' : 'text-destructive'} bold />
+            <div className="my-2 border-t border-white/10" />
             <SummaryRow label="Total Project Cost" value={fmt(financials.totalProjectCost)} />
             <SummaryRow label="Estimated Incentives" value={`-${fmt(financials.estimatedIncentives)}`} className="text-success" />
-            <div className="my-2 border-t border-white/10" />
             <SummaryRow label="Net Investment" value={fmt(financials.netInvestment)} bold />
-            <SummaryRow label="Annual Net Revenue" value={fmt(financials.annualNetRevenue)} className={financials.annualNetRevenue >= 0 ? 'text-success' : 'text-destructive'} />
             <SummaryRow
               label="Simple Payback"
               value={isFinite(financials.paybackMonths) ? `${Math.round(financials.paybackMonths)} months` : 'N/A'}
