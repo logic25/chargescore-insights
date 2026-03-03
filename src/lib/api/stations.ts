@@ -1,6 +1,6 @@
 import type { NearbyStation } from '@/types/chargeScore';
 
-const NREL_API_KEY = 'DEMO_KEY';
+const NREL_API_KEY = 'ttwrfmgTXzqUEZctNUcKtCbN2gnJhnST68fj6Oe9';
 const NREL_BASE = 'https://developer.nrel.gov/api/alt-fuel-stations/v1.json';
 
 export async function fetchNearbyStations(lat: number, lng: number, radiusMiles: number = 5): Promise<NearbyStation[]> {
