@@ -12,6 +12,7 @@ import PropertyInputs from '@/components/dashboard/PropertyInputs';
 import FinancialProjection from '@/components/dashboard/FinancialProjection';
 import DemandChargeAnalyzer from '@/components/dashboard/DemandChargeAnalyzer';
 import ParkingImpact from '@/components/dashboard/ParkingImpact';
+import NetworkComparison from '@/components/dashboard/NetworkComparison';
 
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
@@ -39,6 +40,7 @@ const Dashboard = () => {
 
   const [stations, setStations] = useState<NearbyStation[]>([]);
   const [stationsLoading, setStationsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'analysis' | 'compare'>('analysis');
 
   useEffect(() => {
     setStationsLoading(true);
@@ -105,9 +107,32 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Financial Projection */}
+        {/* View Toggle */}
+        <div className="mt-4 flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={viewMode === 'analysis' ? 'default' : 'outline'}
+            onClick={() => setViewMode('analysis')}
+          >
+            <Zap className="mr-1 h-3.5 w-3.5" />
+            Tesla Analysis
+          </Button>
+          <Button
+            size="sm"
+            variant={viewMode === 'compare' ? 'default' : 'outline'}
+            onClick={() => setViewMode('compare')}
+          >
+            Compare Networks
+          </Button>
+        </div>
+
+        {/* Financial Section */}
         <div className="mt-4">
-          <FinancialProjection financials={financials} incentives={incentives} site={site} nrelIncentives={nrelIncentives} />
+          {viewMode === 'analysis' ? (
+            <FinancialProjection financials={financials} incentives={incentives} site={site} nrelIncentives={nrelIncentives} />
+          ) : (
+            <NetworkComparison site={site} incentives={incentives} />
+          )}
         </div>
 
         {/* Bottom: Demand Charge + Parking */}
