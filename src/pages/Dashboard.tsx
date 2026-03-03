@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Zap, ArrowLeft, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { SiteAnalysis } from '@/types/chargeScore';
-import { generateMockStations } from '@/lib/mockData';
+import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
+import { fetchNearbyStations } from '@/lib/api/stations';
 import { calculateChargeScore, calculateFinancials, calculateParkingImpact, calculateDemandCharge, getIncentives } from '@/lib/calculations';
 import MapView from '@/components/dashboard/MapView';
 import ChargeScoreGauge from '@/components/dashboard/ChargeScoreGauge';
@@ -36,7 +36,16 @@ const Dashboard = () => {
     teslaServiceFeePerKwh: 0.10,
   });
 
-  const stations = useMemo(() => generateMockStations(site.lat, site.lng), [site.lat, site.lng]);
+  const [stations, setStations] = useState<NearbyStation[]>([]);
+  const [stationsLoading, setStationsLoading] = useState(true);
+
+  useEffect(() => {
+    setStationsLoading(true);
+    fetchNearbyStations(site.lat, site.lng, 5)
+      .then(setStations)
+      .finally(() => setStationsLoading(false));
+  }, [site.lat, site.lng]);
+
   const score = useMemo(() => calculateChargeScore(site, stations), [site, stations]);
   const incentives = useMemo(() => getIncentives(site), [site]);
   const financials = useMemo(() => calculateFinancials(site, incentives), [site, incentives]);
@@ -79,7 +88,7 @@ const Dashboard = () => {
         {/* Top Row: Map + Score + Inputs */}
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Left: Map */}
-          <MapView lat={site.lat} lng={site.lng} stations={stations} />
+          <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
 
           {/* Right: Score + Inputs */}
           <div className="flex flex-col gap-4">
