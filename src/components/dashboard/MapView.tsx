@@ -6,15 +6,23 @@ interface MapViewProps {
   lat: number;
   lng: number;
   stations: NearbyStation[];
+  loading?: boolean;
 }
 
-const CHARGER_COLORS: Record<string, string> = {
-  L2: '#22c55e',
-  DCFC: '#ef4444',
-  Tesla: '#3b82f6',
+const NETWORK_COLORS: Record<string, string> = {
+  'Tesla': '#ef4444',
+  'Tesla Destination': '#ef4444',
+  'ChargePoint': '#3b82f6',
+  'Blink': '#3b82f6',
+  'EVgo': '#22c55e',
+  'Electrify America': '#22c55e',
 };
 
-const MapView = ({ lat, lng, stations }: MapViewProps) => {
+function getStationColor(station: NearbyStation): string {
+  return NETWORK_COLORS[station.network] || '#888888';
+}
+
+const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -46,7 +54,7 @@ const MapView = ({ lat, lng, stations }: MapViewProps) => {
 
     // Station markers
     stations.forEach((station) => {
-      const color = CHARGER_COLORS[station.chargerType] || '#888';
+      const color = getStationColor(station);
       const icon = L.divIcon({
         html: `<div style="width:14px;height:14px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);"></div>`,
         iconSize: [14, 14],
@@ -77,12 +85,23 @@ const MapView = ({ lat, lng, stations }: MapViewProps) => {
       <div className="flex items-center justify-between border-b border-white/10 p-4">
         <h2 className="font-heading text-sm font-semibold text-foreground">Competition Map</h2>
         <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-success" /> L2</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-destructive" /> DCFC</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#3b82f6' }} /> Tesla</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#ef4444' }} /> Tesla</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#3b82f6' }} /> ChargePoint/Blink</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#22c55e' }} /> EVgo/EA</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#888' }} /> Other</span>
         </div>
       </div>
-      <div ref={containerRef} className="h-[400px] w-full lg:h-[460px]" />
+      <div className="relative">
+        <div ref={containerRef} className="h-[400px] w-full lg:h-[460px]" />
+        {loading && (
+          <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-background/50 backdrop-blur-sm">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              Loading stations…
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
