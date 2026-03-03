@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, FileText } from 'lucide-react';
+import { Zap, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
 import { fetchNearbyStations } from '@/lib/api/stations';
@@ -13,6 +13,7 @@ import FinancialProjection from '@/components/dashboard/FinancialProjection';
 import DemandChargeAnalyzer from '@/components/dashboard/DemandChargeAnalyzer';
 import ParkingImpact from '@/components/dashboard/ParkingImpact';
 import NetworkComparison from '@/components/dashboard/NetworkComparison';
+import ReportGenerator from '@/components/dashboard/ReportGenerator';
 
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
@@ -68,9 +69,7 @@ const Dashboard = () => {
     return () => document.documentElement.classList.remove('dark');
   }, []);
 
-  const handlePrint = () => {
-    window.print();
-  };
+  // Removed handlePrint — replaced by ReportGenerator
 
   return (
     <div className="min-h-screen bg-background">
@@ -86,10 +85,14 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:block">{site.address}</span>
-            <Button size="sm" variant="outline" onClick={handlePrint}>
-              <FileText className="mr-1 h-4 w-4" />
-              Report
-            </Button>
+            <ReportGenerator
+              site={site}
+              score={score}
+              financials={financials}
+              incentives={incentives}
+              parking={parking}
+              demandCharge={demandCharge}
+            />
           </div>
         </div>
       </header>
