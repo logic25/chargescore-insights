@@ -1,4 +1,15 @@
 export type ChargingModel = 'tesla' | 'generic';
+export type NetworkOption = 'tesla' | 'chargepoint' | 'turnkey';
+
+export interface TurnkeyProjection {
+  monthlyLease: number;
+  annualRevenue: number;
+  investmentRequired: number;
+  maintenanceBy: string;
+  contractYears: number;
+  paybackYears: number;
+  controlsPricing: string;
+}
 
 export interface SiteAnalysis {
   address: string;
