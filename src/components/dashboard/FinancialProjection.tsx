@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { TrendingUp, AlertTriangle, Info, DollarSign, Award, Zap } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Info, DollarSign, Award, Zap, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Tooltip as UITooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { FinancialProjection as FP, Incentive, SiteAnalysis } from '@/types/chargeScore';
+import type { NrelIncentive } from '@/lib/api/incentives';
 
 interface Props {
   financials: FP;
   incentives: Incentive[];
   site: SiteAnalysis;
+  nrelIncentives?: NrelIncentive[];
 }
 
 const fmt = (n: number) => {
@@ -15,8 +17,9 @@ const fmt = (n: number) => {
   return n < 0 ? `-$${Math.abs(Math.round(n)).toLocaleString()}` : `$${Math.round(n).toLocaleString()}`;
 };
 
-const FinancialProjection = ({ financials, incentives, site }: Props) => {
+const FinancialProjection = ({ financials, incentives, site, nrelIncentives = [] }: Props) => {
   const [incentiveExpanded, setIncentiveExpanded] = useState<string | null>(null);
+  const [showNrelPrograms, setShowNrelPrograms] = useState(false);
   const isTesla = financials.chargingModel === 'tesla';
 
   const chartData = financials.cumulativeCashFlow.map((val, i) => ({
@@ -149,6 +152,39 @@ const FinancialProjection = ({ financials, incentives, site }: Props) => {
                 )}
               </div>
             ))}
+            {nrelIncentives.length > 0 && (
+              <div className="mt-3">
+                <button
+                  className="flex w-full items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-white/10"
+                  onClick={() => setShowNrelPrograms(!showNrelPrograms)}
+                >
+                  {showNrelPrograms ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  Additional Programs ({nrelIncentives.length})
+                </button>
+                {showNrelPrograms && (
+                  <div className="mt-2 space-y-1.5 pl-1">
+                    {nrelIncentives.map((nrel) => (
+                      <div key={nrel.id} className="rounded border border-white/5 bg-white/[0.02] p-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-[11px] font-medium text-foreground/80">{nrel.title}</p>
+                            <p className="mt-0.5 text-[10px] text-muted-foreground">{nrel.type}</p>
+                          </div>
+                          <a
+                            href={`https://afdc.energy.gov/laws/${nrel.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-shrink-0 text-primary hover:text-primary/80"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

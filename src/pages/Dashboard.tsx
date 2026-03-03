@@ -4,6 +4,7 @@ import { Zap, ArrowLeft, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
 import { fetchNearbyStations } from '@/lib/api/stations';
+import { fetchStateIncentives, type NrelIncentive } from '@/lib/api/incentives';
 import { calculateChargeScore, calculateFinancials, calculateParkingImpact, calculateDemandCharge, getIncentives } from '@/lib/calculations';
 import MapView from '@/components/dashboard/MapView';
 import ChargeScoreGauge from '@/components/dashboard/ChargeScoreGauge';
@@ -52,6 +53,13 @@ const Dashboard = () => {
   const parking = useMemo(() => calculateParkingImpact(site), [site]);
   const demandCharge = useMemo(() => calculateDemandCharge(site), [site]);
 
+  const [nrelIncentives, setNrelIncentives] = useState<NrelIncentive[]>([]);
+  useEffect(() => {
+    if (site.state) {
+      fetchStateIncentives(site.state).then(setNrelIncentives);
+    }
+  }, [site.state]);
+
   // Force dark mode on dashboard
   useEffect(() => {
     document.documentElement.classList.add('dark');
@@ -99,7 +107,7 @@ const Dashboard = () => {
 
         {/* Financial Projection */}
         <div className="mt-4">
-          <FinancialProjection financials={financials} incentives={incentives} site={site} />
+          <FinancialProjection financials={financials} incentives={incentives} site={site} nrelIncentives={nrelIncentives} />
         </div>
 
         {/* Bottom: Demand Charge + Parking */}
