@@ -108,6 +108,8 @@ export interface FinancialProjection {
   fiveYearRoi: number;
   // Cash flow
   cumulativeCashFlow: number[];
+  npv15Year: number;
+  paybackYears: number;
 }
 
 export interface Incentive {
