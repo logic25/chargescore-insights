@@ -20,7 +20,7 @@ const FinancialProjection = ({ financials, incentives, site }: Props) => {
   const isTesla = financials.chargingModel === 'tesla';
 
   const chartData = financials.cumulativeCashFlow.map((val, i) => ({
-    year: `Year ${i + 1}`,
+    year: `Y${i + 1}`,
     value: Math.round(val),
   }));
 
@@ -171,8 +171,14 @@ const FinancialProjection = ({ financials, incentives, site }: Props) => {
             <SummaryRow label="Estimated Incentives" value={`-${fmt(financials.estimatedIncentives)}`} className="text-success" />
             <SummaryRow label="Net Investment" value={fmt(financials.netInvestment)} bold />
             <SummaryRow
-              label="Simple Payback"
-              value={isFinite(financials.paybackMonths) ? `${Math.round(financials.paybackMonths)} months` : 'N/A'}
+              label="Payback Period"
+              value={isFinite(financials.paybackYears) ? `${financials.paybackYears} year${financials.paybackYears !== 1 ? 's' : ''}` : 'N/A'}
+              bold
+            />
+            <SummaryRow
+              label="15-Year NPV (10%)"
+              value={fmt(financials.npv15Year)}
+              className={financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}
               bold
             />
             <SummaryRow
@@ -185,25 +191,32 @@ const FinancialProjection = ({ financials, incentives, site }: Props) => {
         </div>
 
         {/* Cash Flow Chart */}
-        <div>
-          <h3 className="mb-3 font-heading text-sm font-semibold text-foreground">Cumulative Cash Flow</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="year" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: '#f8fafc' }}
-                formatter={(value: number) => [fmt(value), 'Cash Flow']}
-              />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {chartData.map((entry, i) => (
-                  <Cell key={i} fill={entry.value >= 0 ? '#00d4aa' : '#ef4444'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="min-w-0">
+          <h3 className="mb-3 font-heading text-sm font-semibold text-foreground">15-Year Cumulative Cash Flow</h3>
+          <div className="overflow-x-auto">
+            <div className="min-w-[500px]">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="year" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={(v) => {
+                    if (Math.abs(v) >= 1000000) return `$${(v / 1000000).toFixed(1)}M`;
+                    return `$${(v / 1000).toFixed(0)}k`;
+                  }} />
+                  <Tooltip
+                    contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: '#f8fafc' }}
+                    formatter={(value: number) => [fmt(value), 'Cash Flow']}
+                  />
+                  <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                    {chartData.map((entry, i) => (
+                      <Cell key={i} fill={entry.value >= 0 ? '#00d4aa' : '#ef4444'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
       </div>
     </div>

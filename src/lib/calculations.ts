@@ -93,12 +93,15 @@ const MAINTENANCE_RATE = 0.03;
 const L2_PEAK_KW = 7.7;
 const DCFC_PEAK_KW = 150;
 
-// Tesla Supercharger for Business constants
-const TESLA_COST_PER_STALL = 42500; // ~$40-45k per stall
-const TESLA_INSTALL_PER_STALL = 15000; // Site prep, civil works, grid connection per stall
-const TESLA_KWH_PER_STALL_PER_DAY = 200; // Avg utilization per stall
-const TESLA_PEAK_KW_PER_STALL = 250; // V3.5: 250kW max
-const TESLA_LOAD_MGMT_FACTOR = 0.55; // Tesla's power sharing reduces peak demand ~45%
+// Tesla Supercharger for Business constants — aligned with Tesla ROI Calculator
+const TESLA_COST_PER_STALL = 50000;      // Tesla's BOM per V4 Post including cabinet, connectivity, commissioning
+const TESLA_INSTALL_PER_STALL = 50000;    // Tesla's "High Cost Scenario" turnkey installation per charger
+const TESLA_KWH_PER_STALL_PER_DAY = 250;  // Tesla's "Medium" utilization estimate
+const TESLA_PEAK_KW_PER_STALL = 325;      // V4 Supercharger max output
+const TESLA_LOAD_MGMT_FACTOR = 0.55;      // Tesla power sharing reduces peak demand ~45%
+const TESLA_UTILIZATION_GROWTH = 1.07;     // 7% YoY utilization growth
+const TESLA_FEE_ESCALATION = 1.03;        // 3% YoY Tesla service fee escalation
+const DISCOUNT_RATE = 0.10;                // 10% discount rate for NPV
 
 // --- Financial Projection ---
 
@@ -111,13 +114,14 @@ export function calculateFinancials(site: SiteAnalysis, incentives: Incentive[])
 
 function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): FinancialProjection {
   const stalls = Math.max(4, site.teslaStalls);
-  const dailyKwh = stalls * TESLA_KWH_PER_STALL_PER_DAY;
+  const baseDailyKwh = stalls * TESLA_KWH_PER_STALL_PER_DAY;
+  // Year 1 values
+  const dailyKwh = baseDailyKwh;
   const grossDailyRevenue = dailyKwh * site.pricePerKwh;
-  const teslaServiceFeeDaily = dailyKwh * site.teslaServiceFeePerKwh;
-  const dailyRevenue = grossDailyRevenue; // We show gross, deduct Tesla fee in operating costs
+  const dailyRevenue = grossDailyRevenue;
   const monthlyRevenue = dailyRevenue * 30;
   const annualRevenue = monthlyRevenue * 12;
-  const teslaServiceFeeAnnual = teslaServiceFeeDaily * 365;
+  const teslaServiceFeeAnnual = dailyKwh * site.teslaServiceFeePerKwh * 365;
 
   const totalHardwareCost = stalls * TESLA_COST_PER_STALL;
   const totalInstallationCost = stalls * TESLA_INSTALL_PER_STALL;
@@ -126,12 +130,9 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
   const electricalUpgradeCost: [number, number] = needsUpgrade ? [75000, 150000] : [0, 0];
 
   const monthlyElectricityCost = dailyKwh * 30 * site.electricityCostPerKwh;
-  // Tesla load management reduces effective peak demand
   const peakKw = stalls * TESLA_PEAK_KW_PER_STALL * TESLA_LOAD_MGMT_FACTOR;
   const monthlyDemandCharge = peakKw * site.demandChargePerKw;
-  // Tesla handles maintenance — $0 for business owner
   const annualMaintenance = 0;
-  // Tesla handles networking
   const monthlyNetworkingCost = 0;
 
   const totalAnnualOperatingCost =
@@ -150,14 +151,33 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
   const estimatedIncentives = Math.min(totalIncentiveAmount, totalProjectCost * 0.5);
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
-  const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
 
+  // 15-year cash flow with 7% utilization growth and 3% fee escalation
   const cumulativeCashFlow: number[] = [];
-  for (let year = 1; year <= 5; year++) {
+  let npv15Year = -netInvestment;
+  let paybackYears = Infinity;
+
+  for (let year = 1; year <= 15; year++) {
+    const growthFactor = Math.pow(TESLA_UTILIZATION_GROWTH, year - 1);
+    const feeEscalation = Math.pow(TESLA_FEE_ESCALATION, year - 1);
+    const yearDailyKwh = baseDailyKwh * growthFactor;
+    const yearAnnualRevenue = yearDailyKwh * site.pricePerKwh * 365;
+    const yearElectricity = yearDailyKwh * 365 * site.electricityCostPerKwh;
+    const yearDemandCharge = monthlyDemandCharge * 12; // demand charge stays same (peak doesn't grow with utilization)
+    const yearTeslaFee = yearDailyKwh * site.teslaServiceFeePerKwh * feeEscalation * 365;
+    const yearNetRevenue = yearAnnualRevenue - yearElectricity - yearDemandCharge - yearTeslaFee;
+
     const prev = year === 1 ? -netInvestment : cumulativeCashFlow[year - 2];
-    cumulativeCashFlow.push(prev + annualNetRevenue);
+    cumulativeCashFlow.push(prev + yearNetRevenue);
+
+    npv15Year += yearNetRevenue / Math.pow(1 + DISCOUNT_RATE, year);
+
+    if (paybackYears === Infinity && cumulativeCashFlow[year - 1] >= 0) {
+      paybackYears = year;
+    }
   }
 
+  const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
   const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : 0;
 
   return {
@@ -172,6 +192,7 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
     annualMaintenance, totalAnnualOperatingCost,
     totalProjectCost, estimatedIncentives, netInvestment,
     annualNetRevenue, paybackMonths, fiveYearRoi, cumulativeCashFlow,
+    npv15Year, paybackYears,
   };
 }
 
@@ -219,9 +240,16 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
   const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
 
   const cumulativeCashFlow: number[] = [];
-  for (let year = 1; year <= 5; year++) {
+  let npv15Year = -netInvestment;
+  let paybackYears = Infinity;
+
+  for (let year = 1; year <= 15; year++) {
     const prev = year === 1 ? -netInvestment : cumulativeCashFlow[year - 2];
     cumulativeCashFlow.push(prev + annualNetRevenue);
+    npv15Year += annualNetRevenue / Math.pow(1 + DISCOUNT_RATE, year);
+    if (paybackYears === Infinity && cumulativeCashFlow[year - 1] >= 0) {
+      paybackYears = year;
+    }
   }
 
   const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : 0;
@@ -237,6 +265,7 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
     annualMaintenance, totalAnnualOperatingCost,
     totalProjectCost, estimatedIncentives, netInvestment,
     annualNetRevenue, paybackMonths, fiveYearRoi, cumulativeCashFlow,
+    npv15Year, paybackYears,
   };
 }
 

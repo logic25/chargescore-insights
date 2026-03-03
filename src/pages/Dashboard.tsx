@@ -30,8 +30,8 @@ const Dashboard = () => {
     teslaStalls: 4,
     l2Chargers: 4,
     dcfcChargers: 2,
-    pricePerKwh: 0.45,
-    electricityCostPerKwh: 0.14,
+    pricePerKwh: 0.42,
+    electricityCostPerKwh: 0.223,
     demandChargePerKw: 15,
     teslaServiceFeePerKwh: 0.10,
   });
