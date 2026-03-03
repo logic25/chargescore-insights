@@ -1,37 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Zap, DollarSign, BarChart3, Building2, ChevronRight } from 'lucide-react';
+import { Zap, DollarSign, BarChart3, Building2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 
 const LandingPage = () => {
-  const [address, setAddress] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<{ formatted: string; lat: number; lng: number; stateCode: string } | null>(null);
   const navigate = useNavigate();
 
-  const handleSearch = async () => {
-    if (!address.trim()) return;
-    setLoading(true);
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&addressdetails=1&limit=1`
-      );
-      const data = await res.json();
-      if (data.length > 0) {
-        const { lat, lon, address: addr } = data[0];
-        const state = addr?.state || '';
-        const zip = addr?.postcode || '';
-        const stateCode = getStateCode(state);
-        navigate(`/dashboard?address=${encodeURIComponent(address)}&lat=${lat}&lng=${lon}&state=${stateCode}&zip=${zip}`);
-      } else {
-        // Fallback: navigate with just address
-        navigate(`/dashboard?address=${encodeURIComponent(address)}&lat=40.7128&lng=-74.006&state=NY&zip=10001`);
-      }
-    } catch {
-      navigate(`/dashboard?address=${encodeURIComponent(address)}&lat=40.7128&lng=-74.006&state=NY&zip=10001`);
-    }
-    setLoading(false);
+  const handleAddressSelect = (result: { formatted: string; lat: number; lng: number; stateCode: string }) => {
+    setSelectedAddress(result);
+    navigate(`/dashboard?address=${encodeURIComponent(result.formatted)}&lat=${result.lat}&lng=${result.lng}&state=${result.stateCode}`);
   };
 
   return (
@@ -71,22 +51,17 @@ const LandingPage = () => {
             </p>
 
             <div className="mx-auto mt-10 flex max-w-xl flex-col gap-3 sm:flex-row">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="h-14 pl-10 text-base"
-                  placeholder="Enter your property address..."
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
-              </div>
+              <AddressAutocomplete onSelect={handleAddressSelect} />
               <Button
                 className="h-14 px-8 text-base font-semibold"
-                onClick={handleSearch}
-                disabled={loading || !address.trim()}
+                onClick={() => {
+                  if (selectedAddress) {
+                    navigate(`/dashboard?address=${encodeURIComponent(selectedAddress.formatted)}&lat=${selectedAddress.lat}&lng=${selectedAddress.lng}&state=${selectedAddress.stateCode}`);
+                  }
+                }}
+                disabled={!selectedAddress}
               >
-                {loading ? 'Analyzing...' : 'Analyze Site'}
+                Analyze Site
                 <ChevronRight className="ml-1 h-5 w-5" />
               </Button>
             </div>
@@ -200,23 +175,5 @@ const LandingPage = () => {
     </div>
   );
 };
-
-function getStateCode(stateName: string): string {
-  const map: Record<string, string> = {
-    'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
-    'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
-    'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
-    'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
-    'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
-    'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
-    'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH',
-    'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
-    'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
-    'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY',
-    'District of Columbia': 'DC',
-  };
-  if (stateName.length === 2) return stateName.toUpperCase();
-  return map[stateName] || 'NY';
-}
 
 export default LandingPage;
