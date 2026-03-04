@@ -68,6 +68,9 @@ function extractStateCode(place: any): string {
 interface Prediction {
   description: string;
   place_id: string;
+  _lat?: number;
+  _lng?: number;
+  _state?: string;
 }
 
 const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property address...', className }: Props) => {
@@ -81,6 +84,31 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
   const placesService = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<number>(0);
+  const nominatimMode = useRef(false);
+
+  const fetchNominatimSuggestions = async (input: string) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(input)}&format=json&addressdetails=1&limit=5&countrycodes=us`
+      );
+      const data = await res.json();
+      if (data.length > 0) {
+        nominatimMode.current = true;
+        setPredictions(data.map((d: any) => ({
+          description: d.display_name,
+          place_id: `nom_${d.place_id}`,
+          _lat: parseFloat(d.lat),
+          _lng: parseFloat(d.lon),
+          _state: d.address?.state || '',
+        })));
+        setShowDropdown(true);
+      } else {
+        setPredictions([]);
+      }
+    } catch {
+      setPredictions([]);
+    }
+  };
 
   useEffect(() => {
     loadGoogleMaps()
@@ -106,10 +134,17 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
   }, []);
 
   const fetchPredictions = useCallback((input: string) => {
-    if (!autocompleteService.current || input.length < 3) {
+    if (input.length < 3) {
       setPredictions([]);
       return;
     }
+
+    // If Google Maps isn't available, use Nominatim autocomplete
+    if (!autocompleteService.current) {
+      fetchNominatimSuggestions(input);
+      return;
+    }
+
     autocompleteService.current.getPlacePredictions(
       {
         input,
@@ -135,10 +170,26 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
   };
 
   const handleSelect = (prediction: Prediction) => {
-    setLoading(true);
     setShowDropdown(false);
     setValue(prediction.description);
 
+    // Nominatim result — already has coordinates
+    if (prediction.place_id.startsWith('nom_') && prediction._lat != null && prediction._lng != null) {
+      const stateCode = prediction._state?.length === 2
+        ? prediction._state.toUpperCase()
+        : getStateCode(prediction._state || '');
+      onSelect({
+        formatted: prediction.description,
+        lat: prediction._lat,
+        lng: prediction._lng,
+        stateCode,
+        placeId: '',
+      });
+      return;
+    }
+
+    // Google Places result
+    setLoading(true);
     placesService.current?.getDetails(
       { placeId: prediction.place_id, fields: ['geometry', 'formatted_address', 'address_components'] },
       (place: any, status: string) => {
@@ -233,7 +284,7 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
 
       {mapsError && !mapsReady && (
         <p className="mt-1 text-[10px] text-muted-foreground">
-          Using basic geocoding — Google Places unavailable
+          Type an address and select from suggestions to continue
         </p>
       )}
     </div>

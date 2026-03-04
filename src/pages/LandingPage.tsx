@@ -29,9 +29,7 @@ const LandingPage = () => {
             <Zap className="h-6 w-6 text-primary" />
             <span className="font-heading text-xl font-bold text-foreground">ChargeScore</span>
           </div>
-          <Button variant="outline" size="sm" className="hidden sm:flex">
-            Sign In
-          </Button>
+          {/* Sign In — auth not yet implemented */}
         </div>
       </header>
 
