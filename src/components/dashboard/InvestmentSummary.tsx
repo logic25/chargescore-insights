@@ -40,6 +40,7 @@ const LAYER_ORDER: string[] = ['federal', 'state', 'utility'];
 
 const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nrelIncentives = [] }: Props) => {
   const [showNrelPrograms, setShowNrelPrograms] = useState(false);
+  const [showYear1, setShowYear1] = useState(false);
   const outOfPocket = financials.netInvestment;
   const outOfPocketColor = outOfPocket <= 0
     ? 'text-success'
@@ -48,6 +49,9 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
       : outOfPocket <= 150000
         ? 'text-amber'
         : 'text-destructive';
+
+  const netProfit = financials.annualNetRevenue;
+  const monthlyProfit = netProfit / 12;
 
   // Group incentives by layer
   const incentivesByLayer = LAYER_ORDER.map(layer => ({
@@ -84,6 +88,7 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
             <p className="text-[10px] text-muted-foreground/60">Drag to adjust — all financials update instantly</p>
           </div>
         )}
+
         {/* Total Project Cost */}
         <div>
           <div className="flex items-center justify-between">
@@ -198,6 +203,86 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
 
         {/* Divider */}
         <div className="border-t border-border" />
+
+        {/* Year 1 Revenue & Costs (collapsible) */}
+        <button
+          className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/50 p-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+          onClick={() => setShowYear1(!showYear1)}
+        >
+          <span className="flex items-center gap-1">
+            {showYear1 ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            Year 1 Revenue & Costs
+          </span>
+          <span className={`font-mono font-semibold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+            {fmt(netProfit)}/yr
+          </span>
+        </button>
+
+        {showYear1 && (
+          <div className="space-y-2 pl-1">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground flex items-center">
+                Charging Revenue
+                <InfoTip text={`Based on ${Math.round(financials.dailyKwhDcfc)} kWh/day at your retail price. Assumes medium utilization (250 kWh/stall/day).`} />
+              </span>
+              <span className="font-mono text-sm font-semibold text-success">{fmt(financials.annualRevenue)}/yr</span>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground flex items-center">
+                  Less: Electricity
+                  <InfoTip text="Your utility bill for power consumed. This is a LEVELIZED rate — it already includes demand charges, TOU pricing, and surcharges." />
+                </span>
+                <span className="font-mono text-sm text-destructive">({fmt(financials.monthlyElectricityCost * 12)})/yr</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground/60 ml-4 mt-0.5">Levelized rate, includes demand charges</p>
+            </div>
+
+            {financials.chargingModel === 'tesla' && financials.teslaServiceFeeAnnual > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground flex items-center">
+                  Less: Tesla Service Fee
+                  <InfoTip text="Tesla charges $0.10/kWh for network management, payment processing, monitoring, and maintenance. Increases 3% per year." />
+                </span>
+                <span className="font-mono text-sm text-destructive">({fmt(financials.teslaServiceFeeAnnual)})/yr</span>
+              </div>
+            )}
+
+            {financials.chargingModel !== 'tesla' && (
+              <>
+                {financials.monthlyDemandCharge > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Less: Demand Charges</span>
+                    <span className="font-mono text-sm text-destructive">({fmt(financials.monthlyDemandCharge * 12)})/yr</span>
+                  </div>
+                )}
+                {financials.monthlyNetworkingCost > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Less: Networking</span>
+                    <span className="font-mono text-sm text-destructive">({fmt(financials.monthlyNetworkingCost * 12)})/yr</span>
+                  </div>
+                )}
+                {financials.annualMaintenance > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Less: Maintenance</span>
+                    <span className="font-mono text-sm text-destructive">({fmt(financials.annualMaintenance)})/yr</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            <div className="border-t border-border" />
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground">Net Profit</span>
+              <span className={`font-mono text-sm font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(netProfit)}/yr</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Monthly to You: <span className="font-mono font-semibold text-foreground">{fmt(monthlyProfit)}/mo</span>
+            </p>
+          </div>
+        )}
 
         {/* Bottom metrics */}
         <div className="grid grid-cols-2 gap-4">

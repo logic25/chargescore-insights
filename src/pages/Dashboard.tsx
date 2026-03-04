@@ -19,11 +19,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ChargeScoreGauge from '@/components/dashboard/ChargeScoreGauge';
 import PropertyInputs, { type TrafficLevel, TRAFFIC_LEVEL_VPD } from '@/components/dashboard/PropertyInputs';
 import InvestmentSummary from '@/components/dashboard/InvestmentSummary';
-import RevenueCosts from '@/components/dashboard/RevenueCosts';
-
 import FinancialProjection from '@/components/dashboard/FinancialProjection';
 import ParkingImpact from '@/components/dashboard/ParkingImpact';
-import NetworkComparison from '@/components/dashboard/NetworkComparison';
 import ReportGenerator from '@/components/dashboard/ReportGenerator';
 import ReportGate from '@/components/ReportGate';
 
@@ -270,17 +267,11 @@ const Dashboard = () => {
               <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} nrelIncentives={nrelIncentives} />
             </div>
 
-            {/* Row 3: Revenue & Costs + 15-Year Cash Flow */}
+            {/* Row 3: 15-Year Cash Flow + Parking Impact */}
             <div className="grid items-start gap-3 lg:grid-cols-2">
-              <RevenueCosts financials={financials} />
               <FinancialProjection financials={financials} />
+              <ParkingImpact analysis={parking} />
             </div>
-
-            {/* Network Comparison (full width — wide table) */}
-            <NetworkComparison site={site} incentives={incentives} />
-
-            {/* Parking Impact */}
-            <ParkingImpact analysis={parking} />
           </div>
         </div>
       </main>
