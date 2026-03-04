@@ -142,6 +142,14 @@ const ReportGate = ({ chargeScore, onUnlock }: Props) => {
             <p className="text-center text-[10px] text-muted-foreground/60">
               We'll send you a copy of the report. No spam.
             </p>
+
+            <button
+              type="button"
+              onClick={onUnlock}
+              className="w-full text-center text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors underline"
+            >
+              Skip for now
+            </button>
           </form>
         </motion.div>
       </motion.div>
