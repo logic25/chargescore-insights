@@ -82,32 +82,6 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             </div>
           </div>
 
-          {/* Row 1 */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Property Type</Label>
-              <Select value={site.propertyType} onValueChange={(v) => update({ propertyType: v as PropertyType })}>
-                <SelectTrigger className="amber-input h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PROPERTY_TYPE_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Total Parking Spaces</Label>
-              <Input
-                type="number"
-                className="amber-input h-9 font-mono text-sm"
-                value={site.totalParkingSpaces}
-                onChange={(e) => update({ totalParkingSpaces: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-          </div>
-
           {/* Traffic Level */}
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">

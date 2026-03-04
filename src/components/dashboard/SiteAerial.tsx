@@ -5,47 +5,43 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { getSatelliteImageUrl, estimateParkingSpots } from '@/lib/api/googleMaps';
-
-export type LotPreset = 'pharmacy' | 'strip-mall' | 'shopping-center' | 'gas-station' | 'standalone-retail' | 'other';
-
-const LOT_PRESETS: Record<LotPreset, { label: string; sqFt: number }> = {
-  'pharmacy': { label: 'Former Pharmacy / Retail', sqFt: 12000 },
-  'strip-mall': { label: 'Strip Mall', sqFt: 25000 },
-  'shopping-center': { label: 'Shopping Center', sqFt: 80000 },
-  'gas-station': { label: 'Gas Station', sqFt: 8000 },
-  'standalone-retail': { label: 'Standalone Retail', sqFt: 15000 },
-  'other': { label: 'Other (manual)', sqFt: 10000 },
-};
+import { PROPERTY_TYPE_LABELS } from '@/types/chargeScore';
+import type { PropertyType } from '@/types/chargeScore';
+import ParkingLotMeasure from './ParkingLotMeasure';
 
 interface SiteAerialProps {
   lat: number;
   lng: number;
+  propertyType: PropertyType;
+  onPropertyTypeChange: (type: PropertyType) => void;
   onParkingEstimate: (data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => void;
 }
 
-const SiteAerial = ({ lat, lng, onParkingEstimate }: SiteAerialProps) => {
-  const [lotPreset, setLotPreset] = useState<LotPreset>('pharmacy');
+const SiteAerial = ({ lat, lng, propertyType, onPropertyTypeChange, onParkingEstimate }: SiteAerialProps) => {
   const [lotSqFt, setLotSqFt] = useState(12000);
+  const [drawnLotSqFt, setDrawnLotSqFt] = useState<number | null>(null);
+  const [showDrawTool, setShowDrawTool] = useState(false);
 
   const satelliteUrl = useMemo(() => getSatelliteImageUrl(lat, lng), [lat, lng]);
-  const parking = useMemo(() => estimateParkingSpots(lotSqFt), [lotSqFt]);
+  const effectiveLotSqFt = drawnLotSqFt ?? lotSqFt;
+  const parking = useMemo(() => estimateParkingSpots(effectiveLotSqFt), [effectiveLotSqFt]);
 
-  // Notify parent of parking changes
   useEffect(() => {
     onParkingEstimate({
-      lotSqFt,
+      lotSqFt: effectiveLotSqFt,
       totalSpots: parking.total,
       availableForChargers: parking.availableForChargers,
     });
-  }, [lotSqFt, parking.total, parking.availableForChargers, onParkingEstimate]);
+  }, [effectiveLotSqFt, parking.total, parking.availableForChargers, onParkingEstimate]);
 
-  const handlePresetChange = (preset: LotPreset) => {
-    setLotPreset(preset);
-    setLotSqFt(LOT_PRESETS[preset].sqFt);
+  const handleDrawMeasured = (data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => {
+    setDrawnLotSqFt(data.lotSqFt);
+    setLotSqFt(data.lotSqFt);
+    onParkingEstimate(data);
   };
 
   return (
-    <div className="glass-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
       {/* Satellite Image */}
       <div className="relative">
         {satelliteUrl ? (
@@ -57,7 +53,7 @@ const SiteAerial = ({ lat, lng, onParkingEstimate }: SiteAerialProps) => {
           />
         ) : (
           <div className="flex h-[240px] w-full items-center justify-center bg-muted">
-            <p className="text-sm text-muted-foreground">Set VITE_GOOGLE_MAPS_KEY in environment variables to see satellite view</p>
+            <p className="text-sm text-muted-foreground">Set VITE_GOOGLE_MAPS_KEY to see satellite view</p>
           </div>
         )}
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-1 backdrop-blur-sm">
@@ -73,35 +69,51 @@ const SiteAerial = ({ lat, lng, onParkingEstimate }: SiteAerialProps) => {
         <h3 className="font-heading text-sm font-semibold text-foreground">Property Details</h3>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          {/* Property Type Preset */}
+          {/* Property Type */}
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Property Type</Label>
-            <Select value={lotPreset} onValueChange={(v) => handlePresetChange(v as LotPreset)}>
-              <SelectTrigger className="amber-input h-9 text-sm">
+            <Select value={propertyType} onValueChange={(v) => onPropertyTypeChange(v as PropertyType)}>
+              <SelectTrigger className="h-9 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(LOT_PRESETS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                {Object.entries(PROPERTY_TYPE_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Lot Size */}
+          {/* Lot Size (manual override) */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Lot Size (sq ft)</Label>
+            <Label className="text-xs text-muted-foreground">
+              Lot Size (sq ft) {drawnLotSqFt && <span className="text-primary text-[10px]">— measured</span>}
+            </Label>
             <Input
               type="number"
-              className="amber-input h-9 font-mono text-sm"
-              value={lotSqFt}
+              className="h-9 font-mono text-sm"
+              value={effectiveLotSqFt}
               onChange={(e) => {
-                setLotSqFt(parseInt(e.target.value) || 0);
-                setLotPreset('other');
+                const val = parseInt(e.target.value) || 0;
+                setLotSqFt(val);
+                setDrawnLotSqFt(null); // manual override clears drawn
               }}
             />
           </div>
         </div>
+
+        {/* Draw-to-Measure Toggle */}
+        <button
+          type="button"
+          onClick={() => setShowDrawTool(!showDrawTool)}
+          className="text-xs text-primary hover:text-primary/80 underline transition-colors"
+        >
+          {showDrawTool ? 'Hide drawing tool' : '📐 Draw on map to measure lot'}
+        </button>
+
+        {showDrawTool && (
+          <ParkingLotMeasure lat={lat} lng={lng} onMeasured={handleDrawMeasured} />
+        )}
 
         {/* Parking Estimates */}
         <div className="grid grid-cols-2 gap-3">
@@ -117,8 +129,8 @@ const SiteAerial = ({ lat, lng, onParkingEstimate }: SiteAerialProps) => {
                 <TooltipTrigger>
                   <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
                 </TooltipTrigger>
-                <TooltipContent className="max-w-[240px] text-xs">
-                  Industry standard: 1 parking spot per 340 sq ft. We recommend no more than 33% of spots for EV charging to avoid impacting regular parking.
+                <TooltipContent className="max-w-[280px] text-xs">
+                  Industry standard: 1 parking spot per 340 sq ft (including drive lanes). We recommend no more than 33% of spots for EV chargers to avoid impacting regular parking. Tesla requires minimum 8 dedicated spaces.
                 </TooltipContent>
               </Tooltip>
             </div>

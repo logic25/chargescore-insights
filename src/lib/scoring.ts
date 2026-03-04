@@ -35,6 +35,8 @@ export interface ScoringInputs {
   totalParkingSpots: number;
   isDisadvantagedCommunity: boolean;
   hasThreePhasePower: boolean | null;
+  state?: string;
+  zipCode?: string;
 }
 
 export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult {
@@ -194,16 +196,43 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   let overflowScore = 50;
   let demandMultiplier = 1.0;
 
-  if (inputs.multiFamilyPct !== null) {
-    if (inputs.multiFamilyPct >= 60) demandMultiplier += 1.5;
-    else if (inputs.multiFamilyPct >= 40) demandMultiplier += 1.0;
-    else if (inputs.multiFamilyPct >= 20) demandMultiplier += 0.5;
+  // Use sensible defaults when Census data is unavailable
+  let effectiveMultiFamilyPct = inputs.multiFamilyPct;
+  let effectivePopDensity = inputs.popDensity;
+
+  if (effectiveMultiFamilyPct === null) {
+    // Estimate from state/zip — NYC zips 100xx-104xx and 11xxx are dense urban
+    const zip = inputs.zipCode || '';
+    const state = inputs.state || '';
+    if (state === 'NY' && (zip.startsWith('10') || zip.startsWith('11'))) {
+      effectiveMultiFamilyPct = 55;
+    } else if (['NY', 'CA', 'MA', 'NJ', 'IL'].includes(state)) {
+      effectiveMultiFamilyPct = 40;
+    } else {
+      effectiveMultiFamilyPct = 30; // national average
+    }
   }
-  if (inputs.popDensity !== null) {
-    if (inputs.popDensity >= 20000) demandMultiplier += 1.0;
-    else if (inputs.popDensity >= 10000) demandMultiplier += 0.7;
-    else if (inputs.popDensity >= 5000) demandMultiplier += 0.3;
+
+  if (effectivePopDensity === null) {
+    const zip = inputs.zipCode || '';
+    const state = inputs.state || '';
+    if (state === 'NY' && (zip.startsWith('10') || zip.startsWith('11'))) {
+      effectivePopDensity = 25000;
+    } else if (['NY', 'CA', 'MA', 'NJ', 'IL'].includes(state)) {
+      effectivePopDensity = 8000;
+    } else {
+      effectivePopDensity = 3000;
+    }
   }
+
+  if (effectiveMultiFamilyPct >= 60) demandMultiplier += 1.5;
+  else if (effectiveMultiFamilyPct >= 40) demandMultiplier += 1.0;
+  else if (effectiveMultiFamilyPct >= 20) demandMultiplier += 0.5;
+
+  if (effectivePopDensity >= 20000) demandMultiplier += 1.0;
+  else if (effectivePopDensity >= 10000) demandMultiplier += 0.7;
+  else if (effectivePopDensity >= 5000) demandMultiplier += 0.3;
+
   if (inputs.nearestMajorAirportMiles !== null) {
     if (inputs.nearestMajorAirportMiles <= 5) demandMultiplier += 0.8;
     else if (inputs.nearestMajorAirportMiles <= 15) demandMultiplier += 0.4;
@@ -311,7 +340,19 @@ export function projectRevenue(inputs: {
   const totalIncentives = inputs.numStalls * inputs.incentivesPerStall;
   const outOfPocket = Math.max(0, totalProjectCost - totalIncentives);
   const paybackYears = outOfPocket === 0 ? 0 : (year1Profit > 0 ? outOfPocket / year1Profit : null);
-  const npv15Year = year1Profit * 11.5;
+
+  // Proper 15-year NPV with discounted cash flow
+  let npv15Year = -outOfPocket;
+  for (let year = 1; year <= 15; year++) {
+    const growthFactor = Math.pow(1.07, year - 1);
+    const feeEscalation = Math.pow(1.03, year - 1);
+    const yearKwh = annualKwh * growthFactor;
+    const yearRevenue = yearKwh * inputs.retailPrice;
+    const yearElectricity = yearKwh * inputs.electricityCost;
+    const yearTeslaFee = yearKwh * inputs.teslaServiceFee * feeEscalation;
+    const yearProfit = yearRevenue - yearElectricity - yearTeslaFee;
+    npv15Year += yearProfit / Math.pow(1.08, year);
+  }
 
   return {
     kwhPerStallPerDay, utilization, annualKwh,
