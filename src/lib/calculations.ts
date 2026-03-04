@@ -154,7 +154,7 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
       return sum;
     }, 0);
 
-  const estimatedIncentives = Math.min(totalIncentiveAmount, totalProjectCost * 0.5);
+  const estimatedIncentives = Math.min(totalIncentiveAmount, totalProjectCost);
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
 
@@ -240,7 +240,7 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
       return sum;
     }, 0);
 
-  const estimatedIncentives = Math.min(totalIncentiveAmount, totalProjectCost * 0.5);
+  const estimatedIncentives = Math.min(totalIncentiveAmount, totalProjectCost);
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
   const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
@@ -335,52 +335,60 @@ interface StateIncentive {
   name: string;
   amount: string;
   details: string;
+  layer: 'federal' | 'state' | 'utility';
 }
 
 const STATE_INCENTIVES: Record<string, StateIncentive[]> = {
   NY: [
-    { name: 'NYSERDA NYSBIP', amount: '$65,000', details: 'NY State Building Infrastructure Program — up to $65,000 per DCFC charger for eligible commercial locations.' },
-    { name: 'EVolve NY Program', amount: '$50,000', details: 'Up to $50,000 per DCFC for installations at eligible locations throughout New York State.' },
-    { name: 'NYSERDA Charge Ready NY 2.0', amount: '$4,000', details: '$3,000–$4,000 per L2 port for workplace and multifamily installations. $28M program budget.' },
-    { name: 'Con Edison PowerReady MHD', amount: '$1,200,000', details: 'Covers up to 85% of DCFC infrastructure costs in Con Ed territory. Max $1.2M per project. Includes utility-side and customer-side make-ready.' },
-    { name: 'RGE&E Make Ready', amount: 'Up to 100%', details: 'Up to 100% of infrastructure costs in disadvantaged communities, 90% for public DCFC sites in RG&E territory.' },
-    { name: 'PSEG Long Island Make Ready', amount: '$45,000', details: '$45,000/port for DCFC, $6,500/port for L2 in PSEG LI territory. Covers utility-side make-ready infrastructure.' },
-    { name: 'Joint Utilities DCFC Per-Plug', amount: 'Varies', details: 'Additional per-plug incentive payments from NY joint utilities on top of make-ready programs. Amounts vary by utility and site.' },
+    { name: 'NYSERDA NYSBIP', amount: '$65,000', details: 'Up to $65,000 per DCFC for commercial locations. Apply at nyserda.ny.gov', layer: 'state' },
+    { name: 'EVolve NY', amount: '$50,000', details: 'Up to $50,000 per DCFC. Competitive — apply at evolveny.nypa.gov', layer: 'state' },
+    { name: 'Charge Ready NY 2.0', amount: '$4,000', details: '$3,000-$4,000 per port. $28M program budget.', layer: 'state' },
+    { name: 'Joint Utilities Make-Ready', amount: 'Up to 100% of electrical', details: 'NY utilities cover up to 100% of electrical infrastructure. $1.24B program. Contact your utility.', layer: 'utility' },
+    { name: 'Con Edison PowerReady', amount: 'Up to 85%', details: 'Covers up to 85% of DCFC infrastructure in ConEd territory. Max $1.2M.', layer: 'utility' },
   ],
   CA: [
-    { name: 'Fast Charge California (CALeVIP successor)', amount: '$100,000', details: 'Up to $100,000 per DCFC port. Successor to CALeVIP. Check CEC website for current application windows.' },
-    { name: 'LCFS Credits', amount: '$15,000/yr', details: 'Low Carbon Fuel Standard credits generate $10,000–$20,000 annually per DCFC based on utilization. Ongoing revenue stream.' },
-    { name: 'SCE/PG&E Charge Ready', amount: 'Up to 100%', details: 'Major IOUs cover 100% of utility-side infrastructure and offer rebates for customer-side costs. Program details vary by utility.' },
-  ],
-  TX: [
-    { name: 'TCEQ DCFC Program', amount: '$60,000', details: 'Texas Commission on Environmental Quality VW settlement funds — up to $60,000 per DCFC. Program winding down, check availability.' },
-  ],
-  FL: [
-    { name: 'FPL EVolution Program', amount: 'Varies', details: 'FPL offers turnkey DCFC installation at no upfront cost in their territory. Revenue share model. Contact FPL directly.' },
-    { name: 'JEA EV Rebates', amount: '$5,000', details: 'JEA offers rebates for commercial L2 installations in Jacksonville territory. Up to $5,000 per station.' },
-    { name: 'FL NEVI Allocation', amount: 'Up to 80%', details: 'Florida received $198M in federal NEVI funds for highway corridor DCFC. Covers up to 80% of qualifying project costs.' },
-  ],
-  NJ: [
-    { name: 'NJ It Pay$ to Plug In', amount: '$75,000', details: 'Up to $75,000 per DCFC and $5,000 per L2 through New Jersey Board of Public Utilities incentive program.' },
+    { name: 'Fast Charge California', amount: '$100,000', details: 'Up to $100,000 per DCFC port. Successor to CALeVIP.', layer: 'state' },
+    { name: 'LCFS Credits', amount: '$15,000/yr', details: 'Low Carbon Fuel Standard credits: $10-20K/yr per DCFC based on utilization.', layer: 'state' },
+    { name: 'SCE/PG&E Charge Ready', amount: 'Up to 100%', details: 'Major utilities cover 100% of make-ready in disadvantaged communities.', layer: 'utility' },
   ],
   MA: [
-    { name: 'MassEVIP', amount: '$50,000', details: 'Massachusetts offers up to $50,000 per DCFC for workplace and fleet charging through MassDEP.' },
-    { name: 'Eversource Make Ready', amount: 'Up to 100%', details: 'Eversource covers up to 100% of make-ready infrastructure costs for public DCFC in their territory.' },
-    { name: 'National Grid EV Program', amount: 'Varies', details: 'National Grid offers make-ready infrastructure support for commercial DCFC installations in their MA territory.' },
-  ],
-  PA: [
-    { name: 'PA DEP Driving PA Forward', amount: '$40,000', details: 'Up to $40,000 per DCFC through the Driving PA Forward VW settlement program.' },
-  ],
-  IL: [
-    { name: 'IL EPA Charge Ahead', amount: '$45,000', details: 'Up to $45,000 per DCFC and $4,000 per L2 through the Illinois Charge Ahead program.' },
-    { name: 'ComEd EV Charging Rebate', amount: '$10,000', details: 'ComEd offers rebates up to $10,000 for commercial L2/DCFC installations in their territory.' },
+    { name: 'MassEVIP', amount: '$50,000', details: 'Up to $50,000 per DCFC through MassDEP. $14M program pool.', layer: 'state' },
+    { name: 'Eversource Make-Ready', amount: 'Up to 100%', details: 'Eversource covers up to 100% of make-ready for public DCFC.', layer: 'utility' },
+    { name: 'National Grid EV Program', amount: '$80,000', details: 'Up to $80,000 per DCFC port in National Grid MA territory.', layer: 'utility' },
   ],
   CO: [
-    { name: 'CO Charge Ahead', amount: '$55,000', details: 'Colorado offers up to $55,000 per DCFC and tax credits for EV charging infrastructure.' },
-    { name: 'Xcel Energy EV Program', amount: 'Varies', details: 'Xcel Energy offers make-ready infrastructure support and reduced EV commercial rates in CO.' },
+    { name: 'Charge Ahead Colorado', amount: '80% of cost', details: 'Up to 80% of total DCFC project cost with NO CAP for public stations.', layer: 'state' },
+    { name: 'Xcel Energy EV Program', amount: 'Varies', details: 'Make-ready support and reduced commercial EV rates.', layer: 'utility' },
+  ],
+  NJ: [
+    { name: 'It Pay$ to Plug In', amount: '$100,000', details: 'Up to $100,000 per DCFC PORT near transit and multifamily housing.', layer: 'state' },
+    { name: 'PSE&G Make-Ready', amount: 'Varies', details: 'PSE&G covers make-ready infrastructure costs.', layer: 'utility' },
+  ],
+  CT: [
+    { name: 'CT EV Charging Program', amount: '$50,000', details: 'Up to $50,000 per DCFC through state program.', layer: 'state' },
+    { name: 'Eversource CT Make-Ready', amount: 'Varies', details: 'Make-ready infrastructure support in Eversource CT territory.', layer: 'utility' },
   ],
   WA: [
-    { name: 'WA State EV Program', amount: '$50,000', details: 'Washington State offers grants up to $50,000 per DCFC for qualifying locations.' },
+    { name: 'WA State EV Grants', amount: '$50,000', details: 'Up to $50K per DCFC. $85M+ program with multiple funding rounds.', layer: 'state' },
+  ],
+  OR: [
+    { name: 'Oregon Clean Fuels Credits', amount: '$12,000/yr', details: 'CFP credits generate ongoing revenue per DCFC based on utilization.', layer: 'state' },
+  ],
+  MI: [
+    { name: 'DTE Energy DCFC Rebate', amount: '$55,000', details: 'DTE offers up to $55,000 per DCFC station.', layer: 'utility' },
+  ],
+  IL: [
+    { name: 'IL Charge Ahead', amount: '$45,000', details: 'Up to $45,000 per DCFC through IL EPA.', layer: 'state' },
+    { name: 'ComEd EV Rebate', amount: '$10,000', details: 'ComEd offers up to $10,000 for commercial EV charging.', layer: 'utility' },
+  ],
+  TX: [
+    { name: 'TCEQ DCFC Program', amount: '$60,000', details: 'VW settlement funds — up to $60K per DCFC. Check availability.', layer: 'state' },
+  ],
+  FL: [
+    { name: 'FL NEVI Allocation', amount: 'Up to 80%', details: 'Florida received $198M in federal NEVI. Covers up to 80% for highway corridor DCFC.', layer: 'state' },
+  ],
+  PA: [
+    { name: 'Driving PA Forward', amount: '$40,000', details: 'Up to $40,000 per DCFC through VW settlement program.', layer: 'state' },
   ],
 };
 
@@ -404,9 +412,9 @@ export function getIncentives(site: SiteAnalysis): Incentive[] {
     description: '30% of hardware + installation costs',
     amount: `$${Math.round(federal30cAmount).toLocaleString()}`,
     eligible: null,
-    details: `30% of qualified costs, up to $100,000 per port. Must be in eligible census tract. Expires December 2032.`,
+    details: `30% of equipment + installation, up to $100,000 per port. Must be in eligible census tract. Expires June 2026.`,
     category: 'federal',
-    expiresAt: 'Dec 2032',
+    expiresAt: 'Jun 2026',
   });
 
   incentives.push({
@@ -414,37 +422,22 @@ export function getIncentives(site: SiteAnalysis): Incentive[] {
     name: 'NEVI Formula Program',
     description: 'Up to 80% of project costs for highway corridor locations',
     amount: `$${Math.round(totalProjectCost * 0.8).toLocaleString()}`,
-    eligible: site.chargingModel === 'tesla' && site.teslaStalls >= 4 ? null : null,
-    details: `National Electric Vehicle Infrastructure program covers up to 80% of costs for qualifying Alternative Fuel Corridor locations. Requires minimum 4 DCFC ports at 150kW+.${site.chargingModel === 'tesla' ? ' Tesla Superchargers meet the 150kW+ requirement.' : ''}`,
+    eligible: null,
+    details: `National Electric Vehicle Infrastructure program covers up to 80% of costs for qualifying Alternative Fuel Corridor locations. Requires minimum 4 DCFC ports at 150kW+. Must be on designated Alternative Fuel Corridor. Expanding to all public roads in 2026.${site.chargingModel === 'tesla' ? ' Tesla Superchargers meet the 150kW+ requirement.' : ''}`,
     category: 'federal',
   });
 
   const statePrograms = STATE_INCENTIVES[site.state] || [];
   statePrograms.forEach((prog, i) => {
     incentives.push({
-      id: `state-${i}`,
+      id: `${prog.layer}-${i}`,
       name: prog.name,
       description: prog.details.slice(0, 80) + '...',
       amount: prog.amount,
       eligible: true,
       details: prog.details,
-      category: 'state',
+      category: prog.layer,
     });
-  });
-
-  const isNY = site.state === 'NY';
-  incentives.push({
-    id: 'utility',
-    name: 'Utility Make-Ready Program',
-    description: isNY
-      ? 'NY utilities offer make-ready programs covering 85-100% of infrastructure costs'
-      : 'Contact your local utility for infrastructure incentives',
-    amount: 'Varies',
-    eligible: null,
-    details: isNY
-      ? 'NY utilities offer make-ready programs covering 85-100% of infrastructure costs — this is often the largest incentive available. Con Edison, National Grid, RG&E, and PSEG LI all have active programs.'
-      : 'Many utilities offer "make-ready" programs that cover electrical infrastructure costs (trenching, conduit, transformer upgrades). Contact your local utility — make-ready programs often cover $50K-$200K+ in infrastructure costs.',
-    category: 'utility',
   });
 
   return incentives;
