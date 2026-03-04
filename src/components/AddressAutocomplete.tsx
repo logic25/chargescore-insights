@@ -104,9 +104,11 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
         setShowDropdown(true);
       } else {
         setPredictions([]);
+        setShowDropdown(false);
       }
     } catch {
       setPredictions([]);
+      setShowDropdown(false);
     }
   };
 
@@ -153,11 +155,12 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
         componentRestrictions: { country: 'us' },
       },
       (results: Prediction[] | null, status: string) => {
-        if (status === 'OK' && results) {
+        if (status === 'OK' && results && results.length > 0) {
+          nominatimMode.current = false;
           setPredictions(results.slice(0, 5));
           setShowDropdown(true);
         } else {
-          setPredictions([]);
+          fetchNominatimSuggestions(input);
         }
       }
     );
@@ -276,9 +279,11 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
               <span className="truncate">{p.description}</span>
             </button>
           ))}
-          {/* Google attribution */}
+          {/* Attribution */}
           <div className="flex items-center justify-end border-t border-border/50 px-3 py-1.5">
-            <span className="text-[10px] text-muted-foreground">Powered by Google</span>
+            <span className="text-[10px] text-muted-foreground">
+              {nominatimMode.current ? 'Powered by OpenStreetMap' : 'Powered by Google'}
+            </span>
           </div>
         </div>
       )}
