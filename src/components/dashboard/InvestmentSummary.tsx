@@ -78,7 +78,7 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
             <Slider
               value={[stalls]}
               onValueChange={([v]) => onStallsChange(v)}
-              min={4} max={12} step={1}
+              min={4} max={24} step={1}
               className="py-2"
             />
             <p className="text-[10px] text-muted-foreground/60">Drag to adjust — all financials update instantly</p>

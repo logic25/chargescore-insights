@@ -236,49 +236,50 @@ const Dashboard = () => {
       </header>
 
       <main className="p-4 space-y-3">
-        {/* VISIBLE: Site Aerial + Competition Map (tabbed) */}
-        <Tabs defaultValue="satellite" className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-          <div className="border-b border-border px-4 pt-3">
-            <TabsList className="h-8">
-              <TabsTrigger value="satellite" className="text-xs">Satellite</TabsTrigger>
-              <TabsTrigger value="competition" className="text-xs">Competition</TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value="satellite" className="mt-0">
-            <SiteAerial lat={site.lat} lng={site.lng} propertyType={site.propertyType} onPropertyTypeChange={(t) => setSite(prev => ({ ...prev, propertyType: t }))} onParkingEstimate={handleParkingEstimate} />
-          </TabsContent>
-          <TabsContent value="competition" className="mt-0">
-            <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
-          </TabsContent>
-        </Tabs>
+        {/* Row 1 (ungated): Map tabs + ChargeScore Gauge */}
+        <div className="grid items-start gap-3 lg:grid-cols-2">
+          <Tabs defaultValue="satellite" className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+            <div className="border-b border-border px-4 pt-3">
+              <TabsList className="h-8">
+                <TabsTrigger value="satellite" className="text-xs">Satellite</TabsTrigger>
+                <TabsTrigger value="competition" className="text-xs">Competition</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="satellite" className="mt-0">
+              <SiteAerial lat={site.lat} lng={site.lng} propertyType={site.propertyType} onPropertyTypeChange={(t) => setSite(prev => ({ ...prev, propertyType: t }))} onParkingEstimate={handleParkingEstimate} />
+            </TabsContent>
+            <TabsContent value="competition" className="mt-0">
+              <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
+            </TabsContent>
+          </Tabs>
 
-        {/* VISIBLE: ChargeScore Gauge */}
-        <ChargeScoreGauge score={chargeScore} />
+          <ChargeScoreGauge score={chargeScore} />
+        </div>
 
         {/* GATED: Everything below is blurred until email entry */}
         <div className={blurClass}>
           <div className="space-y-3">
-            {/* Property Inputs */}
-            <PropertyInputs
-              site={site} onChange={setSite}
-              trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
-              availableForChargers={availableForChargers}
-            />
+            {/* Row 2: Property Inputs + Investment Summary */}
+            <div className="grid items-start gap-3 lg:grid-cols-2">
+              <PropertyInputs
+                site={site} onChange={setSite}
+                trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
+                availableForChargers={availableForChargers}
+              />
+              <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} nrelIncentives={nrelIncentives} />
+            </div>
 
-            {/* Investment Summary */}
-            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} nrelIncentives={nrelIncentives} />
-
-            {/* Revenue & Costs + Cash Flow side-by-side */}
+            {/* Row 3: Revenue & Costs + 15-Year Cash Flow */}
             <div className="grid items-start gap-3 lg:grid-cols-2">
               <RevenueCosts financials={financials} />
               <FinancialProjection financials={financials} />
             </div>
 
-            {/* Network Comparison */}
-            <NetworkComparison site={site} incentives={incentives} />
-
-            {/* Parking Impact */}
-            <ParkingImpact analysis={parking} />
+            {/* Row 4: Network Comparison + Parking Impact */}
+            <div className="grid items-start gap-3 lg:grid-cols-2">
+              <NetworkComparison site={site} incentives={incentives} />
+              <ParkingImpact analysis={parking} />
+            </div>
           </div>
         </div>
       </main>
