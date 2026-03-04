@@ -131,8 +131,17 @@ const ParkingLotMeasure = ({ lat, lng, onMeasured }: ParkingMeasureProps) => {
 
   if (error || !GOOGLE_MAPS_KEY) {
     return (
-      <div className="rounded-lg border border-border bg-muted/50 p-4 text-center text-sm text-muted-foreground">
-        Set VITE_GOOGLE_MAPS_KEY to enable parking lot drawing tool
+      <div className="rounded-lg border border-border bg-muted/50 p-4 text-center space-y-1">
+        <p className="text-sm text-muted-foreground">
+          {!GOOGLE_MAPS_KEY
+            ? 'Google Maps API key not configured'
+            : 'Drawing tool failed to load'}
+        </p>
+        <p className="text-xs text-muted-foreground/60">
+          {!GOOGLE_MAPS_KEY
+            ? 'Add VITE_GOOGLE_MAPS_KEY to environment secrets. Required APIs: Maps JavaScript, Static Maps, Places.'
+            : 'Check browser console for errors. Ensure Maps JavaScript API with Drawing and Geometry libraries is enabled.'}
+        </p>
       </div>
     );
   }
