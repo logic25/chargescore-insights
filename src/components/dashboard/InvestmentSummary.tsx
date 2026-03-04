@@ -24,6 +24,14 @@ const InfoTip = ({ text }: { text: string }) => (
   </Tooltip>
 );
 
+const LAYER_LABELS: Record<string, string> = {
+  federal: 'Federal',
+  state: 'State',
+  utility: 'Utility',
+};
+
+const LAYER_ORDER: string[] = ['federal', 'state', 'utility'];
+
 const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
   const outOfPocket = financials.netInvestment;
   const outOfPocketColor = outOfPocket <= 0
@@ -34,7 +42,12 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
         ? 'text-amber'
         : 'text-destructive';
 
-  const eligibleIncentives = incentives.filter(i => i.eligible);
+  // Group incentives by layer
+  const incentivesByLayer = LAYER_ORDER.map(layer => ({
+    layer,
+    label: LAYER_LABELS[layer],
+    items: incentives.filter(i => i.category === layer),
+  })).filter(g => g.items.length > 0);
 
   return (
     <div className="glass-card-dark">
@@ -72,25 +85,31 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
           </div>
         </div>
 
-        {/* Incentives */}
+        {/* Incentives by Layer */}
         <div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-success flex items-center">
               Less: Incentives
-              <InfoTip text="Federal, state, and utility programs that reduce your project cost. Eligibility verified per program." />
+              <InfoTip text="Federal, state, and utility programs that reduce your project cost. Programs stack — in states like NY and CA, incentives can cover 100% of costs." />
             </span>
             <span className="font-mono text-sm font-semibold text-success">({fmt(financials.estimatedIncentives)})</span>
           </div>
-          {eligibleIncentives.length > 0 && (
-            <div className="ml-4 mt-1 space-y-0.5">
-              {eligibleIncentives.map((inc) => (
-                <div key={inc.id} className="flex items-center justify-between">
-                  <span className="text-[11px] text-muted-foreground/70">├─ {inc.name}</span>
-                  <span className="font-mono text-[11px] text-muted-foreground/70">{inc.amount}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="ml-4 mt-2 space-y-2">
+            {incentivesByLayer.map(({ layer, label, items }) => (
+              <div key={layer}>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-0.5">{label}</p>
+                {items.map((inc) => (
+                  <div key={inc.id} className="flex items-center justify-between py-0.5">
+                    <span className="text-[11px] text-muted-foreground/70 flex items-center">
+                      ├─ {inc.name}
+                      {inc.eligible === null && <span className="ml-1 text-[9px] text-amber">(verify)</span>}
+                    </span>
+                    <span className="font-mono text-[11px] text-muted-foreground/70">{inc.amount}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Divider */}
