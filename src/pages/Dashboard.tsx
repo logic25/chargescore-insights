@@ -265,14 +265,14 @@ const Dashboard = () => {
               availableForChargers={availableForChargers}
             />
 
-            {/* Investment Summary + Revenue & Costs side-by-side */}
-            <div className="grid items-start gap-3 lg:grid-cols-2">
-              <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} nrelIncentives={nrelIncentives} />
-              <RevenueCosts financials={financials} />
-            </div>
+            {/* Investment Summary */}
+            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} nrelIncentives={nrelIncentives} />
 
-            {/* Financial Details + Cash Flow */}
-            <FinancialProjection financials={financials} />
+            {/* Revenue & Costs + Cash Flow side-by-side */}
+            <div className="grid items-start gap-3 lg:grid-cols-2">
+              <RevenueCosts financials={financials} />
+              <FinancialProjection financials={financials} />
+            </div>
 
             {/* Network Comparison */}
             <NetworkComparison site={site} incentives={incentives} />
