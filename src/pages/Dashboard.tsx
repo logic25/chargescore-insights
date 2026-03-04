@@ -18,7 +18,6 @@ import MapView from '@/components/dashboard/MapView';
 import ChargeScoreGauge from '@/components/dashboard/ChargeScoreGauge';
 import PropertyInputs, { type TrafficLevel, TRAFFIC_LEVEL_VPD } from '@/components/dashboard/PropertyInputs';
 import FinancialProjection from '@/components/dashboard/FinancialProjection';
-import DemandChargeAnalyzer from '@/components/dashboard/DemandChargeAnalyzer';
 import ParkingImpact from '@/components/dashboard/ParkingImpact';
 import NetworkComparison from '@/components/dashboard/NetworkComparison';
 import ReportGenerator from '@/components/dashboard/ReportGenerator';
@@ -275,9 +274,8 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Bottom: Demand Charge + Parking */}
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <DemandChargeAnalyzer analysis={demandCharge} />
+        {/* Bottom: Parking */}
+        <div className="mt-4">
           <ParkingImpact analysis={parking} />
         </div>
       </main>
