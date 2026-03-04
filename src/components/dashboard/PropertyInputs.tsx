@@ -29,9 +29,10 @@ interface PropertyInputsProps {
   onChange: (site: SiteAnalysis) => void;
   trafficLevel: TrafficLevel;
   onTrafficLevelChange: (level: TrafficLevel) => void;
+  availableForChargers?: number;
 }
 
-const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange }: PropertyInputsProps) => {
+const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, availableForChargers = 0 }: PropertyInputsProps) => {
   const [expanded, setExpanded] = useState(true);
 
   const update = (partial: Partial<SiteAnalysis>) => {
@@ -182,6 +183,11 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange }: 
               <p className="text-[10px] text-muted-foreground/60">
                 Based on {site.totalParkingSpaces} parking spots, we recommend {Math.min(12, Math.max(4, Math.round(site.totalParkingSpaces * 0.04)))}–{Math.min(12, Math.max(4, Math.round(site.totalParkingSpaces * 0.08)))} stalls
               </p>
+              {availableForChargers > 0 && site.teslaStalls > availableForChargers && (
+                <div className="flex items-center gap-1 rounded bg-accent/10 p-1.5 text-[10px] text-accent">
+                  ⚠ Exceeds estimated available spots ({availableForChargers})
+                </div>
+              )}
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
