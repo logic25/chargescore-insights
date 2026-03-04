@@ -36,7 +36,7 @@ const FinancialProjection = ({ financials, incentives, site, nrelIncentives = []
         </h2>
       </div>
 
-      <div className="grid gap-6 p-4 lg:grid-cols-3">
+      <div className="grid gap-4 p-4 lg:grid-cols-3">
         {/* Revenue */}
         <div className="space-y-3">
           <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">

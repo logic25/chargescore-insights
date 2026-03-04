@@ -34,7 +34,7 @@ const RevenueCosts = ({ financials }: Props) => {
         </h2>
       </div>
 
-      <div className="p-5 space-y-3">
+      <div className="p-4 space-y-2.5">
         {/* Revenue */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground flex items-center">
@@ -95,7 +95,7 @@ const RevenueCosts = ({ financials }: Props) => {
         <div className="border-t border-border" />
 
         {/* Net Profit — BIG */}
-        <div className="text-center py-2">
+        <div className="text-center py-1">
           <span className="text-xs uppercase tracking-wider text-muted-foreground">Net Profit</span>
           <p className={`font-mono text-2xl font-bold mt-0.5 ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
             {fmt(netProfit)}/yr
