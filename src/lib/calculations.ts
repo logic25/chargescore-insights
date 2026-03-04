@@ -94,14 +94,14 @@ const L2_PEAK_KW = 7.7;
 const DCFC_PEAK_KW = 150;
 
 // Tesla Supercharger for Business constants — aligned with Tesla ROI Calculator
-const TESLA_COST_PER_STALL = 50000;      // Tesla's BOM per V4 Post including cabinet, connectivity, commissioning
-const TESLA_INSTALL_PER_STALL = 50000;    // Tesla's "High Cost Scenario" turnkey installation per charger
-const TESLA_KWH_PER_STALL_PER_DAY = 250;  // Tesla's "Medium" utilization estimate
-const TESLA_PEAK_KW_PER_STALL = 325;      // V4 Supercharger max output
-const TESLA_LOAD_MGMT_FACTOR = 0.55;      // Tesla power sharing reduces peak demand ~45%
+const TESLA_COST_PER_STALL = 50000;      // BOM per V4 Post (Source: Tesla V4 Canvas 2025)
+const TESLA_INSTALL_PER_STALL = 50000;    // Installation per charger (Tesla High Cost estimate)
+const TESLA_KWH_PER_STALL_PER_DAY = 250;  // Medium utilization (Source: Tesla ROI Calculator)
+const TESLA_PEAK_KW_PER_STALL = 325;      // V4 max output kW (kept for reference only)
 const TESLA_UTILIZATION_GROWTH = 1.07;     // 7% YoY utilization growth
 const TESLA_FEE_ESCALATION = 1.03;        // 3% YoY Tesla service fee escalation
-const DISCOUNT_RATE = 0.10;                // 10% discount rate for NPV
+const DISCOUNT_RATE = 0.08;               // 8% discount rate for NPV
+const PROJECT_YEARS = 15;                 // 15-year analysis
 
 // --- Financial Projection ---
 
@@ -115,28 +115,34 @@ export function calculateFinancials(site: SiteAnalysis, incentives: Incentive[])
 function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): FinancialProjection {
   const stalls = Math.max(4, site.teslaStalls);
   const baseDailyKwh = stalls * TESLA_KWH_PER_STALL_PER_DAY;
+
   // Year 1 values
+  // CRITICAL: electricityCostPerKwh is a LEVELIZED rate that ALREADY INCLUDES demand charges.
+  // Do NOT calculate demand charges separately — that double-counts.
   const dailyKwh = baseDailyKwh;
-  const grossDailyRevenue = dailyKwh * site.pricePerKwh;
-  const dailyRevenue = grossDailyRevenue;
+  const dailyRevenue = dailyKwh * site.pricePerKwh;
   const monthlyRevenue = dailyRevenue * 30;
   const annualRevenue = monthlyRevenue * 12;
+
+  // Only two operating cost lines:
+  // 1. Electricity (levelized — includes demand charges, TOU, surcharges)
+  const monthlyElectricityCost = dailyKwh * 30 * site.electricityCostPerKwh;
+  // 2. Tesla service fee
   const teslaServiceFeeAnnual = dailyKwh * site.teslaServiceFeePerKwh * 365;
 
+  // NO separate demand charge — it's embedded in the levelized electricity rate
+  const monthlyDemandCharge = 0;
+  const monthlyNetworkingCost = 0;
+  const annualMaintenance = 0; // Tesla handles maintenance
+
+  const totalAnnualOperatingCost = (monthlyElectricityCost * 12) + teslaServiceFeeAnnual;
+
+  // Capital costs
   const totalHardwareCost = stalls * TESLA_COST_PER_STALL;
   const totalInstallationCost = stalls * TESLA_INSTALL_PER_STALL;
 
   const needsUpgrade = (site.electricalService === 'unknown' || site.electricalService === '200a-208v' || site.electricalService === '400a-208v') && stalls > 4;
   const electricalUpgradeCost: [number, number] = needsUpgrade ? [75000, 150000] : [0, 0];
-
-  const monthlyElectricityCost = dailyKwh * 30 * site.electricityCostPerKwh;
-  const peakKw = stalls * TESLA_PEAK_KW_PER_STALL * TESLA_LOAD_MGMT_FACTOR;
-  const monthlyDemandCharge = peakKw * site.demandChargePerKw;
-  const annualMaintenance = 0;
-  const monthlyNetworkingCost = 0;
-
-  const totalAnnualOperatingCost =
-    (monthlyElectricityCost + monthlyDemandCharge) * 12 + teslaServiceFeeAnnual;
 
   const totalProjectCost = totalHardwareCost + totalInstallationCost + (needsUpgrade ? electricalUpgradeCost[0] : 0);
 
@@ -152,20 +158,20 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
 
-  // 15-year cash flow with 7% utilization growth and 3% fee escalation
+  // 15-year cash flow with 7% utilization growth and 3% Tesla fee escalation
   const cumulativeCashFlow: number[] = [];
   let npv15Year = -netInvestment;
   let paybackYears = Infinity;
 
-  for (let year = 1; year <= 15; year++) {
+  for (let year = 1; year <= PROJECT_YEARS; year++) {
     const growthFactor = Math.pow(TESLA_UTILIZATION_GROWTH, year - 1);
     const feeEscalation = Math.pow(TESLA_FEE_ESCALATION, year - 1);
     const yearDailyKwh = baseDailyKwh * growthFactor;
     const yearAnnualRevenue = yearDailyKwh * site.pricePerKwh * 365;
     const yearElectricity = yearDailyKwh * 365 * site.electricityCostPerKwh;
-    const yearDemandCharge = monthlyDemandCharge * 12; // demand charge stays same (peak doesn't grow with utilization)
     const yearTeslaFee = yearDailyKwh * site.teslaServiceFeePerKwh * feeEscalation * 365;
-    const yearNetRevenue = yearAnnualRevenue - yearElectricity - yearDemandCharge - yearTeslaFee;
+    // NO demand charge line — already in levelized electricity rate
+    const yearNetRevenue = yearAnnualRevenue - yearElectricity - yearTeslaFee;
 
     const prev = year === 1 ? -netInvestment : cumulativeCashFlow[year - 2];
     cumulativeCashFlow.push(prev + yearNetRevenue);
@@ -289,15 +295,16 @@ export function calculateParkingImpact(site: SiteAnalysis): ParkingAnalysis {
   };
 }
 
-// --- Demand Charge Analysis ---
+// --- Demand Charge Analysis (kept for generic model only) ---
 
 export function calculateDemandCharge(site: SiteAnalysis): DemandChargeAnalysis {
   let peakDemandKw: number;
   let totalDailyKwh: number;
 
   if (site.chargingModel === 'tesla') {
+    // For Tesla model, demand charges are embedded in levelized electricity rate
     const stalls = Math.max(4, site.teslaStalls);
-    peakDemandKw = stalls * TESLA_PEAK_KW_PER_STALL * TESLA_LOAD_MGMT_FACTOR;
+    peakDemandKw = stalls * TESLA_PEAK_KW_PER_STALL * 0.55; // reference only
     totalDailyKwh = stalls * TESLA_KWH_PER_STALL_PER_DAY;
   } else {
     peakDemandKw = site.l2Chargers * L2_PEAK_KW + site.dcfcChargers * DCFC_PEAK_KW;
@@ -310,29 +317,14 @@ export function calculateDemandCharge(site: SiteAnalysis): DemandChargeAnalysis 
   const demandChargePercent = totalElectricity > 0 ? (monthlyDemandCharge / totalElectricity) * 100 : 0;
 
   const recommendations: string[] = [];
-
   if (site.chargingModel === 'tesla') {
-    recommendations.push('Tesla\'s built-in load management dynamically shares power across stalls, reducing peak demand by ~45%');
-    if (site.teslaStalls > 8) {
-      recommendations.push('Battery energy storage could further reduce demand charges by 30-50% for larger installations');
-    }
-    if (peakDemandKw > 100) {
-      recommendations.push('Contact your utility about EV-specific commercial rates — many offer reduced demand charges for EV charging');
-    }
+    recommendations.push('Demand charges are included in your levelized electricity rate — no separate calculation needed.');
   } else {
-    if (demandChargePercent > 40) {
-      recommendations.push('Consider load management software to stagger charger output and reduce peak demand');
-    }
-    if (site.dcfcChargers > 4) {
-      recommendations.push('Battery energy storage could reduce demand charges by 40-60%');
-    }
-    if (peakDemandKw > 100) {
-      recommendations.push('Contact your utility about EV-specific commercial rates that may reduce demand charges');
-    }
+    if (demandChargePercent > 40) recommendations.push('Consider load management software to reduce peak demand');
+    if (site.dcfcChargers > 4) recommendations.push('Battery storage could reduce demand charges by 40-60%');
+    if (peakDemandKw > 100) recommendations.push('Contact your utility about EV-specific commercial rates');
   }
-  if (recommendations.length === 0) {
-    recommendations.push('Your current configuration has manageable demand charges');
-  }
+  if (recommendations.length === 0) recommendations.push('Your current configuration has manageable demand charges');
 
   return { peakDemandKw, monthlyDemandCharge, monthlyEnergyCost, demandChargePercent, recommendations };
 }
