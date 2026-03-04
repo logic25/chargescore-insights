@@ -187,13 +187,30 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
         {/* Divider */}
         <div className="border-t border-border" />
 
-        {/* Out-of-Pocket — HERO NUMBER */}
+        {/* Monthly Revenue — HERO NUMBER */}
+        <div className="text-center py-3">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-center gap-1">
+            Estimated Monthly Revenue
+            <InfoTip text="Your projected net monthly profit from EV charging after electricity and service fees. Based on your ChargeScore utilization estimate." />
+          </span>
+          <p className={`font-mono text-4xl font-bold mt-1 ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+            {fmt(monthlyProfit)}<span className="text-lg font-semibold text-muted-foreground">/mo</span>
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {fmt(netProfit)}/yr net profit
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-border" />
+
+        {/* Out-of-Pocket */}
         <div className="text-center py-2">
           <span className="text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-center gap-1">
             Your Out-of-Pocket
             <InfoTip text="What you actually pay after all incentives, credits, and utility programs. This is your real investment." />
           </span>
-          <p className={`font-mono text-4xl font-bold mt-1 ${outOfPocketColor}`}>
+          <p className={`font-mono text-2xl font-bold mt-1 ${outOfPocketColor}`}>
             {fmt(outOfPocket)}
           </p>
           {outOfPocket <= 0 && (
