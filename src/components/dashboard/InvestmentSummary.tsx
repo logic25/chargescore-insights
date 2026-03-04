@@ -60,7 +60,7 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: P
         </h2>
       </div>
 
-      <div className="p-5 space-y-4">
+      <div className="p-4 space-y-3">
         {/* Stalls Slider */}
         {onStallsChange && (
           <div className="space-y-1.5">
@@ -151,7 +151,7 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: P
         <div className="border-t border-border" />
 
         {/* Out-of-Pocket — HERO NUMBER */}
-        <div className="text-center py-3">
+        <div className="text-center py-2">
           <span className="text-xs uppercase tracking-wider text-muted-foreground flex items-center justify-center gap-1">
             Your Out-of-Pocket
             <InfoTip text="What you actually pay after all incentives, credits, and utility programs. This is your real investment." />

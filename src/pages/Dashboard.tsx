@@ -235,7 +235,7 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="p-4 space-y-4">
+      <main className="p-4 space-y-3">
         {/* VISIBLE: Site Aerial + Competition Map (tabbed) */}
         <Tabs defaultValue="satellite" className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
           <div className="border-b border-border px-4 pt-3">
@@ -257,7 +257,7 @@ const Dashboard = () => {
 
         {/* GATED: Everything below is blurred until email entry */}
         <div className={blurClass}>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Property Inputs */}
             <PropertyInputs
               site={site} onChange={setSite}
@@ -265,21 +265,17 @@ const Dashboard = () => {
               availableForChargers={availableForChargers}
             />
 
-            {/* Investment Summary — Hero Card */}
-            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
-
-            {/* Revenue & Costs (Year 1) */}
-            <RevenueCosts financials={financials} />
+            {/* Investment Summary + Revenue & Costs side-by-side */}
+            <div className="grid gap-3 lg:grid-cols-2">
+              <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
+              <RevenueCosts financials={financials} />
+            </div>
 
             {/* Financial Details + Cash Flow */}
-
-            {/* Incentives Breakdown */}
             <FinancialProjection financials={financials} incentives={incentives} site={site} nrelIncentives={nrelIncentives} />
 
             {/* Network Comparison */}
             <NetworkComparison site={site} incentives={incentives} />
-
-
 
             {/* Parking Impact */}
             <ParkingImpact analysis={parking} />
