@@ -33,7 +33,7 @@ interface PropertyInputsProps {
 }
 
 const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, availableForChargers = 0 }: PropertyInputsProps) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const update = (partial: Partial<SiteAnalysis>) => {
     onChange({ ...site, ...partial });
@@ -149,13 +149,13 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
                 <Slider
                   value={[site.teslaStalls]}
                   onValueChange={([v]) => update({ teslaStalls: v })}
-                  min={4} max={12} step={1}
+                  min={4} max={24} step={1}
                   className="flex-1 py-2"
                 />
                 <span className="w-8 text-center font-mono text-sm font-bold text-primary">{site.teslaStalls}</span>
               </div>
               <p className="text-[10px] text-muted-foreground/60">
-                Based on {site.totalParkingSpaces} parking spots, we recommend {Math.min(12, Math.max(4, Math.round(site.totalParkingSpaces * 0.04)))}–{Math.min(12, Math.max(4, Math.round(site.totalParkingSpaces * 0.08)))} stalls
+                Based on {site.totalParkingSpaces} parking spots, we recommend {Math.min(24, Math.max(4, Math.round(site.totalParkingSpaces * 0.04)))}–{Math.min(24, Math.max(4, Math.round(site.totalParkingSpaces * 0.08)))} stalls
               </p>
               {availableForChargers > 0 && site.teslaStalls > availableForChargers && (
                 <div className="flex items-center gap-1 rounded bg-accent/10 p-1.5 text-[10px] text-accent">
