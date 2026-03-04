@@ -148,6 +148,15 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
       return;
     }
 
+    // Set a timeout — if Google doesn't respond in 2s, fall back to Nominatim
+    let responded = false;
+    const timeout = setTimeout(() => {
+      if (!responded) {
+        responded = true;
+        fetchNominatimSuggestions(input);
+      }
+    }, 2000);
+
     autocompleteService.current.getPlacePredictions(
       {
         input,
@@ -155,6 +164,9 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
         componentRestrictions: { country: 'us' },
       },
       (results: Prediction[] | null, status: string) => {
+        if (responded) return;
+        responded = true;
+        clearTimeout(timeout);
         if (status === 'OK' && results && results.length > 0) {
           nominatimMode.current = false;
           setPredictions(results.slice(0, 5));
