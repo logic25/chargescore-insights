@@ -333,62 +333,66 @@ export function calculateDemandCharge(site: SiteAnalysis): DemandChargeAnalysis 
 
 interface StateIncentive {
   name: string;
-  amount: string;
+  amountPerPort?: number;       // flat $ per port
+  amountFlat?: number;          // flat $ total
+  amountPctOfProject?: number;  // percentage of project cost (0-1)
+  amountPctOfInstall?: number;  // percentage of installation cost (0-1)
+  displayAmount: string;        // for UI display
   details: string;
   layer: 'federal' | 'state' | 'utility';
 }
 
 const STATE_INCENTIVES: Record<string, StateIncentive[]> = {
   NY: [
-    { name: 'NYSERDA NYSBIP', amount: '$65,000', details: 'Up to $65,000 per DCFC for commercial locations. Apply at nyserda.ny.gov', layer: 'state' },
-    { name: 'EVolve NY', amount: '$50,000', details: 'Up to $50,000 per DCFC. Competitive — apply at evolveny.nypa.gov', layer: 'state' },
-    { name: 'Charge Ready NY 2.0', amount: '$4,000', details: '$3,000-$4,000 per port. $28M program budget.', layer: 'state' },
-    { name: 'Joint Utilities Make-Ready', amount: 'Up to 100% of electrical', details: 'NY utilities cover up to 100% of electrical infrastructure. $1.24B program. Contact your utility.', layer: 'utility' },
-    { name: 'Con Edison PowerReady', amount: 'Up to 85%', details: 'Covers up to 85% of DCFC infrastructure in ConEd territory. Max $1.2M.', layer: 'utility' },
+    { name: 'NYSERDA NYSBIP', amountPerPort: 65000, displayAmount: '$65,000/port', details: 'Up to $65,000 per DCFC for commercial locations. Apply at nyserda.ny.gov', layer: 'state' },
+    { name: 'EVolve NY', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC. Competitive — apply at evolveny.nypa.gov', layer: 'state' },
+    { name: 'Charge Ready NY 2.0', amountPerPort: 4000, displayAmount: '$4,000/port', details: '$3,000-$4,000 per port. $28M program budget.', layer: 'state' },
+    { name: 'Joint Utilities Make-Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'NY utilities cover up to 100% of electrical infrastructure. $1.24B program. Contact your utility.', layer: 'utility' },
+    { name: 'Con Edison PowerReady', amountPctOfInstall: 0.85, displayAmount: 'Up to 85% of installation', details: 'Covers up to 85% of DCFC infrastructure in ConEd territory. Max $1.2M.', layer: 'utility' },
   ],
   CA: [
-    { name: 'Fast Charge California', amount: '$100,000', details: 'Up to $100,000 per DCFC port. Successor to CALeVIP.', layer: 'state' },
-    { name: 'LCFS Credits', amount: '$15,000/yr', details: 'Low Carbon Fuel Standard credits: $10-20K/yr per DCFC based on utilization.', layer: 'state' },
-    { name: 'SCE/PG&E Charge Ready', amount: 'Up to 100%', details: 'Major utilities cover 100% of make-ready in disadvantaged communities.', layer: 'utility' },
+    { name: 'Fast Charge California', amountPerPort: 100000, displayAmount: '$100,000/port', details: 'Up to $100,000 per DCFC port. Successor to CALeVIP.', layer: 'state' },
+    { name: 'LCFS Credits', amountPerPort: 15000, displayAmount: '$15,000/yr/port', details: 'Low Carbon Fuel Standard credits: $10-20K/yr per DCFC based on utilization.', layer: 'state' },
+    { name: 'SCE/PG&E Charge Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'Major utilities cover 100% of make-ready in disadvantaged communities.', layer: 'utility' },
   ],
   MA: [
-    { name: 'MassEVIP', amount: '$50,000', details: 'Up to $50,000 per DCFC through MassDEP. $14M program pool.', layer: 'state' },
-    { name: 'Eversource Make-Ready', amount: 'Up to 100%', details: 'Eversource covers up to 100% of make-ready for public DCFC.', layer: 'utility' },
-    { name: 'National Grid EV Program', amount: '$80,000', details: 'Up to $80,000 per DCFC port in National Grid MA territory.', layer: 'utility' },
+    { name: 'MassEVIP', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC through MassDEP. $14M program pool.', layer: 'state' },
+    { name: 'Eversource Make-Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'Eversource covers up to 100% of make-ready for public DCFC.', layer: 'utility' },
+    { name: 'National Grid EV Program', amountPerPort: 80000, displayAmount: '$80,000/port', details: 'Up to $80,000 per DCFC port in National Grid MA territory.', layer: 'utility' },
   ],
   CO: [
-    { name: 'Charge Ahead Colorado', amount: '80% of cost', details: 'Up to 80% of total DCFC project cost with NO CAP for public stations.', layer: 'state' },
-    { name: 'Xcel Energy EV Program', amount: 'Varies', details: 'Make-ready support and reduced commercial EV rates.', layer: 'utility' },
+    { name: 'Charge Ahead Colorado', amountPctOfProject: 0.8, displayAmount: 'Up to 80% of project', details: 'Up to 80% of total DCFC project cost with NO CAP for public stations.', layer: 'state' },
+    { name: 'Xcel Energy EV Program', amountPctOfInstall: 0.5, displayAmount: 'Up to 50% of installation', details: 'Make-ready support and reduced commercial EV rates.', layer: 'utility' },
   ],
   NJ: [
-    { name: 'It Pay$ to Plug In', amount: '$100,000', details: 'Up to $100,000 per DCFC PORT near transit and multifamily housing.', layer: 'state' },
-    { name: 'PSE&G Make-Ready', amount: 'Varies', details: 'PSE&G covers make-ready infrastructure costs.', layer: 'utility' },
+    { name: 'It Pay$ to Plug In', amountPerPort: 100000, displayAmount: '$100,000/port', details: 'Up to $100,000 per DCFC PORT near transit and multifamily housing.', layer: 'state' },
+    { name: 'PSE&G Make-Ready', amountPctOfInstall: 0.7, displayAmount: 'Up to 70% of installation', details: 'PSE&G covers make-ready infrastructure costs.', layer: 'utility' },
   ],
   CT: [
-    { name: 'CT EV Charging Program', amount: '$50,000', details: 'Up to $50,000 per DCFC through state program.', layer: 'state' },
-    { name: 'Eversource CT Make-Ready', amount: 'Varies', details: 'Make-ready infrastructure support in Eversource CT territory.', layer: 'utility' },
+    { name: 'CT EV Charging Program', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC through state program.', layer: 'state' },
+    { name: 'Eversource CT Make-Ready', amountPctOfInstall: 0.5, displayAmount: 'Up to 50% of installation', details: 'Make-ready infrastructure support in Eversource CT territory.', layer: 'utility' },
   ],
   WA: [
-    { name: 'WA State EV Grants', amount: '$50,000', details: 'Up to $50K per DCFC. $85M+ program with multiple funding rounds.', layer: 'state' },
+    { name: 'WA State EV Grants', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50K per DCFC. $85M+ program with multiple funding rounds.', layer: 'state' },
   ],
   OR: [
-    { name: 'Oregon Clean Fuels Credits', amount: '$12,000/yr', details: 'CFP credits generate ongoing revenue per DCFC based on utilization.', layer: 'state' },
+    { name: 'Oregon Clean Fuels Credits', amountPerPort: 12000, displayAmount: '$12,000/yr/port', details: 'CFP credits generate ongoing revenue per DCFC based on utilization.', layer: 'state' },
   ],
   MI: [
-    { name: 'DTE Energy DCFC Rebate', amount: '$55,000', details: 'DTE offers up to $55,000 per DCFC station.', layer: 'utility' },
+    { name: 'DTE Energy DCFC Rebate', amountPerPort: 55000, displayAmount: '$55,000/port', details: 'DTE offers up to $55,000 per DCFC station.', layer: 'utility' },
   ],
   IL: [
-    { name: 'IL Charge Ahead', amount: '$45,000', details: 'Up to $45,000 per DCFC through IL EPA.', layer: 'state' },
-    { name: 'ComEd EV Rebate', amount: '$10,000', details: 'ComEd offers up to $10,000 for commercial EV charging.', layer: 'utility' },
+    { name: 'IL Charge Ahead', amountPerPort: 45000, displayAmount: '$45,000/port', details: 'Up to $45,000 per DCFC through IL EPA.', layer: 'state' },
+    { name: 'ComEd EV Rebate', amountPerPort: 10000, displayAmount: '$10,000/port', details: 'ComEd offers up to $10,000 for commercial EV charging.', layer: 'utility' },
   ],
   TX: [
-    { name: 'TCEQ DCFC Program', amount: '$60,000', details: 'VW settlement funds — up to $60K per DCFC. Check availability.', layer: 'state' },
+    { name: 'TCEQ DCFC Program', amountPerPort: 60000, displayAmount: '$60,000/port', details: 'VW settlement funds — up to $60K per DCFC. Check availability.', layer: 'state' },
   ],
   FL: [
-    { name: 'FL NEVI Allocation', amount: 'Up to 80%', details: 'Florida received $198M in federal NEVI. Covers up to 80% for highway corridor DCFC.', layer: 'state' },
+    { name: 'FL NEVI Allocation', amountPctOfProject: 0.8, displayAmount: 'Up to 80% of project', details: 'Florida received $198M in federal NEVI. Covers up to 80% for highway corridor DCFC.', layer: 'state' },
   ],
   PA: [
-    { name: 'Driving PA Forward', amount: '$40,000', details: 'Up to $40,000 per DCFC through VW settlement program.', layer: 'state' },
+    { name: 'Driving PA Forward', amountPerPort: 40000, displayAmount: '$40,000/port', details: 'Up to $40,000 per DCFC through VW settlement program.', layer: 'state' },
   ],
 };
 
@@ -428,12 +432,22 @@ export function getIncentives(site: SiteAnalysis): Incentive[] {
   });
 
   const statePrograms = STATE_INCENTIVES[site.state] || [];
+  const installCost = site.chargingModel === 'tesla'
+    ? site.teslaStalls * TESLA_INSTALL_PER_STALL
+    : site.l2Chargers * L2_INSTALL_COST + site.dcfcChargers * DCFC_INSTALL_COST;
+
   statePrograms.forEach((prog, i) => {
+    let computedAmount = 0;
+    if (prog.amountPerPort) computedAmount = prog.amountPerPort * totalPorts;
+    else if (prog.amountFlat) computedAmount = prog.amountFlat;
+    else if (prog.amountPctOfProject) computedAmount = Math.round(totalProjectCost * prog.amountPctOfProject);
+    else if (prog.amountPctOfInstall) computedAmount = Math.round(installCost * prog.amountPctOfInstall);
+
     incentives.push({
       id: `${prog.layer}-${i}`,
       name: prog.name,
       description: prog.details.slice(0, 80) + '...',
-      amount: prog.amount,
+      amount: `$${computedAmount.toLocaleString()}`,
       eligible: true,
       details: prog.details,
       category: prog.layer,
