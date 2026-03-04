@@ -17,8 +17,8 @@ const CashFlowChart = ({ financials }: Props) => {
   }));
 
   return (
-    <div className="glass-card-dark">
-      <div className="border-b border-white/10 p-4">
+    <div className="glass-card">
+      <div className="border-b border-border p-4">
         <h2 className="font-heading text-sm font-semibold uppercase tracking-wider text-foreground">
           15-Year Cumulative Cash Flow
         </h2>
@@ -27,20 +27,20 @@ const CashFlowChart = ({ financials }: Props) => {
         <div className="min-w-[500px]">
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="year" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={(v) => {
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
+              <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 10 }} interval={0} />
+              <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(v) => {
                 if (Math.abs(v) >= 1000000) return `$${(v / 1000000).toFixed(1)}M`;
                 return `$${(v / 1000).toFixed(0)}k`;
               }} />
               <Tooltip
-                contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: '#f8fafc' }}
+                contentStyle={{ background: '#fff', border: '1px solid hsl(214, 20%, 88%)', borderRadius: 8, fontSize: 12 }}
+                labelStyle={{ color: '#1e293b' }}
                 formatter={(value: number) => [fmt(value), 'Cash Flow']}
               />
               <Bar dataKey="value" radius={[3, 3, 0, 0]}>
                 {chartData.map((entry, i) => (
-                  <Cell key={i} fill={entry.value >= 0 ? '#00d4aa' : '#ef4444'} />
+                  <Cell key={i} fill={entry.value >= 0 ? 'hsl(152, 60%, 38%)' : 'hsl(4, 72%, 50%)'} />
                 ))}
               </Bar>
             </BarChart>

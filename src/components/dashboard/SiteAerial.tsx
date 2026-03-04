@@ -45,7 +45,7 @@ const SiteAerial = ({ lat, lng, onParkingEstimate }: SiteAerialProps) => {
   };
 
   return (
-    <div className="glass-card-dark overflow-hidden">
+    <div className="glass-card overflow-hidden">
       {/* Satellite Image */}
       <div className="relative">
         <img
@@ -99,7 +99,7 @@ const SiteAerial = ({ lat, lng, onParkingEstimate }: SiteAerialProps) => {
 
         {/* Parking Estimates */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+          <div className="rounded-lg border border-border bg-muted/50 p-3">
             <p className="text-[10px] text-muted-foreground">Estimated Total Spots</p>
             <p className="font-mono text-xl font-bold text-foreground">{parking.total}</p>
             <p className="text-[9px] text-muted-foreground/60">1 spot per 340 sq ft</p>

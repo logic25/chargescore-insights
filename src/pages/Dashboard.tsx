@@ -196,10 +196,9 @@ const Dashboard = () => {
     }
   }, [chargeScore.totalScore]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Force dark mode
+  // Use light mode
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-    return () => document.documentElement.classList.remove('dark');
+    document.documentElement.classList.remove('dark');
   }, []);
 
   const blurClass = gateUnlocked ? '' : 'blur-md pointer-events-none select-none';
@@ -212,7 +211,7 @@ const Dashboard = () => {
       )}
 
       {/* Header */}
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl">
+      <header className="border-b border-border bg-card/80 backdrop-blur-xl">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate('/')}>

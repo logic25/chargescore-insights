@@ -4,36 +4,39 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 217 33% 17%;
+    --background: 210 20% 98%;
+    --foreground: 220 25% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 217 33% 17%;
+    --card-foreground: 220 25% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 217 33% 17%;
+    --popover-foreground: 220 25% 15%;
 
-    --primary: 163 100% 42%;
-    --primary-foreground: 218 47% 20%;
+    --primary: 163 72% 40%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 217 33% 17%;
+    --secondary: 210 25% 93%;
+    --secondary-foreground: 220 25% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 210 20% 95%;
+    --muted-foreground: 215 14% 45%;
 
-    --accent: 45 97% 56%;
-    --accent-foreground: 217 33% 17%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 4 72% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 152 60% 38%;
     --success-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 163 100% 42%;
+    --expense: 4 72% 50%;
+    --expense-foreground: 4 72% 50%;
+
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 163 72% 40%;
 
     --radius: 0.75rem;
 
@@ -44,52 +47,55 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 163 100% 42%;
+    --sidebar-ring: 163 72% 40%;
 
-    --navy: 218 47% 20%;
+    --navy: 220 25% 15%;
     --navy-foreground: 210 40% 98%;
-    --navy-deep: 222 47% 11%;
-    --navy-card: 217 33% 17%;
-    --amber: 45 97% 56%;
+    --navy-deep: 222 30% 10%;
+    --navy-card: 220 20% 20%;
+    --amber: 38 92% 50%;
   }
 
   .dark {
-    --background: 218 47% 20%;
-    --foreground: 210 40% 98%;
+    --background: 220 20% 10%;
+    --foreground: 210 40% 96%;
 
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 18% 14%;
+    --card-foreground: 210 40% 96%;
 
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 18% 14%;
+    --popover-foreground: 210 40% 96%;
 
-    --primary: 163 100% 42%;
-    --primary-foreground: 218 47% 20%;
+    --primary: 163 72% 44%;
+    --primary-foreground: 220 20% 10%;
 
-    --secondary: 217 33% 22%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 18% 18%;
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 217 33% 22%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 18% 18%;
+    --muted-foreground: 215 15% 55%;
 
-    --accent: 45 97% 56%;
-    --accent-foreground: 217 33% 17%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 220 20% 10%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 4 72% 55%;
+    --destructive-foreground: 210 40% 96%;
 
-    --success: 142 71% 45%;
+    --success: 152 60% 42%;
     --success-foreground: 0 0% 100%;
 
-    --border: 217 33% 25%;
-    --input: 217 33% 25%;
-    --ring: 163 100% 42%;
+    --expense: 4 72% 55%;
+    --expense-foreground: 4 72% 55%;
 
-    --navy: 218 47% 20%;
-    --navy-foreground: 210 40% 98%;
-    --navy-deep: 222 47% 11%;
-    --navy-card: 217 33% 17%;
-    --amber: 45 97% 56%;
+    --border: 220 18% 22%;
+    --input: 220 18% 22%;
+    --ring: 163 72% 44%;
+
+    --navy: 220 20% 10%;
+    --navy-foreground: 210 40% 96%;
+    --navy-deep: 222 30% 7%;
+    --navy-card: 220 18% 14%;
+    --amber: 38 92% 50%;
   }
 }
 
@@ -114,15 +120,15 @@
 
 @layer components {
   .glass-card {
-    @apply rounded-xl border border-border/50 bg-card/80 backdrop-blur-xl shadow-lg;
+    @apply rounded-xl border border-border bg-card shadow-sm;
   }
 
   .glass-card-dark {
-    @apply rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-lg;
+    @apply rounded-xl border border-border bg-card shadow-sm;
   }
 
   .amber-input {
-    @apply border-amber/50 bg-amber/10 focus:border-amber focus:ring-amber/30;
+    @apply border-border bg-muted/50 focus:border-primary focus:ring-primary/30;
   }
 
   .pulse-warning {
@@ -137,10 +143,10 @@
   .score-gradient {
     background: conic-gradient(
       from 180deg,
-      hsl(0, 84%, 60%) 0deg,
-      hsl(45, 97%, 56%) 120deg,
-      hsl(142, 71%, 45%) 240deg,
-      hsl(163, 100%, 42%) 360deg
+      hsl(4, 72%, 50%) 0deg,
+      hsl(38, 92%, 50%) 120deg,
+      hsl(152, 60%, 38%) 240deg,
+      hsl(163, 72%, 40%) 360deg
     );
   }
 }

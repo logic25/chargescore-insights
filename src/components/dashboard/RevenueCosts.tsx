@@ -27,8 +27,8 @@ const RevenueCosts = ({ financials }: Props) => {
   const monthlyProfit = netProfit / 12;
 
   return (
-    <div className="glass-card-dark">
-      <div className="border-b border-white/10 p-4">
+    <div className="glass-card">
+      <div className="border-b border-border p-4">
         <h2 className="font-heading text-sm font-semibold uppercase tracking-wider text-foreground">
           Year 1 Revenue & Costs
         </h2>
@@ -92,7 +92,7 @@ const RevenueCosts = ({ financials }: Props) => {
         )}
 
         {/* Divider */}
-        <div className="border-t border-white/20" />
+        <div className="border-t border-border" />
 
         {/* Net Profit — BIG */}
         <div className="text-center py-2">

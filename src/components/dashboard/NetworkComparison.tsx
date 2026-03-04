@@ -180,8 +180,8 @@ const NetworkComparison = ({ site, incentives }: Props) => {
   }, [incentiveCoverPct]);
 
   return (
-    <div className="glass-card-dark">
-      <div className="flex items-center gap-2 border-b border-white/10 p-4">
+    <div className="glass-card">
+      <div className="flex items-center gap-2 border-b border-border p-4">
         <Crown className="h-4 w-4 text-primary" />
         <h2 className="font-heading text-sm font-semibold uppercase tracking-wider text-foreground">Network Comparison</h2>
       </div>
@@ -189,7 +189,7 @@ const NetworkComparison = ({ site, incentives }: Props) => {
       <div className="overflow-x-auto">
         <table className="w-full min-w-[700px]">
           <thead>
-            <tr className="border-b border-white/10">
+            <tr className="border-b border-border">
               <th className="p-3 text-left text-xs font-medium text-muted-foreground w-[180px]">Metric</th>
               <th className="p-3 text-center">
                 <div className="flex flex-col items-center gap-1">
@@ -216,7 +216,7 @@ const NetworkComparison = ({ site, incentives }: Props) => {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.label} className="border-b border-white/5 transition-colors hover:bg-white/[0.02]">
+              <tr key={row.label} className="border-b border-border/50 transition-colors hover:bg-muted/50">
                 <td className="p-3">
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     {row.icon}
@@ -240,7 +240,7 @@ const NetworkComparison = ({ site, incentives }: Props) => {
       </div>
 
       {/* Recommendation */}
-      <div className="border-t border-white/10 p-4">
+      <div className="border-t border-border p-4">
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
           <p className="text-xs font-semibold text-primary mb-1">💡 Recommendation</p>
           <p className="text-xs leading-relaxed text-muted-foreground">{recommendation.text}</p>
