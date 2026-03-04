@@ -1,43 +1,57 @@
 
 
-## Assessment: The Code Is Already Correct
+## Dashboard Redesign: Remove Redundancy and Fix Issues
 
-After reading every relevant file, the "damage report" is **factually incorrect**. All 10 items listed as "not implemented" are actually present in the codebase:
+### Problems Identified
 
-### Evidence
+1. **Parking shows 35 spaces** — The default `lotSqFt` is 12,000 sq ft. At 1 spot per 340 sq ft, that's 35 spots. This is too small for most commercial properties. Should default to ~50,000 sq ft (≈147 spots).
 
-1. **9-factor scoring** — `src/lib/scoring.ts` contains `calculateChargeScoreV2` with all 9 factors: Traffic Volume (22%), EV Density (13%), Competition Gap (18%), Dwell Time (10%), Amenities (10%), Parking (5%), Grid (5%), Incentive Eligibility (10%), Demand Overflow (7%).
+2. **Duplicate 15-Year Cash Flow chart** — Both `CashFlowChart` (standalone card) AND `FinancialProjection` render the exact same bar chart. Remove the standalone `CashFlowChart` entirely.
 
-2. **Distance-based competition** — `scoring.ts` lines 84-97 use `nearestDcfcMiles` with graduated thresholds (≥10mi = 100, ≥5mi = 85, etc.), not the old `100 - stations * 15`.
+3. **Duplicate Investment Summary data** — `InvestmentSummary` shows project cost, incentives, out-of-pocket, payback, NPV. `FinancialProjection` repeats all of this in its "Investment Summary" box. Merge them: keep the hero `InvestmentSummary` card, strip the summary box from `FinancialProjection` so it only shows Revenue/Costs/Incentives details + the chart.
 
-3. **$0.223/kWh levelized rate** — `Dashboard.tsx` line 52 sets `electricityCostPerKwh: 0.223`.
+4. **Two maps look redundant** — `SiteAerial` (satellite photo) and `MapView` (competition stations) serve different purposes but both take up large vertical space. Combine them into a single section with tabs: "Satellite" / "Competition".
 
-4. **No demand charge double-count** — `calculations.ts` line 134: `monthlyDemandCharge = 0` for Tesla model, with comments explaining the levelized rate includes demand charges.
+5. **Network Comparison costs** — Owner-Operated shows `$85,000–$100,000` hardware which is correct for ChargePoint DCFC. This is intentionally different from Tesla's $50K. No code change needed, but could add a note clarifying the difference.
 
-5. **$50K hardware + $50K install** — `calculations.ts` lines 97-98: `TESLA_COST_PER_STALL = 50000`, `TESLA_INSTALL_PER_STALL = 50000`.
+### Proposed Dashboard Layout (after cleanup)
 
-6. **Google Maps satellite** — `SiteAerial.tsx` calls `getSatelliteImageUrl(lat, lng)` from `src/lib/api/googleMaps.ts`.
+```text
+┌─────────────────────────────────┐
+│  Site Aerial + Competition Map  │  ← Tabbed: Satellite | Competition
+│  (Property Details inline)      │
+├─────────────────────────────────┤
+│  ChargeScore Gauge              │
+├─────────────────────────────────┤
+│  ── GATE (blur below) ──       │
+├─────────────────────────────────┤
+│  Property Inputs                │
+├─────────────────────────────────┤
+│  Investment Summary (hero)      │  ← Stalls slider, costs, incentives, out-of-pocket
+├─────────────────────────────────┤
+│  Year 1 Revenue & Costs         │
+├─────────────────────────────────┤
+│  Financial Details + Cash Flow  │  ← Revenue/Costs/Incentives columns + chart (NO summary box)
+├─────────────────────────────────┤
+│  Network Comparison             │
+├─────────────────────────────────┤
+│  Parking Impact                 │
+└─────────────────────────────────┘
+```
 
-7. **Draw-to-measure** — `ParkingLotMeasure` component is imported and rendered in SiteAerial.
+### Changes
 
-8. **Census + FCC + NLR APIs** — Dashboard.tsx imports and calls `fetchCensusTractFips`, `fetchMultiFamilyPct`, `fetchPopDensity`, `fetchPlannedStations`, and `fetchNearbyStations`.
+1. **`SiteAerial.tsx`** — Change default `lotSqFt` from `12000` to `50000`
 
-9. **15-year discounted NPV** — `calculations.ts` uses `DISCOUNT_RATE = 0.08` and `PROJECT_YEARS = 15` with proper DCF.
+2. **`Dashboard.tsx`** — Remove `CashFlowChart` import and usage. Combine `SiteAerial` and `MapView` into a tabbed container (Satellite / Competition tabs).
 
-### The Old Code Still Exists But Isn't Used
+3. **`FinancialProjection.tsx`** — Remove the "Investment Summary" box (lines 194-227) since `InvestmentSummary` already shows all that data. Keep the 3-column Revenue/Costs/Incentives grid and the cash flow chart.
 
-The legacy `calculateChargeScore` function (5-factor, `100 - stations * 15`) remains in `calculations.ts` lines 36-57 as dead code. The Dashboard exclusively calls `calculateChargeScoreV2` from `scoring.ts`. This dead code may have caused the confusion.
+4. **Remove `CashFlowChart.tsx`** — No longer needed since `FinancialProjection` has the chart.
 
-### Recommended Action
+### Technical Notes
 
-No core rewrites are needed. If you're seeing unexpected values in the UI, the issue is likely:
-- A specific UI component displaying old data
-- The `VITE_GOOGLE_MAPS_KEY` not being set (satellite view falls back to placeholder)
-- A rendering bug in a specific panel
-
-If you're experiencing a specific incorrect number or broken feature, point me to it and I'll trace the exact cause. Otherwise, the engine is working as designed.
-
-### Optional Cleanup
-
-- **Remove dead code**: Delete the unused `calculateChargeScore` function and related legacy helpers (`getVerdict`, `getIncentiveScore`, `getEvAdoptionScore`) from `calculations.ts` to avoid future confusion.
+- The parking "35 spots" is not a bug — it's the lot size default being too small. Changing from 12,000 to 50,000 sq ft gives ~147 spots which is realistic for a shopping center.
+- The two maps serve genuinely different purposes (satellite aerial vs competition stations) so they're kept but combined into tabs to reduce scroll.
+- Network Comparison correctly shows different hardware costs per model — Tesla V4 posts are cheaper than ChargePoint/Blink DCFC units.
 
