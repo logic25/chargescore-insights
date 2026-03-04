@@ -1,11 +1,14 @@
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
 import type { FinancialProjection, Incentive } from '@/types/chargeScore';
 
 interface Props {
   financials: FinancialProjection;
   incentives: Incentive[];
   stalls: number;
+  onStallsChange?: (stalls: number) => void;
 }
 
 const fmt = (n: number) => {
@@ -32,7 +35,7 @@ const LAYER_LABELS: Record<string, string> = {
 
 const LAYER_ORDER: string[] = ['federal', 'state', 'utility'];
 
-const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
+const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: Props) => {
   const outOfPocket = financials.netInvestment;
   const outOfPocketColor = outOfPocket <= 0
     ? 'text-success'
@@ -58,6 +61,25 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
       </div>
 
       <div className="p-5 space-y-4">
+        {/* Stalls Slider */}
+        {onStallsChange && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground flex items-center">
+                Number of Stalls
+                <InfoTip text="How many Tesla V4 Supercharger posts to install. Each stall costs ~$100K (hardware + installation). Minimum 4 for Tesla program." />
+              </Label>
+              <span className="font-mono text-sm font-bold text-primary">{stalls}</span>
+            </div>
+            <Slider
+              value={[stalls]}
+              onValueChange={([v]) => onStallsChange(v)}
+              min={4} max={12} step={1}
+              className="py-2"
+            />
+            <p className="text-[10px] text-muted-foreground/60">Drag to adjust — all financials update instantly</p>
+          </div>
+        )}
         {/* Total Project Cost */}
         <div>
           <div className="flex items-center justify-between">

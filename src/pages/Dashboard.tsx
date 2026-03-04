@@ -149,13 +149,15 @@ const Dashboard = () => {
     multiFamilyPct,
     popDensity,
     nearestMajorAirportMiles: nearestAirport.distance,
-    isOnAltFuelCorridor: false, // MVP: not bundled yet
+    isOnAltFuelCorridor: false,
     propertyType: site.propertyType,
     amenitiesNearby: amenitiesCount,
     totalParkingSpots: site.totalParkingSpaces,
     isDisadvantagedCommunity,
     hasThreePhasePower: hasThreePhasePower,
-  }), [trafficLevel, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, isDisadvantagedCommunity, hasThreePhasePower]);
+    state: site.state,
+    zipCode: site.zipCode,
+  }), [trafficLevel, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, isDisadvantagedCommunity, hasThreePhasePower, site.state, site.zipCode]);
 
   // Revenue projection from ChargeScore
   const revenueProjection: RevenueProjection = useMemo(() => projectRevenue({
@@ -234,7 +236,7 @@ const Dashboard = () => {
 
       <main className="p-4 space-y-4">
         {/* VISIBLE: Site Aerial (teaser) */}
-        <SiteAerial lat={site.lat} lng={site.lng} onParkingEstimate={handleParkingEstimate} />
+        <SiteAerial lat={site.lat} lng={site.lng} propertyType={site.propertyType} onPropertyTypeChange={(t) => setSite(prev => ({ ...prev, propertyType: t }))} onParkingEstimate={handleParkingEstimate} />
 
         {/* VISIBLE: ChargeScore Gauge (teaser) */}
         <ChargeScoreGauge score={chargeScore} />
@@ -250,7 +252,7 @@ const Dashboard = () => {
             />
 
             {/* Investment Summary — Hero Card */}
-            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} />
+            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
 
             {/* Revenue & Costs (Year 1) */}
             <RevenueCosts financials={financials} />
