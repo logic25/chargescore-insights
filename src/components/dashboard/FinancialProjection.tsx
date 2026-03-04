@@ -219,7 +219,7 @@ const FinancialProjection = ({ financials, incentives, site, nrelIncentives = []
             />
             <SummaryRow
               label="5-Year ROI"
-              value={`${Math.round(financials.fiveYearRoi)}%`}
+              value={isFinite(financials.fiveYearRoi) ? `${Math.round(financials.fiveYearRoi)}%` : '∞ (no cost)'}
               className={financials.fiveYearRoi > 0 ? 'text-primary' : 'text-destructive'}
               bold
             />

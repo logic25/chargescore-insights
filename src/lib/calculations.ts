@@ -184,7 +184,7 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
   }
 
   const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
-  const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : 0;
+  const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : (cumulativeCashFlow[4] > 0 ? Infinity : 0);
 
   return {
     chargingModel: 'tesla',
@@ -258,7 +258,7 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
     }
   }
 
-  const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : 0;
+  const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : (cumulativeCashFlow[4] > 0 ? Infinity : 0);
 
   return {
     chargingModel: 'generic',
