@@ -40,7 +40,7 @@ const ChargeScoreGauge = ({ score }: ChargeScoreGaugeProps) => {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="glass-card-dark p-6"
+      className="glass-card p-6"
     >
       <div className="mb-4 flex items-center gap-2">
         <h2 className="font-heading text-sm font-semibold text-foreground">ChargeScore™</h2>
@@ -65,7 +65,7 @@ const ChargeScoreGauge = ({ score }: ChargeScoreGaugeProps) => {
           <svg width="140" height="140" viewBox="0 0 160 160">
             <circle
               cx="80" cy="80" r="70" fill="none" stroke="currentColor"
-              className="text-white/10" strokeWidth="10"
+              className="text-border" strokeWidth="10"
               strokeDasharray={`${circumference * 0.75} ${circumference * 0.25}`}
               strokeLinecap="round" transform="rotate(135 80 80)"
             />
@@ -104,7 +104,7 @@ const ChargeScoreGauge = ({ score }: ChargeScoreGaugeProps) => {
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="h-1.5 flex-1 rounded-full bg-white/10">
+              <div className="h-1.5 flex-1 rounded-full bg-muted">
                 <div
                   className={`h-full rounded-full transition-all duration-700 ${barColor(factor.score)}`}
                   style={{ width: `${factor.score}%` }}

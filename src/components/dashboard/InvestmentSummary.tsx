@@ -50,8 +50,8 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
   })).filter(g => g.items.length > 0);
 
   return (
-    <div className="glass-card-dark">
-      <div className="border-b border-white/10 p-4">
+    <div className="glass-card">
+      <div className="border-b border-border p-4">
         <h2 className="font-heading text-sm font-semibold uppercase tracking-wider text-foreground">
           Investment Summary
         </h2>
@@ -113,7 +113,7 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-white/20" />
+        <div className="border-t border-border" />
 
         {/* Out-of-Pocket — HERO NUMBER */}
         <div className="text-center py-3">
@@ -130,7 +130,7 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-white/10" />
+        <div className="border-t border-border" />
 
         {/* Bottom metrics */}
         <div className="grid grid-cols-2 gap-4">

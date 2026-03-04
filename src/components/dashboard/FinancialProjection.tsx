@@ -28,8 +28,8 @@ const FinancialProjection = ({ financials, incentives, site, nrelIncentives = []
   }));
 
   return (
-    <div className="glass-card-dark">
-      <div className="flex items-center gap-2 border-b border-white/10 p-4">
+    <div className="glass-card">
+      <div className="flex items-center gap-2 border-b border-border p-4">
         {isTesla && <Zap className="h-4 w-4 text-primary" />}
         <h2 className="font-heading text-sm font-semibold text-foreground">
           {isTesla ? 'Tesla Supercharger for Business — Financial Projection' : 'Financial Projection'}
@@ -135,7 +135,7 @@ const FinancialProjection = ({ financials, incentives, site, nrelIncentives = []
             {incentives.map((inc) => (
               <div
                 key={inc.id}
-                className="cursor-pointer rounded-lg border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10"
+                className="cursor-pointer rounded-lg border border-border bg-muted/50 p-3 transition-colors hover:bg-muted"
                 onClick={() => setIncentiveExpanded(incentiveExpanded === inc.id ? null : inc.id)}
               >
                 <div className="flex items-center justify-between">
@@ -155,7 +155,7 @@ const FinancialProjection = ({ financials, incentives, site, nrelIncentives = []
             {nrelIncentives.length > 0 && (
               <div className="mt-3">
                 <button
-                  className="flex w-full items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-white/10"
+                  className="flex w-full items-center gap-1 rounded-lg border border-border bg-muted/50 p-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
                   onClick={() => setShowNrelPrograms(!showNrelPrograms)}
                 >
                   {showNrelPrograms ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
@@ -164,7 +164,7 @@ const FinancialProjection = ({ financials, incentives, site, nrelIncentives = []
                 {showNrelPrograms && (
                   <div className="mt-2 space-y-1.5 pl-1">
                     {nrelIncentives.map((nrel) => (
-                      <div key={nrel.id} className="rounded border border-white/5 bg-white/[0.02] p-2">
+                      <div key={nrel.id} className="rounded border border-border bg-muted/30 p-2">
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <p className="text-[11px] font-medium text-foreground/80">{nrel.title}</p>
@@ -190,7 +190,7 @@ const FinancialProjection = ({ financials, incentives, site, nrelIncentives = []
       </div>
 
       {/* Summary + Chart */}
-      <div className="grid gap-4 border-t border-white/10 p-4 lg:grid-cols-2">
+      <div className="grid gap-4 border-t border-border p-4 lg:grid-cols-2">
         {/* Summary Box */}
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
           <h3 className="mb-3 font-heading text-sm font-semibold text-primary">Investment Summary</h3>
@@ -200,9 +200,9 @@ const FinancialProjection = ({ financials, incentives, site, nrelIncentives = []
             {isTesla && (
               <SummaryRow label="  └ Tesla Service Fee" value={`-${fmt(financials.teslaServiceFeeAnnual)}`} className="text-muted-foreground" />
             )}
-            <div className="my-2 border-t border-white/10" />
+             <div className="my-2 border-t border-border" />
             <SummaryRow label="Annual Net Profit" value={fmt(financials.annualNetRevenue)} className={financials.annualNetRevenue >= 0 ? 'text-success' : 'text-destructive'} bold />
-            <div className="my-2 border-t border-white/10" />
+            <div className="my-2 border-t border-border" />
             <SummaryRow label="Total Project Cost" value={fmt(financials.totalProjectCost)} />
             <SummaryRow label="Estimated Incentives" value={`-${fmt(financials.estimatedIncentives)}`} className="text-success" />
             <SummaryRow label="Net Investment" value={fmt(financials.netInvestment)} bold />
@@ -233,20 +233,20 @@ const FinancialProjection = ({ financials, incentives, site, nrelIncentives = []
             <div className="min-w-[500px]">
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="year" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={(v) => {
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
+                  <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 10 }} interval={0} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(v) => {
                     if (Math.abs(v) >= 1000000) return `$${(v / 1000000).toFixed(1)}M`;
                     return `$${(v / 1000).toFixed(0)}k`;
                   }} />
                   <Tooltip
-                    contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: '#f8fafc' }}
+                    contentStyle={{ background: '#fff', border: '1px solid hsl(214, 20%, 88%)', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: '#1e293b' }}
                     formatter={(value: number) => [fmt(value), 'Cash Flow']}
                   />
                   <Bar dataKey="value" radius={[3, 3, 0, 0]}>
                     {chartData.map((entry, i) => (
-                      <Cell key={i} fill={entry.value >= 0 ? '#00d4aa' : '#ef4444'} />
+                      <Cell key={i} fill={entry.value >= 0 ? 'hsl(152, 60%, 38%)' : 'hsl(4, 72%, 50%)'} />
                     ))}
                   </Bar>
                 </BarChart>

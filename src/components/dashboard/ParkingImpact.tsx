@@ -12,8 +12,8 @@ const ParkingImpact = ({ analysis }: Props) => {
   const evPct = totalW > 0 ? (analysis.recommendedEv / totalW) * 100 : 0;
 
   return (
-    <div className="glass-card-dark">
-      <div className="flex items-center gap-2 border-b border-white/10 p-4">
+    <div className="glass-card">
+      <div className="flex items-center gap-2 border-b border-border p-4">
         <Car className="h-4 w-4 text-primary" />
         <h2 className="font-heading text-sm font-semibold text-foreground">Parking Impact Analysis</h2>
       </div>
@@ -41,7 +41,7 @@ const ParkingImpact = ({ analysis }: Props) => {
               {analysis.recommendedEv > 0 && `${analysis.recommendedEv} EV`}
             </div>
             <div
-              className="flex items-center justify-center bg-white/10 text-[10px] font-medium text-muted-foreground"
+              className="flex items-center justify-center bg-muted text-[10px] font-medium text-muted-foreground"
               style={{ width: `${Math.max(0, availPct - evPct)}%` }}
             >
               buffer
