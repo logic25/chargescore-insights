@@ -1,3 +1,5 @@
+import { haversineDistance } from '@/lib/geo';
+
 const NREL_API_KEY = 'ttwrfmgTXzqUEZctNUcKtCbN2gnJhnST68fj6Oe9';
 
 export interface PlannedStationData {
@@ -16,24 +18,26 @@ export async function fetchPlannedStations(lat: number, lng: number, radiusMiles
       latitude: lat.toString(),
       longitude: lng.toString(),
       radius: radiusMiles.toString(),
-      limit: '50',
+      limit: '200',
     });
 
     const res = await fetch(`https://developer.nrel.gov/api/alt-fuel-stations/v1.json?${params}`);
     if (!res.ok) throw new Error(`NLR API error: ${res.status}`);
     const data = await res.json();
-    const stations = data.fuel_stations || [];
+    const rawStations = data.fuel_stations || [];
+
+    // Calculate real distances and filter to actual radius
+    const stations = rawStations
+      .map((s: any) => ({
+        ...s,
+        _distance: s.distance ?? haversineDistance(lat, lng, s.latitude, s.longitude),
+      }))
+      .filter((s: any) => s._distance <= radiusMiles)
+      .sort((a: any, b: any) => a._distance - b._distance);
 
     const plannedCount = stations.length;
     const totalPlannedPorts = stations.reduce((sum: number, s: any) => sum + (s.ev_dc_fast_num || 0), 0);
-    let nearestPlannedMiles: number | null = null;
-
-    if (stations.length > 0) {
-      const nearest = stations.reduce((min: any, s: any) =>
-        (s.distance || Infinity) < (min.distance || Infinity) ? s : min
-      );
-      nearestPlannedMiles = nearest.distance || null;
-    }
+    const nearestPlannedMiles = stations.length > 0 ? stations[0]._distance : null;
 
     return { plannedCount, totalPlannedPorts, nearestPlannedMiles };
   } catch (err) {
