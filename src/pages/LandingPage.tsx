@@ -75,11 +75,17 @@ const LandingPage = () => {
                 className="h-14 px-8 text-base font-semibold"
                 onClick={handleAnalyze}
                 disabled={!selectedAddress}
+                title={!selectedAddress ? 'Type an address and select from suggestions' : ''}
               >
                 Analyze Site
                 <ChevronRight className="ml-1 h-5 w-5" />
               </Button>
             </div>
+            {!selectedAddress && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Type an address above, then select from the dropdown to continue
+              </p>
+            )}
           </motion.div>
         </div>
       </section>
