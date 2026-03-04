@@ -1,14 +1,17 @@
-import { Info } from 'lucide-react';
+import { useState } from 'react';
+import { Info, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import type { FinancialProjection, Incentive } from '@/types/chargeScore';
+import type { NrelIncentive } from '@/lib/api/incentives';
 
 interface Props {
   financials: FinancialProjection;
   incentives: Incentive[];
   stalls: number;
   onStallsChange?: (stalls: number) => void;
+  nrelIncentives?: NrelIncentive[];
 }
 
 const fmt = (n: number) => {
@@ -35,7 +38,8 @@ const LAYER_LABELS: Record<string, string> = {
 
 const LAYER_ORDER: string[] = ['federal', 'state', 'utility'];
 
-const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: Props) => {
+const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nrelIncentives = [] }: Props) => {
+  const [showNrelPrograms, setShowNrelPrograms] = useState(false);
   const outOfPocket = financials.netInvestment;
   const outOfPocketColor = outOfPocket <= 0
     ? 'text-success'
@@ -146,6 +150,34 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: P
             })}
           </div>
         </div>
+        {nrelIncentives.length > 0 && (
+          <div>
+            <button
+              className="flex w-full items-center gap-1 rounded-lg border border-border bg-muted/50 p-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+              onClick={() => setShowNrelPrograms(!showNrelPrograms)}
+            >
+              {showNrelPrograms ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              Additional Programs ({nrelIncentives.length})
+            </button>
+            {showNrelPrograms && (
+              <div className="mt-2 space-y-1.5 pl-1">
+                {nrelIncentives.map((nrel) => (
+                  <div key={nrel.id} className="rounded border border-border bg-muted/30 p-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[11px] font-medium text-foreground/80">{nrel.title}</p>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">{nrel.type}</p>
+                      </div>
+                      <a href={`https://afdc.energy.gov/laws/${nrel.id}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 text-primary hover:text-primary/80">
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Divider */}
         <div className="border-t border-border" />
