@@ -32,9 +32,14 @@ const LandingPage = () => {
             <span className="font-heading text-xl font-bold text-foreground">ChargeScore</span>
           </div>
           {user ? (
-            <Button variant="outline" size="sm" onClick={signOut} className="hidden sm:flex">
-              <LogOut className="mr-1.5 h-4 w-4" /> Sign Out
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/my-analyses')} className="hidden sm:flex">
+                My Analyses
+              </Button>
+              <Button variant="outline" size="sm" onClick={signOut} className="hidden sm:flex">
+                <LogOut className="mr-1.5 h-4 w-4" /> Sign Out
+              </Button>
+            </div>
           ) : (
             <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="hidden sm:flex">
               <LogIn className="mr-1.5 h-4 w-4" /> Sign In

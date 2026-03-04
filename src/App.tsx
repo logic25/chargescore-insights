@@ -8,6 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import MlAdmin from "./pages/MlAdmin";
+import MyAnalyses from "./pages/MyAnalyses";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/my-analyses" element={<MyAnalyses />} />
             <Route path="/admin/ml" element={<MlAdmin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
