@@ -3,11 +3,12 @@ import { FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import type { SiteAnalysis, FinancialProjection, ChargeScoreBreakdown, Incentive, ParkingAnalysis, DemandChargeAnalysis } from '@/types/chargeScore';
+import type { SiteAnalysis, FinancialProjection, Incentive, ParkingAnalysis, DemandChargeAnalysis } from '@/types/chargeScore';
+import type { ChargeScoreResult } from '@/lib/scoring';
 
 interface Props {
   site: SiteAnalysis;
-  score: ChargeScoreBreakdown;
+  score: ChargeScoreResult;
   financials: FinancialProjection;
   incentives: Incentive[];
   parking: ParkingAnalysis;
@@ -88,15 +89,15 @@ async function generateReport(props: Props): Promise<jsPDF> {
   pdf.circle(cx, cy, 50, 'S');
   pdf.setTextColor(TEAL);
   pdf.setFontSize(36);
-  pdf.text(String(score.total), cx, cy + 5, { align: 'center' });
+  pdf.text(String(score.totalScore), cx, cy + 5, { align: 'center' });
   pdf.setFontSize(10);
   pdf.setTextColor(MUTED);
-  pdf.text('ChargeScore', cx, cy + 22, { align: 'center' });
+  pdf.text(`Grade: ${score.grade}`, cx, cy + 22, { align: 'center' });
 
   // Score verdict
   pdf.setFontSize(11);
   pdf.setTextColor(WHITE);
-  const verdictLines = pdf.splitTextToSize(score.verdict, CONTENT_W);
+  const verdictLines = pdf.splitTextToSize(score.recommendation, CONTENT_W);
   pdf.text(verdictLines, MARGIN, 380);
 
   // Date & branding
