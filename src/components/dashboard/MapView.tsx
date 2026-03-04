@@ -81,8 +81,8 @@ const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
   }, [lat, lng, stations]);
 
   return (
-    <div className="glass-card-dark overflow-hidden">
-      <div className="flex items-center justify-between border-b border-white/10 p-4">
+    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border p-4">
         <h2 className="font-heading text-sm font-semibold text-foreground">Competition Map</h2>
         <div className="flex items-center gap-3 text-xs">
           <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#ef4444' }} /> Tesla</span>
