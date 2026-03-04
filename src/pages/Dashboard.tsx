@@ -17,6 +17,9 @@ import SiteAerial from '@/components/dashboard/SiteAerial';
 import MapView from '@/components/dashboard/MapView';
 import ChargeScoreGauge from '@/components/dashboard/ChargeScoreGauge';
 import PropertyInputs, { type TrafficLevel, TRAFFIC_LEVEL_VPD } from '@/components/dashboard/PropertyInputs';
+import InvestmentSummary from '@/components/dashboard/InvestmentSummary';
+import RevenueCosts from '@/components/dashboard/RevenueCosts';
+import CashFlowChart from '@/components/dashboard/CashFlowChart';
 import FinancialProjection from '@/components/dashboard/FinancialProjection';
 import ParkingImpact from '@/components/dashboard/ParkingImpact';
 import NetworkComparison from '@/components/dashboard/NetworkComparison';
@@ -48,7 +51,6 @@ const Dashboard = () => {
 
   const [stations, setStations] = useState<NearbyStation[]>([]);
   const [stationsLoading, setStationsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'analysis' | 'compare'>('analysis');
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
   const [availableForChargers, setAvailableForChargers] = useState(0);
 
@@ -213,82 +215,43 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="p-4">
-        {/* Site Aerial + Parking Estimator */}
+      <main className="p-4 space-y-4">
+        {/* 1. Site Aerial + Parking Estimator */}
         <SiteAerial lat={site.lat} lng={site.lng} onParkingEstimate={handleParkingEstimate} />
 
-        {/* Top Row: Map + Score + Inputs */}
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
-          <div className="flex flex-col gap-4">
-            <ChargeScoreGauge score={chargeScore} />
-            <PropertyInputs
-              site={site} onChange={setSite}
-              trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
-              availableForChargers={availableForChargers}
-            />
-          </div>
-        </div>
+        {/* Property Inputs */}
+        <PropertyInputs
+          site={site} onChange={setSite}
+          trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
+          availableForChargers={availableForChargers}
+        />
 
-        {/* Revenue Projection from ChargeScore */}
-        <div className="mt-4 glass-card-dark p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-sm font-semibold text-foreground flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary" />
-              Revenue Projection (Score-Based)
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              Based on ChargeScore {chargeScore.totalScore} → {revenueProjection.kwhPerStallPerDay} kWh/stall/day
-            </span>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <RevenueCard label="Monthly Profit" value={`$${Math.round(revenueProjection.monthlyProfit).toLocaleString()}`}
-              sub={`${site.teslaStalls} stalls`} positive={revenueProjection.monthlyProfit > 0} />
-            <RevenueCard label="Year 1 Revenue" value={`$${Math.round(revenueProjection.year1Revenue).toLocaleString()}`}
-              sub={`${Math.round(revenueProjection.annualKwh).toLocaleString()} kWh`} positive />
-            <RevenueCard label="Out of Pocket" value={`$${Math.round(revenueProjection.outOfPocket).toLocaleString()}`}
-              sub={`After $${Math.round(revenueProjection.totalIncentives).toLocaleString()} incentives`} positive={revenueProjection.outOfPocket === 0} />
-            <RevenueCard label="Payback" value={revenueProjection.paybackYears !== null ? `${revenueProjection.paybackYears.toFixed(1)} yrs` : 'N/A'}
-              sub={`15-yr NPV: $${Math.round(revenueProjection.npv15Year).toLocaleString()}`} positive={revenueProjection.paybackYears !== null && revenueProjection.paybackYears < 5} />
-          </div>
-        </div>
+        {/* 2. INVESTMENT SUMMARY — Hero Card */}
+        <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} />
 
-        {/* View Toggle */}
-        <div className="mt-4 flex items-center gap-2">
-          <Button size="sm" variant={viewMode === 'analysis' ? 'default' : 'outline'}
-            onClick={() => setViewMode('analysis')}>
-            <Zap className="mr-1 h-3.5 w-3.5" /> Tesla Analysis
-          </Button>
-          <Button size="sm" variant={viewMode === 'compare' ? 'default' : 'outline'}
-            onClick={() => setViewMode('compare')}>
-            Compare Networks
-          </Button>
-        </div>
+        {/* 3. Revenue & Costs (Year 1) */}
+        <RevenueCosts financials={financials} />
 
-        {/* Financial Section */}
-        <div className="mt-4">
-          {viewMode === 'analysis' ? (
-            <FinancialProjection financials={financials} incentives={incentives} site={site} nrelIncentives={nrelIncentives} />
-          ) : (
-            <NetworkComparison site={site} incentives={incentives} />
-          )}
-        </div>
+        {/* 4. 15-Year Cash Flow Chart */}
+        <CashFlowChart financials={financials} />
 
-        {/* Bottom: Parking */}
-        <div className="mt-4">
-          <ParkingImpact analysis={parking} />
-        </div>
+        {/* 5. Incentives Breakdown */}
+        <FinancialProjection financials={financials} incentives={incentives} site={site} nrelIncentives={nrelIncentives} />
+
+        {/* 6. Network Comparison */}
+        <NetworkComparison site={site} incentives={incentives} />
+
+        {/* 7. Competition Map */}
+        <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
+
+        {/* 8. Parking Impact */}
+        <ParkingImpact analysis={parking} />
+
+        {/* 9. ChargeScore Gauge — bottom */}
+        <ChargeScoreGauge score={chargeScore} />
       </main>
     </div>
   );
 };
-
-const RevenueCard = ({ label, value, sub, positive }: { label: string; value: string; sub: string; positive: boolean }) => (
-  <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-    <p className="text-[11px] text-muted-foreground">{label}</p>
-    <p className={`font-mono text-xl font-bold ${positive ? 'text-primary' : 'text-destructive'}`}>{value}</p>
-    <p className="text-[10px] text-muted-foreground/70">{sub}</p>
-  </div>
-);
 
 export default Dashboard;
