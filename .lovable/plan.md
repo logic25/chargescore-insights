@@ -1,50 +1,23 @@
 
 
-## Dashboard Redesign: Clean, Informative Flow
+## Problem
 
-### Layout Philosophy
-The current layout stacks everything vertically — wasteful on desktop. The new design uses a **persistent 2-column grid on desktop** that reads top-to-bottom, left-to-right like a report. Related data pairs together so nothing feels orphaned.
+The Google Maps key cannot be injected into the frontend via backend secrets. `import.meta.env.VITE_GOOGLE_MAPS_KEY` reads from the auto-managed `.env` file, which only contains Supabase config. Backend secrets are only accessible in edge functions.
 
-### New Layout
+## Solution: Edge function proxy for the API key
 
-```text
-┌──────────────────────────────────────────────────────────┐
-│  Header: ← ChargeScore        [address]     [Download]   │
-╞═══════════════════════════════╤═══════════════════════════╡
-│  Map (Satellite | Competition)│  ChargeScore Gauge        │
-│  ~350px, tabbed               │  Score + factor breakdown │
-├───────────────────────────────┴───────────────────────────┤
-│  ── GATE (blur below) ──                                  │
-├───────────────────────────────┬───────────────────────────┤
-│  Property Inputs (collapsible)│  Investment Summary       │
-│  Property type, traffic,      │  Stalls slider, costs,    │
-│  electrical, pricing          │  incentives, out-of-pocket│
-├───────────────────────────────┼───────────────────────────┤
-│  Year 1 Revenue & Costs       │  15-Year Cash Flow Chart  │
-├───────────────────────────────┼───────────────────────────┤
-│  Network Comparison           │  Parking Impact           │
-└───────────────────────────────┴───────────────────────────┘
-```
+Create a small edge function that returns the Google Maps API key to the frontend. The key stays stored as a backend secret, and the frontend fetches it once on app load.
 
-Mobile: single column, same order top-to-bottom.
+### Steps
 
-### Why This Works
-- **Map + Score** side-by-side: the two "headline" pieces — where and how good
-- **Inputs + Investment** paired: adjust assumptions on the left, see financial impact on the right
-- **Revenue + Cash Flow** paired: short-term P&L next to long-term projection
-- **Network + Parking** paired: both are "context" cards, neither very tall — fills the row without dead space
+1. **Add the secret** -- Use the `add_secret` tool to store `GOOGLE_MAPS_KEY` (without the VITE_ prefix) as a backend secret
+2. **Create edge function** `supabase/functions/get-maps-key/index.ts` -- Returns the key from `Deno.env.get('GOOGLE_MAPS_KEY')` with CORS headers
+3. **Create a shared hook** `src/hooks/useGoogleMapsKey.ts` -- Fetches the key once from the edge function, caches it in a module-level variable so subsequent calls are instant
+4. **Update 3 files** to use the hook instead of `import.meta.env.VITE_GOOGLE_MAPS_KEY`:
+   - `src/components/AddressAutocomplete.tsx`
+   - `src/components/dashboard/ParkingLotMeasure.tsx`
+   - `src/lib/api/googleMaps.ts` (convert to accept key as parameter)
+5. **Update `SiteAerial.tsx`** to pass the key through
 
-### Changes
-
-1. **`Dashboard.tsx`** — Restructure `<main>`:
-   - Row 1 (ungated): `grid lg:grid-cols-2 gap-3` → Map tabs (left) + ChargeScore Gauge (right)
-   - Row 2 (gated): `grid lg:grid-cols-2 items-start gap-3` → PropertyInputs + InvestmentSummary
-   - Row 3 (gated): `grid lg:grid-cols-2 items-start gap-3` → RevenueCosts + FinancialProjection
-   - Row 4 (gated): `grid lg:grid-cols-2 items-start gap-3` → NetworkComparison + ParkingImpact
-
-2. **`PropertyInputs.tsx`** — Change stalls slider `max={12}` → `max={24}`. Update recommendation text to cap at 24 instead of 12.
-
-3. **`InvestmentSummary.tsx`** — Change stalls slider `max={12}` → `max={24}`.
-
-4. **`PropertyInputs.tsx`** — Start collapsed by default (`useState(false)`) so the right column (Investment Summary) isn't dwarfed by a massive expanded form.
+This keeps the key out of the codebase while making it available to the frontend. The key is still a publishable key (secured by referrer restrictions in Google Cloud Console), so exposing it to the browser is standard practice.
 
