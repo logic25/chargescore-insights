@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, DollarSign, BarChart3, Building2, ChevronRight } from 'lucide-react';
+import { Zap, DollarSign, BarChart3, Building2, ChevronRight, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { getAnalysisCount } from '@/lib/analytics';
+import { useAuth } from '@/hooks/useAuth';
 
 const LandingPage = () => {
   const [selectedAddress, setSelectedAddress] = useState<{ formatted: string; lat: number; lng: number; stateCode: string } | null>(null);
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   const handleAddressSelect = (result: { formatted: string; lat: number; lng: number; stateCode: string }) => {
     setSelectedAddress(result);
@@ -29,7 +31,15 @@ const LandingPage = () => {
             <Zap className="h-6 w-6 text-primary" />
             <span className="font-heading text-xl font-bold text-foreground">ChargeScore</span>
           </div>
-          {/* Sign In — auth not yet implemented */}
+          {user ? (
+            <Button variant="outline" size="sm" onClick={signOut} className="hidden sm:flex">
+              <LogOut className="mr-1.5 h-4 w-4" /> Sign Out
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="hidden sm:flex">
+              <LogIn className="mr-1.5 h-4 w-4" /> Sign In
+            </Button>
+          )}
         </div>
       </header>
 

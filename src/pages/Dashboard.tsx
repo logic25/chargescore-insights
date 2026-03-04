@@ -184,7 +184,7 @@ const Dashboard = () => {
   // Log analysis for ML
   useEffect(() => {
     if (chargeScore.totalScore > 0) {
-      logAnalysis({
+      void logAnalysis({
         address: site.address,
         lat: site.lat,
         lng: site.lng,

@@ -1,7 +1,9 @@
+import { supabase } from '@/integrations/supabase/client';
+
 const ANALYSIS_COUNT_KEY = 'chargescore_analysis_count';
 const ML_READINESS_THRESHOLD = 500;
 
-export function logAnalysis(data: {
+export async function logAnalysis(data: {
   address: string;
   lat: number;
   lng: number;
@@ -12,14 +14,34 @@ export function logAnalysis(data: {
   predictedUtilization: number;
   timestamp: string;
 }) {
+  // Always store locally
   try {
     const existing = JSON.parse(localStorage.getItem('chargescore_analyses') || '[]');
     existing.push(data);
     localStorage.setItem('chargescore_analyses', JSON.stringify(existing));
     localStorage.setItem(ANALYSIS_COUNT_KEY, existing.length.toString());
-    return existing.length;
   } catch {
-    return 0;
+    // ignore
+  }
+
+  // If user is logged in, persist to database
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('analyses').insert({
+        user_id: user.id,
+        address: data.address,
+        lat: data.lat,
+        lng: data.lng,
+        state: data.state,
+        charge_score: data.chargeScore,
+        factors: data.factors as any,
+        num_stalls: data.numStalls,
+        predicted_utilization: data.predictedUtilization,
+      });
+    }
+  } catch {
+    // Fail silently — local storage is the fallback
   }
 }
 
