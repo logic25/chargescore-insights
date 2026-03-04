@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analyses: {
+        Row: {
+          address: string
+          charge_score: number
+          created_at: string
+          factors: Json | null
+          id: string
+          lat: number
+          lng: number
+          num_stalls: number | null
+          predicted_utilization: number | null
+          state: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          charge_score: number
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          lat: number
+          lng: number
+          num_stalls?: number | null
+          predicted_utilization?: number | null
+          state: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          charge_score?: number
+          created_at?: string
+          factors?: Json | null
+          id?: string
+          lat?: number
+          lng?: number
+          num_stalls?: number | null
+          predicted_utilization?: number | null
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
