@@ -1,84 +1,10 @@
 import type {
   SiteAnalysis,
-  NearbyStation,
   FinancialProjection,
-  ChargeScoreBreakdown,
   ParkingAnalysis,
   DemandChargeAnalysis,
   Incentive,
-  PropertyType,
 } from '@/types/chargeScore';
-
-// --- ChargeScore Calculation ---
-
-const TRAFFIC_SCORES: Record<PropertyType, number> = {
-  'shopping-center': 90,
-  'strip-retail': 75,
-  'gas-station': 85,
-  'restaurant': 70,
-  'hotel': 65,
-  'parking-garage': 80,
-  'office-park': 55,
-  'multifamily': 45,
-  'other': 50,
-};
-
-const ELECTRICAL_FEASIBILITY: Record<string, number> = {
-  'unknown': 40,
-  '200a-208v': 30,
-  '400a-208v': 50,
-  '400a-480v': 70,
-  '800a-480v': 85,
-  '1200a-480v': 95,
-  '2000a-480v': 100,
-};
-
-export function calculateChargeScore(
-  site: SiteAnalysis,
-  stations: NearbyStation[]
-): ChargeScoreBreakdown {
-  const stationsWithin3Miles = stations.filter(s => s.distanceMiles <= 3).length;
-  const competitionGap = Math.max(0, Math.min(100, 100 - stationsWithin3Miles * 15));
-  const trafficIndicator = TRAFFIC_SCORES[site.propertyType] || 50;
-  const electricalFeasibility = ELECTRICAL_FEASIBILITY[site.electricalService] || 40;
-  const incentiveAvailability = getIncentiveScore(site.state);
-  const evAdoption = getEvAdoptionScore(site.state);
-
-  const total = Math.round(
-    competitionGap * 0.3 +
-    trafficIndicator * 0.25 +
-    electricalFeasibility * 0.2 +
-    incentiveAvailability * 0.15 +
-    evAdoption * 0.1
-  );
-
-  const verdict = getVerdict(total, competitionGap, trafficIndicator);
-  return { competitionGap, trafficIndicator, electricalFeasibility, incentiveAvailability, evAdoption, total, verdict };
-}
-
-function getVerdict(score: number, competition: number, traffic: number): string {
-  if (score >= 80) return 'Strong Candidate — Low competition with high traffic potential';
-  if (score >= 65) return 'Good Opportunity — Favorable conditions for EV charging investment';
-  if (score >= 50) return 'Moderate — Nearby competition exists but demand may support additional capacity';
-  if (score >= 35) return 'Challenging — High competition or limited traffic may reduce returns';
-  return 'Weak — Consider alternative locations with better fundamentals';
-}
-
-function getIncentiveScore(state: string): number {
-  const highIncentive = ['CA', 'NY', 'CO', 'MA', 'NJ', 'WA'];
-  const medIncentive = ['TX', 'FL', 'PA', 'IL'];
-  if (highIncentive.includes(state)) return 90;
-  if (medIncentive.includes(state)) return 65;
-  return 45;
-}
-
-function getEvAdoptionScore(state: string): number {
-  const highAdoption = ['CA', 'WA', 'CO', 'MA', 'NJ'];
-  const medAdoption = ['NY', 'FL', 'TX', 'IL', 'PA'];
-  if (highAdoption.includes(state)) return 90;
-  if (medAdoption.includes(state)) return 65;
-  return 40;
-}
 
 // --- Constants ---
 
