@@ -24,6 +24,9 @@ import FinancialProjection from '@/components/dashboard/FinancialProjection';
 import ParkingImpact from '@/components/dashboard/ParkingImpact';
 import NetworkComparison from '@/components/dashboard/NetworkComparison';
 import ReportGenerator from '@/components/dashboard/ReportGenerator';
+import ReportGate from '@/components/ReportGate';
+
+const GATE_UNLOCKED_KEY = 'chargescore_gate_unlocked';
 
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
@@ -53,6 +56,12 @@ const Dashboard = () => {
   const [stationsLoading, setStationsLoading] = useState(true);
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
   const [availableForChargers, setAvailableForChargers] = useState(0);
+  const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
+
+  const handleGateUnlock = useCallback(() => {
+    localStorage.setItem(GATE_UNLOCKED_KEY, 'true');
+    setGateUnlocked(true);
+  }, []);
 
   // Scoring data state
   const [plannedData, setPlannedData] = useState<PlannedStationData>({ plannedCount: 0, totalPlannedPorts: 0, nearestPlannedMiles: null });
@@ -193,8 +202,15 @@ const Dashboard = () => {
     return () => document.documentElement.classList.remove('dark');
   }, []);
 
+  const blurClass = gateUnlocked ? '' : 'blur-md pointer-events-none select-none';
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Report Gate */}
+      {!gateUnlocked && chargeScore.totalScore > 0 && (
+        <ReportGate chargeScore={chargeScore.totalScore} onUnlock={handleGateUnlock} />
+      )}
+
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl">
         <div className="flex h-14 items-center justify-between px-4">
@@ -207,48 +223,55 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:block">{site.address}</span>
-            <ReportGenerator
-              site={site} score={chargeScore} financials={financials}
-              incentives={incentives} parking={parking} demandCharge={demandCharge}
-            />
+            {gateUnlocked && (
+              <ReportGenerator
+                site={site} score={chargeScore} financials={financials}
+                incentives={incentives} parking={parking} demandCharge={demandCharge}
+              />
+            )}
           </div>
         </div>
       </header>
 
       <main className="p-4 space-y-4">
-        {/* 1. Site Aerial + Parking Estimator */}
+        {/* VISIBLE: Site Aerial (teaser) */}
         <SiteAerial lat={site.lat} lng={site.lng} onParkingEstimate={handleParkingEstimate} />
 
-        {/* Property Inputs */}
-        <PropertyInputs
-          site={site} onChange={setSite}
-          trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
-          availableForChargers={availableForChargers}
-        />
-
-        {/* 2. INVESTMENT SUMMARY — Hero Card */}
-        <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} />
-
-        {/* 3. Revenue & Costs (Year 1) */}
-        <RevenueCosts financials={financials} />
-
-        {/* 4. 15-Year Cash Flow Chart */}
-        <CashFlowChart financials={financials} />
-
-        {/* 5. Incentives Breakdown */}
-        <FinancialProjection financials={financials} incentives={incentives} site={site} nrelIncentives={nrelIncentives} />
-
-        {/* 6. Network Comparison */}
-        <NetworkComparison site={site} incentives={incentives} />
-
-        {/* 7. Competition Map */}
-        <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
-
-        {/* 8. Parking Impact */}
-        <ParkingImpact analysis={parking} />
-
-        {/* 9. ChargeScore Gauge — bottom */}
+        {/* VISIBLE: ChargeScore Gauge (teaser) */}
         <ChargeScoreGauge score={chargeScore} />
+
+        {/* GATED: Everything below is blurred until email entry */}
+        <div className={blurClass}>
+          <div className="space-y-4">
+            {/* Property Inputs */}
+            <PropertyInputs
+              site={site} onChange={setSite}
+              trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
+              availableForChargers={availableForChargers}
+            />
+
+            {/* Investment Summary — Hero Card */}
+            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} />
+
+            {/* Revenue & Costs (Year 1) */}
+            <RevenueCosts financials={financials} />
+
+            {/* 15-Year Cash Flow Chart */}
+            <CashFlowChart financials={financials} />
+
+            {/* Incentives Breakdown */}
+            <FinancialProjection financials={financials} incentives={incentives} site={site} nrelIncentives={nrelIncentives} />
+
+            {/* Network Comparison */}
+            <NetworkComparison site={site} incentives={incentives} />
+
+            {/* Competition Map */}
+            <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
+
+            {/* Parking Impact */}
+            <ParkingImpact analysis={parking} />
+          </div>
+        </div>
       </main>
     </div>
   );
