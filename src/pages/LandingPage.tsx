@@ -4,6 +4,7 @@ import { Zap, DollarSign, BarChart3, Building2, ChevronRight } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
+import { getAnalysisCount } from '@/lib/analytics';
 
 const LandingPage = () => {
   const [selectedAddress, setSelectedAddress] = useState<{ formatted: string; lat: number; lng: number; stateCode: string } | null>(null);
@@ -131,7 +132,7 @@ const LandingPage = () => {
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-10">
             {[
-              { value: '500+', label: 'Sites Analyzed' },
+              { value: `${Math.max(getAnalysisCount(), 0)}`, label: 'Sites Analyzed' },
               { value: '$12M', label: 'Incentives Found' },
               { value: '73', label: 'Avg ChargeScore' },
             ].map((stat, i) => (

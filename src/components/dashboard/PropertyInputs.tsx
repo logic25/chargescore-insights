@@ -5,15 +5,33 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { SiteAnalysis, PropertyType, ElectricalService, ChargingModel } from '@/types/chargeScore';
+import type { SiteAnalysis, PropertyType, ElectricalService } from '@/types/chargeScore';
 import { PROPERTY_TYPE_LABELS, ELECTRICAL_SERVICE_LABELS } from '@/types/chargeScore';
+
+export type TrafficLevel = 'highway' | 'main' | 'side' | 'residential';
+
+export const TRAFFIC_LEVEL_LABELS: Record<TrafficLevel, string> = {
+  highway: 'Highway / Major Road (25K+ VPD)',
+  main: 'Main Road (10-25K VPD)',
+  side: 'Side Street (5-10K VPD)',
+  residential: 'Residential (<5K VPD)',
+};
+
+export const TRAFFIC_LEVEL_VPD: Record<TrafficLevel, number> = {
+  highway: 30000,
+  main: 15000,
+  side: 7500,
+  residential: 3000,
+};
 
 interface PropertyInputsProps {
   site: SiteAnalysis;
   onChange: (site: SiteAnalysis) => void;
+  trafficLevel: TrafficLevel;
+  onTrafficLevelChange: (level: TrafficLevel) => void;
 }
 
-const PropertyInputs = ({ site, onChange }: PropertyInputsProps) => {
+const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange }: PropertyInputsProps) => {
   const [expanded, setExpanded] = useState(true);
 
   const update = (partial: Partial<SiteAnalysis>) => {
@@ -89,18 +107,34 @@ const PropertyInputs = ({ site, onChange }: PropertyInputsProps) => {
             </div>
           </div>
 
+          {/* Traffic Level */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              Traffic Level <span className="text-[10px] text-muted-foreground/60">(nearest road)</span>
+            </Label>
+            <Select value={trafficLevel} onValueChange={(v) => onTrafficLevelChange(v as TrafficLevel)}>
+              <SelectTrigger className="amber-input h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(TRAFFIC_LEVEL_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground/60">Exact AADT data coming soon — select the road type nearest your property</p>
+          </div>
+
           {/* Utilization Slider */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground">Peak Parking Utilization</Label>
-              <span className="font-mono text-xs text-amber">{site.peakUtilization}%</span>
+              <span className="font-mono text-xs text-accent">{site.peakUtilization}%</span>
             </div>
             <Slider
               value={[site.peakUtilization]}
               onValueChange={([v]) => update({ peakUtilization: v })}
-              min={0}
-              max={100}
-              step={5}
+              min={0} max={100} step={5}
               className="py-2"
             />
           </div>
@@ -136,13 +170,17 @@ const PropertyInputs = ({ site, onChange }: PropertyInputsProps) => {
               <Label className="text-xs text-muted-foreground">
                 Supercharger Stalls <span className="text-[10px] text-muted-foreground/70">(min 4)</span>
               </Label>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ teslaStalls: Math.max(4, site.teslaStalls - 1) })}>−</Button>
-                <span className="w-10 text-center font-mono text-sm">{site.teslaStalls}</span>
-                <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ teslaStalls: Math.min(24, site.teslaStalls + 1) })}>+</Button>
+              <div className="flex items-center gap-3">
+                <Slider
+                  value={[site.teslaStalls]}
+                  onValueChange={([v]) => update({ teslaStalls: v })}
+                  min={4} max={12} step={1}
+                  className="flex-1 py-2"
+                />
+                <span className="w-8 text-center font-mono text-sm font-bold text-primary">{site.teslaStalls}</span>
               </div>
               <p className="text-[10px] text-muted-foreground/60">
-                Tesla V3.5 Supercharger — 250kW max, built-in load management
+                Based on {site.totalParkingSpaces} parking spots, we recommend {Math.min(12, Math.max(4, Math.round(site.totalParkingSpaces * 0.04)))}–{Math.min(12, Math.max(4, Math.round(site.totalParkingSpaces * 0.08)))} stalls
               </p>
             </div>
           ) : (
@@ -170,30 +208,21 @@ const PropertyInputs = ({ site, onChange }: PropertyInputsProps) => {
           <div className={`grid gap-4 ${isTesla ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Price/kWh ($)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                className="amber-input h-9 font-mono text-sm"
+              <Input type="number" step="0.01" className="amber-input h-9 font-mono text-sm"
                 value={site.pricePerKwh}
                 onChange={(e) => update({ pricePerKwh: parseFloat(e.target.value) || 0 })}
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Electricity $/kWh</Label>
-              <Input
-                type="number"
-                step="0.01"
-                className="amber-input h-9 font-mono text-sm"
+              <Input type="number" step="0.01" className="amber-input h-9 font-mono text-sm"
                 value={site.electricityCostPerKwh}
                 onChange={(e) => update({ electricityCostPerKwh: parseFloat(e.target.value) || 0 })}
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Demand $/kW</Label>
-              <Input
-                type="number"
-                step="1"
-                className="amber-input h-9 font-mono text-sm"
+              <Input type="number" step="1" className="amber-input h-9 font-mono text-sm"
                 value={site.demandChargePerKw}
                 onChange={(e) => update({ demandChargePerKw: parseFloat(e.target.value) || 0 })}
               />
@@ -201,10 +230,7 @@ const PropertyInputs = ({ site, onChange }: PropertyInputsProps) => {
             {isTesla && (
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Tesla Fee $/kWh</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  className="amber-input h-9 font-mono text-sm"
+                <Input type="number" step="0.01" className="amber-input h-9 font-mono text-sm"
                   value={site.teslaServiceFeePerKwh}
                   onChange={(e) => update({ teslaServiceFeePerKwh: parseFloat(e.target.value) || 0 })}
                 />
