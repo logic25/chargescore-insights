@@ -246,7 +246,7 @@ const Dashboard = () => {
               </TabsList>
             </div>
             <TabsContent value="satellite" className="mt-0">
-              <SiteAerial lat={site.lat} lng={site.lng} propertyType={site.propertyType} onPropertyTypeChange={(t) => setSite(prev => ({ ...prev, propertyType: t }))} onParkingEstimate={handleParkingEstimate} />
+              <SiteAerial lat={site.lat} lng={site.lng} />
             </TabsContent>
             <TabsContent value="competition" className="mt-0">
               <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
@@ -265,6 +265,7 @@ const Dashboard = () => {
                 site={site} onChange={setSite}
                 trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
                 availableForChargers={availableForChargers}
+                onParkingEstimate={handleParkingEstimate}
               />
               <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} nrelIncentives={nrelIncentives} />
             </div>
@@ -275,11 +276,11 @@ const Dashboard = () => {
               <FinancialProjection financials={financials} />
             </div>
 
-            {/* Row 4: Network Comparison + Parking Impact */}
-            <div className="grid items-start gap-3 lg:grid-cols-2">
-              <NetworkComparison site={site} incentives={incentives} />
-              <ParkingImpact analysis={parking} />
-            </div>
+            {/* Network Comparison (full width — wide table) */}
+            <NetworkComparison site={site} incentives={incentives} />
+
+            {/* Parking Impact */}
+            <ParkingImpact analysis={parking} />
           </div>
         </div>
       </main>

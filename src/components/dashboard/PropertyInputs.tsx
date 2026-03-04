@@ -1,12 +1,15 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { SiteAnalysis, PropertyType, ElectricalService } from '@/types/chargeScore';
 import { PROPERTY_TYPE_LABELS, ELECTRICAL_SERVICE_LABELS } from '@/types/chargeScore';
+import { estimateParkingSpots } from '@/lib/api/googleMaps';
+import ParkingLotMeasure from './ParkingLotMeasure';
 
 export type TrafficLevel = 'highway' | 'main' | 'side' | 'residential';
 
@@ -26,14 +29,29 @@ export const TRAFFIC_LEVEL_VPD: Record<TrafficLevel, number> = {
 
 interface PropertyInputsProps {
   site: SiteAnalysis;
-  onChange: (site: SiteAnalysis) => void;
+  onChange: (site: SiteAnalysis | ((prev: SiteAnalysis) => SiteAnalysis)) => void;
   trafficLevel: TrafficLevel;
   onTrafficLevelChange: (level: TrafficLevel) => void;
   availableForChargers?: number;
+  onParkingEstimate?: (data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => void;
 }
 
-const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, availableForChargers = 0 }: PropertyInputsProps) => {
+const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, availableForChargers = 0, onParkingEstimate }: PropertyInputsProps) => {
   const [expanded, setExpanded] = useState(false);
+  const [lotSqFt, setLotSqFt] = useState(50000);
+  const [drawnLotSqFt, setDrawnLotSqFt] = useState<number | null>(null);
+  const [showDrawTool, setShowDrawTool] = useState(false);
+
+  const effectiveLotSqFt = drawnLotSqFt ?? lotSqFt;
+  const parking = useMemo(() => estimateParkingSpots(effectiveLotSqFt), [effectiveLotSqFt]);
+
+  useEffect(() => {
+    onParkingEstimate?.({
+      lotSqFt: effectiveLotSqFt,
+      totalSpots: parking.total,
+      availableForChargers: parking.availableForChargers,
+    });
+  }, [effectiveLotSqFt, parking.total, parking.availableForChargers, onParkingEstimate]);
 
   const update = (partial: Partial<SiteAnalysis>) => {
     onChange({ ...site, ...partial });
@@ -47,12 +65,100 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between p-4"
       >
-        <h2 className="font-heading text-sm font-semibold text-foreground">Property Inputs</h2>
+        <h2 className="font-heading text-sm font-semibold text-foreground">Property & Charging Inputs</h2>
         {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
       </button>
 
+      {!expanded && (
+        <div className="border-t border-border px-4 py-3">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span>{PROPERTY_TYPE_LABELS[site.propertyType]}</span>
+            <span>•</span>
+            <span>{effectiveLotSqFt.toLocaleString()} sq ft</span>
+            <span>•</span>
+            <span>{parking.total} spots</span>
+            <span>•</span>
+            <span>{isTesla ? `${site.teslaStalls} Tesla stalls` : `${site.l2Chargers} L2 + ${site.dcfcChargers} DCFC`}</span>
+            <span>•</span>
+            <span>${site.pricePerKwh}/kWh</span>
+          </div>
+        </div>
+      )}
+
       {expanded && (
         <div className="space-y-4 border-t border-border p-4">
+          {/* Property Details */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Property Type</Label>
+              <Select value={site.propertyType} onValueChange={(v) => update({ propertyType: v as PropertyType })}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PROPERTY_TYPE_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Lot Size (sq ft) {drawnLotSqFt && <span className="text-primary text-[10px]">— measured</span>}
+              </Label>
+              <Input
+                type="number"
+                className="h-9 font-mono text-sm"
+                value={effectiveLotSqFt}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 0;
+                  setLotSqFt(val);
+                  setDrawnLotSqFt(null);
+                }}
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowDrawTool(!showDrawTool)}
+            className="text-xs text-primary hover:text-primary/80 underline transition-colors"
+          >
+            {showDrawTool ? 'Hide drawing tool' : '📐 Draw on map to measure lot'}
+          </button>
+
+          {showDrawTool && (
+            <ParkingLotMeasure lat={site.lat} lng={site.lng} onMeasured={(data) => {
+              setDrawnLotSqFt(data.lotSqFt);
+              setLotSqFt(data.lotSqFt);
+              onParkingEstimate?.(data);
+            }} />
+          )}
+
+          {/* Parking Estimates */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border bg-muted/50 p-3">
+              <p className="text-[10px] text-muted-foreground">Estimated Total Spots</p>
+              <p className="font-mono text-xl font-bold text-foreground">{parking.total}</p>
+              <p className="text-[9px] text-muted-foreground/60">1 spot per 340 sq ft</p>
+            </div>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <div className="flex items-center gap-1">
+                <p className="text-[10px] text-muted-foreground">Available for Chargers</p>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[280px] text-xs">
+                    Industry standard: 1 parking spot per 340 sq ft. We recommend no more than 33% for EV chargers.
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <p className="font-mono text-xl font-bold text-primary">{parking.availableForChargers}</p>
+              <p className="text-[9px] text-muted-foreground/60">33% of total spots</p>
+            </div>
+          </div>
+
           {/* Charging Model Toggle */}
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Charging Model</Label>
@@ -97,10 +203,9 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-[10px] text-muted-foreground/60">Exact AADT data coming soon — select the road type nearest your property</p>
           </div>
 
-          {/* Utilization Slider */}
+          {/* Utilization + Electrical + State */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground">Peak Parking Utilization</Label>
@@ -114,7 +219,6 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             />
           </div>
 
-          {/* Row 2 */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Electrical Service</Label>
