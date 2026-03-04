@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Zap, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { calculateChargeScoreV2, projectRevenue, type ChargeScoreResult, type Re
 import { findNearestAirport } from '@/data/airports';
 import { getEstimatedEvRegistrations } from '@/data/evRegistrations';
 import { logAnalysis } from '@/lib/analytics';
+import SiteAerial from '@/components/dashboard/SiteAerial';
 import MapView from '@/components/dashboard/MapView';
 import ChargeScoreGauge from '@/components/dashboard/ChargeScoreGauge';
 import PropertyInputs, { type TrafficLevel, TRAFFIC_LEVEL_VPD } from '@/components/dashboard/PropertyInputs';
@@ -50,6 +51,7 @@ const Dashboard = () => {
   const [stationsLoading, setStationsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'analysis' | 'compare'>('analysis');
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
+  const [availableForChargers, setAvailableForChargers] = useState(0);
 
   // Scoring data state
   const [plannedData, setPlannedData] = useState<PlannedStationData>({ plannedCount: 0, totalPlannedPorts: 0, nearestPlannedMiles: null });
@@ -58,6 +60,11 @@ const Dashboard = () => {
   const [popDensity, setPopDensity] = useState<number | null>(null);
   const [amenitiesCount, setAmenitiesCount] = useState(5);
   const [isDisadvantagedCommunity, setIsDisadvantagedCommunity] = useState(false);
+
+  const handleParkingEstimate = useCallback((data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => {
+    setSite(prev => ({ ...prev, totalParkingSpaces: data.totalSpots }));
+    setAvailableForChargers(data.availableForChargers);
+  }, []);
 
   // Fetch existing stations
   useEffect(() => {
@@ -208,14 +215,18 @@ const Dashboard = () => {
       </header>
 
       <main className="p-4">
+        {/* Site Aerial + Parking Estimator */}
+        <SiteAerial lat={site.lat} lng={site.lng} onParkingEstimate={handleParkingEstimate} />
+
         {/* Top Row: Map + Score + Inputs */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
           <div className="flex flex-col gap-4">
             <ChargeScoreGauge score={chargeScore} />
             <PropertyInputs
               site={site} onChange={setSite}
               trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
+              availableForChargers={availableForChargers}
             />
           </div>
         </div>
