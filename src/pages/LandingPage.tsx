@@ -12,7 +12,12 @@ const LandingPage = () => {
 
   const handleAddressSelect = (result: { formatted: string; lat: number; lng: number; stateCode: string }) => {
     setSelectedAddress(result);
-    navigate(`/dashboard?address=${encodeURIComponent(result.formatted)}&lat=${result.lat}&lng=${result.lng}&state=${result.stateCode}`);
+  };
+
+  const handleAnalyze = () => {
+    if (selectedAddress) {
+      navigate(`/dashboard?address=${encodeURIComponent(selectedAddress.formatted)}&lat=${selectedAddress.lat}&lng=${selectedAddress.lng}&state=${selectedAddress.stateCode}`);
+    }
   };
 
   return (
@@ -55,11 +60,7 @@ const LandingPage = () => {
               <AddressAutocomplete onSelect={handleAddressSelect} />
               <Button
                 className="h-14 px-8 text-base font-semibold"
-                onClick={() => {
-                  if (selectedAddress) {
-                    navigate(`/dashboard?address=${encodeURIComponent(selectedAddress.formatted)}&lat=${selectedAddress.lat}&lng=${selectedAddress.lng}&state=${selectedAddress.stateCode}`);
-                  }
-                }}
+                onClick={handleAnalyze}
                 disabled={!selectedAddress}
               >
                 Analyze Site
