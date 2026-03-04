@@ -1,8 +1,7 @@
-const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || '';
-
-export function getSatelliteImageUrl(lat: number, lng: number, zoom: number = 19): string {
-  if (!GOOGLE_MAPS_KEY) return '';
-  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=640x480&maptype=satellite&markers=color:red|${lat},${lng}&key=${GOOGLE_MAPS_KEY}`;
+export function getSatelliteImageUrl(lat: number, lng: number, zoom: number = 19, apiKey?: string): string {
+  const key = apiKey || '';
+  if (!key) return '';
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=${zoom}&size=640x480&maptype=satellite&markers=color:red|${lat},${lng}&key=${key}`;
 }
 
 export function estimateParkingSpots(lotSqFt: number): { total: number; availableForChargers: number } {

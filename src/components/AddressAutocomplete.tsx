@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Search, MapPin, Loader2 } from 'lucide-react';
+import { useGoogleMapsKey } from '@/hooks/useGoogleMapsKey';
 
 interface AddressResult {
   formatted: string;
@@ -23,9 +24,7 @@ declare global {
   }
 }
 
-const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || '';
-
-function loadGoogleMaps(): Promise<void> {
+function loadGoogleMaps(apiKey: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (window.google?.maps?.places) {
       resolve();
@@ -37,13 +36,13 @@ function loadGoogleMaps(): Promise<void> {
     }
     window.__googleMapsCallbacks = [() => resolve()];
 
-    if (!GOOGLE_MAPS_KEY) {
+    if (!apiKey) {
       reject(new Error('Google Maps API key not configured'));
       return;
     }
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
     script.async = true;
     script.defer = true;
     script.onload = () => {
@@ -74,6 +73,7 @@ interface Prediction {
 }
 
 const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property address...', className }: Props) => {
+  const { key: googleMapsKey, loading: keyLoading } = useGoogleMapsKey();
   const [value, setValue] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(false);
@@ -111,7 +111,8 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
   };
 
   useEffect(() => {
-    loadGoogleMaps()
+    if (keyLoading) return;
+    loadGoogleMaps(googleMapsKey)
       .then(() => {
         autocompleteService.current = new window.google.maps.places.AutocompleteService();
         // Create a hidden div for PlacesService
@@ -120,7 +121,7 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
         setMapsReady(true);
       })
       .catch(() => setMapsError(true));
-  }, []);
+  }, [keyLoading, googleMapsKey]);
 
   // Close dropdown on outside click
   useEffect(() => {

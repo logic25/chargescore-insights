@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useGoogleMapsKey } from '@/hooks/useGoogleMapsKey';
 
 interface ParkingMeasureProps {
   lat: number;
@@ -14,15 +15,13 @@ declare global {
   }
 }
 
-const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || '';
-
-function loadGoogleMapsDrawing(): Promise<void> {
+function loadGoogleMapsDrawing(apiKey: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (window.google?.maps?.drawing) {
       resolve();
       return;
     }
-    if (!GOOGLE_MAPS_KEY) {
+    if (!apiKey) {
       reject(new Error('No API key'));
       return;
     }
@@ -40,7 +39,7 @@ function loadGoogleMapsDrawing(): Promise<void> {
       return;
     }
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places,drawing,geometry`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,drawing,geometry`;
     script.async = true;
     script.defer = true;
     script.onload = () => {
@@ -58,20 +57,22 @@ function loadGoogleMapsDrawing(): Promise<void> {
 }
 
 const ParkingLotMeasure = ({ lat, lng, onMeasured }: ParkingMeasureProps) => {
+  const { key: googleMapsKey, loading: keyLoading } = useGoogleMapsKey();
   const mapRef = useRef<HTMLDivElement>(null);
   const [lotSqFt, setLotSqFt] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!GOOGLE_MAPS_KEY) {
+    if (keyLoading) return;
+    if (!googleMapsKey) {
       setError(true);
       return;
     }
-    loadGoogleMapsDrawing()
+    loadGoogleMapsDrawing(googleMapsKey)
       .then(() => setReady(true))
       .catch(() => setError(true));
-  }, []);
+  }, [keyLoading, googleMapsKey]);
 
   useEffect(() => {
     if (!ready || !mapRef.current || !window.google?.maps?.drawing) return;
@@ -129,17 +130,17 @@ const ParkingLotMeasure = ({ lat, lng, onMeasured }: ParkingMeasureProps) => {
     };
   }, [ready, lat, lng, onMeasured]);
 
-  if (error || !GOOGLE_MAPS_KEY) {
+  if (error && !keyLoading) {
     return (
       <div className="rounded-lg border border-border bg-muted/50 p-4 text-center space-y-1">
         <p className="text-sm text-muted-foreground">
-          {!GOOGLE_MAPS_KEY
+          {!googleMapsKey
             ? 'Google Maps API key not configured'
             : 'Drawing tool failed to load'}
         </p>
         <p className="text-xs text-muted-foreground/60">
-          {!GOOGLE_MAPS_KEY
-            ? 'Add VITE_GOOGLE_MAPS_KEY to environment secrets. Required APIs: Maps JavaScript, Static Maps, Places.'
+          {!googleMapsKey
+            ? 'Configure GOOGLE_MAPS_KEY in backend secrets. Required APIs: Maps JavaScript, Static Maps, Places.'
             : 'Check browser console for errors. Ensure Maps JavaScript API with Drawing and Geometry libraries is enabled.'}
         </p>
       </div>

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { MapPin } from 'lucide-react';
 import { getSatelliteImageUrl } from '@/lib/api/googleMaps';
+import { useGoogleMapsKey } from '@/hooks/useGoogleMapsKey';
 
 interface SiteAerialProps {
   lat: number;
@@ -8,7 +9,16 @@ interface SiteAerialProps {
 }
 
 const SiteAerial = ({ lat, lng }: SiteAerialProps) => {
-  const satelliteUrl = useMemo(() => getSatelliteImageUrl(lat, lng), [lat, lng]);
+  const { key, loading } = useGoogleMapsKey();
+  const satelliteUrl = useMemo(() => getSatelliteImageUrl(lat, lng, 19, key), [lat, lng, key]);
+
+  if (loading) {
+    return (
+      <div className="flex h-[300px] w-full items-center justify-center bg-muted">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden">
@@ -22,7 +32,7 @@ const SiteAerial = ({ lat, lng }: SiteAerialProps) => {
           />
         ) : (
           <div className="flex h-[300px] w-full items-center justify-center bg-muted">
-            <p className="text-sm text-muted-foreground">Set VITE_GOOGLE_MAPS_KEY to see satellite view</p>
+            <p className="text-sm text-muted-foreground">Satellite view unavailable</p>
           </div>
         )}
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-1 backdrop-blur-sm">
