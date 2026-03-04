@@ -112,25 +112,38 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: P
           <div className="flex items-center justify-between">
             <span className="text-sm text-success flex items-center">
               Less: Incentives
-              <InfoTip text="Federal, state, and utility programs that reduce your project cost. Programs stack — in states like NY and CA, incentives can cover 100% of costs." />
+              <InfoTip text="Best-case realistic incentive stack. Only non-overlapping programs are summed. Alternative programs shown in gray — you'd pick one OR the other, not both." />
             </span>
             <span className="font-mono text-sm font-semibold text-success">({fmt(financials.estimatedIncentives)})</span>
           </div>
           <div className="ml-4 mt-2 space-y-2">
-            {incentivesByLayer.map(({ layer, label, items }) => (
-              <div key={layer}>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-0.5">{label}</p>
-                {items.map((inc) => (
-                  <div key={inc.id} className="flex items-center justify-between py-0.5">
-                    <span className="text-[11px] text-muted-foreground/70 flex items-center">
-                      ├─ {inc.name}
-                      {inc.eligible === null && <span className="ml-1 text-[9px] text-amber">(verify)</span>}
-                    </span>
-                    <span className="font-mono text-[11px] text-muted-foreground/70">{inc.amount}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
+            {incentivesByLayer.map(({ layer, label, items }) => {
+              const selected = items.filter(i => !i.isAlternative);
+              const alternatives = items.filter(i => i.isAlternative);
+              return (
+                <div key={layer}>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-0.5">{label}</p>
+                  {selected.map((inc) => (
+                    <div key={inc.id} className="flex items-center justify-between py-0.5">
+                      <span className="text-[11px] text-muted-foreground/70 flex items-center">
+                        ├─ {inc.name}
+                        {inc.eligible === null && <span className="ml-1 text-[9px] text-amber">(verify)</span>}
+                      </span>
+                      <span className="font-mono text-[11px] text-muted-foreground/70">{inc.amount}</span>
+                    </div>
+                  ))}
+                  {alternatives.map((inc) => (
+                    <div key={inc.id} className="flex items-center justify-between py-0.5 opacity-40">
+                      <span className="text-[11px] text-muted-foreground/70 flex items-center">
+                        └─ <span className="italic ml-0.5">or {inc.name}</span>
+                        {inc.eligible === null && <span className="ml-1 text-[9px] text-amber">(verify)</span>}
+                      </span>
+                      <span className="font-mono text-[11px] text-muted-foreground/70 line-through">{inc.amount}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </div>
 

@@ -146,15 +146,17 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
 
   const totalProjectCost = totalHardwareCost + totalInstallationCost + (needsUpgrade ? electricalUpgradeCost[0] : 0);
 
+  // Only sum non-alternative (selected) incentives
   const totalIncentiveAmount = incentives
-    .filter(i => i.eligible)
-    .reduce((sum, i) => {
-      const match = i.amount.match(/[\d,]+/);
-      if (match) return sum + parseInt(match[0].replace(/,/g, ''), 10);
-      return sum;
-    }, 0);
+    .filter(i => i.eligible && !i.isAlternative)
+    .reduce((sum, i) => sum + (i.computedAmount ?? 0), 0);
 
-  const estimatedIncentives = Math.min(totalIncentiveAmount, totalProjectCost);
+  // Also include federal 30C (eligible=null but not alternative)
+  const federal30c = incentives.find(i => i.id === 'federal-30c');
+  const federalAmount = federal30c ? federal30c.computedAmount : 0;
+  const selectedTotal = totalIncentiveAmount + federalAmount;
+
+  const estimatedIncentives = Math.min(selectedTotal, totalProjectCost);
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
 
@@ -233,14 +235,14 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
   const totalProjectCost = totalHardwareCost + totalInstallationCost + (needsUpgrade ? electricalUpgradeCost[0] : 0);
 
   const totalIncentiveAmount = incentives
-    .filter(i => i.eligible)
-    .reduce((sum, i) => {
-      const match = i.amount.match(/[\d,]+/);
-      if (match) return sum + parseInt(match[0].replace(/,/g, ''), 10);
-      return sum;
-    }, 0);
+    .filter(i => i.eligible && !i.isAlternative)
+    .reduce((sum, i) => sum + (i.computedAmount ?? 0), 0);
 
-  const estimatedIncentives = Math.min(totalIncentiveAmount, totalProjectCost);
+  const federal30c = incentives.find(i => i.id === 'federal-30c');
+  const federalAmount = federal30c ? federal30c.computedAmount : 0;
+  const selectedTotal = totalIncentiveAmount + federalAmount;
+
+  const estimatedIncentives = Math.min(selectedTotal, totalProjectCost);
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
   const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
@@ -342,57 +344,69 @@ interface StateIncentive {
   layer: 'federal' | 'state' | 'utility';
 }
 
-const STATE_INCENTIVES: Record<string, StateIncentive[]> = {
+interface StateIncentiveGroup {
+  groupId: string;             // programs in same group are mutually exclusive
+  name: string;
+  amountPerPort?: number;
+  amountFlat?: number;
+  amountPctOfProject?: number;
+  amountPctOfInstall?: number;
+  displayAmount: string;
+  details: string;
+  layer: 'federal' | 'state' | 'utility';
+}
+
+const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
   NY: [
-    { name: 'NYSERDA NYSBIP', amountPerPort: 65000, displayAmount: '$65,000/port', details: 'Up to $65,000 per DCFC for commercial locations. Apply at nyserda.ny.gov', layer: 'state' },
-    { name: 'EVolve NY', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC. Competitive — apply at evolveny.nypa.gov', layer: 'state' },
-    { name: 'Charge Ready NY 2.0', amountPerPort: 4000, displayAmount: '$4,000/port', details: '$3,000-$4,000 per port. $28M program budget.', layer: 'state' },
-    { name: 'Joint Utilities Make-Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'NY utilities cover up to 100% of electrical infrastructure. $1.24B program. Contact your utility.', layer: 'utility' },
-    { name: 'Con Edison PowerReady', amountPctOfInstall: 0.85, displayAmount: 'Up to 85% of installation', details: 'Covers up to 85% of DCFC infrastructure in ConEd territory. Max $1.2M.', layer: 'utility' },
+    { groupId: 'ny-state-dcfc', name: 'NYSERDA NYSBIP', amountPerPort: 65000, displayAmount: '$65,000/port', details: 'Up to $65,000 per DCFC for commercial locations. Apply at nyserda.ny.gov', layer: 'state' },
+    { groupId: 'ny-state-dcfc', name: 'EVolve NY', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC. Competitive — apply at evolveny.nypa.gov', layer: 'state' },
+    { groupId: 'ny-state-small', name: 'Charge Ready NY 2.0', amountPerPort: 4000, displayAmount: '$4,000/port', details: '$3,000-$4,000 per port. $28M program budget. Stackable with NYSBIP.', layer: 'state' },
+    { groupId: 'ny-utility', name: 'Joint Utilities Make-Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'NY utilities cover up to 100% of electrical infrastructure. $1.24B program. Contact your utility.', layer: 'utility' },
+    { groupId: 'ny-utility', name: 'Con Edison PowerReady', amountPctOfInstall: 0.85, displayAmount: 'Up to 85% of installation', details: 'Covers up to 85% of DCFC infrastructure in ConEd territory. Max $1.2M.', layer: 'utility' },
   ],
   CA: [
-    { name: 'Fast Charge California', amountPerPort: 100000, displayAmount: '$100,000/port', details: 'Up to $100,000 per DCFC port. Successor to CALeVIP.', layer: 'state' },
-    { name: 'LCFS Credits', amountPerPort: 15000, displayAmount: '$15,000/yr/port', details: 'Low Carbon Fuel Standard credits: $10-20K/yr per DCFC based on utilization.', layer: 'state' },
-    { name: 'SCE/PG&E Charge Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'Major utilities cover 100% of make-ready in disadvantaged communities.', layer: 'utility' },
+    { groupId: 'ca-state', name: 'Fast Charge California', amountPerPort: 100000, displayAmount: '$100,000/port', details: 'Up to $100,000 per DCFC port. Successor to CALeVIP.', layer: 'state' },
+    { groupId: 'ca-lcfs', name: 'LCFS Credits', amountPerPort: 15000, displayAmount: '$15,000/yr/port', details: 'Low Carbon Fuel Standard credits: $10-20K/yr per DCFC based on utilization. Stackable.', layer: 'state' },
+    { groupId: 'ca-utility', name: 'SCE/PG&E Charge Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'Major utilities cover 100% of make-ready in disadvantaged communities.', layer: 'utility' },
   ],
   MA: [
-    { name: 'MassEVIP', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC through MassDEP. $14M program pool.', layer: 'state' },
-    { name: 'Eversource Make-Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'Eversource covers up to 100% of make-ready for public DCFC.', layer: 'utility' },
-    { name: 'National Grid EV Program', amountPerPort: 80000, displayAmount: '$80,000/port', details: 'Up to $80,000 per DCFC port in National Grid MA territory.', layer: 'utility' },
+    { groupId: 'ma-state', name: 'MassEVIP', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC through MassDEP. $14M program pool.', layer: 'state' },
+    { groupId: 'ma-utility', name: 'Eversource Make-Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'Eversource covers up to 100% of make-ready for public DCFC.', layer: 'utility' },
+    { groupId: 'ma-utility', name: 'National Grid EV Program', amountPerPort: 80000, displayAmount: '$80,000/port', details: 'Up to $80,000 per DCFC port in National Grid MA territory.', layer: 'utility' },
   ],
   CO: [
-    { name: 'Charge Ahead Colorado', amountPctOfProject: 0.8, displayAmount: 'Up to 80% of project', details: 'Up to 80% of total DCFC project cost with NO CAP for public stations.', layer: 'state' },
-    { name: 'Xcel Energy EV Program', amountPctOfInstall: 0.5, displayAmount: 'Up to 50% of installation', details: 'Make-ready support and reduced commercial EV rates.', layer: 'utility' },
+    { groupId: 'co-state', name: 'Charge Ahead Colorado', amountPctOfProject: 0.8, displayAmount: 'Up to 80% of project', details: 'Up to 80% of total DCFC project cost with NO CAP for public stations.', layer: 'state' },
+    { groupId: 'co-utility', name: 'Xcel Energy EV Program', amountPctOfInstall: 0.5, displayAmount: 'Up to 50% of installation', details: 'Make-ready support and reduced commercial EV rates.', layer: 'utility' },
   ],
   NJ: [
-    { name: 'It Pay$ to Plug In', amountPerPort: 100000, displayAmount: '$100,000/port', details: 'Up to $100,000 per DCFC PORT near transit and multifamily housing.', layer: 'state' },
-    { name: 'PSE&G Make-Ready', amountPctOfInstall: 0.7, displayAmount: 'Up to 70% of installation', details: 'PSE&G covers make-ready infrastructure costs.', layer: 'utility' },
+    { groupId: 'nj-state', name: 'It Pay$ to Plug In', amountPerPort: 100000, displayAmount: '$100,000/port', details: 'Up to $100,000 per DCFC PORT near transit and multifamily housing.', layer: 'state' },
+    { groupId: 'nj-utility', name: 'PSE&G Make-Ready', amountPctOfInstall: 0.7, displayAmount: 'Up to 70% of installation', details: 'PSE&G covers make-ready infrastructure costs.', layer: 'utility' },
   ],
   CT: [
-    { name: 'CT EV Charging Program', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC through state program.', layer: 'state' },
-    { name: 'Eversource CT Make-Ready', amountPctOfInstall: 0.5, displayAmount: 'Up to 50% of installation', details: 'Make-ready infrastructure support in Eversource CT territory.', layer: 'utility' },
+    { groupId: 'ct-state', name: 'CT EV Charging Program', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC through state program.', layer: 'state' },
+    { groupId: 'ct-utility', name: 'Eversource CT Make-Ready', amountPctOfInstall: 0.5, displayAmount: 'Up to 50% of installation', details: 'Make-ready infrastructure support in Eversource CT territory.', layer: 'utility' },
   ],
   WA: [
-    { name: 'WA State EV Grants', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50K per DCFC. $85M+ program with multiple funding rounds.', layer: 'state' },
+    { groupId: 'wa-state', name: 'WA State EV Grants', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50K per DCFC. $85M+ program with multiple funding rounds.', layer: 'state' },
   ],
   OR: [
-    { name: 'Oregon Clean Fuels Credits', amountPerPort: 12000, displayAmount: '$12,000/yr/port', details: 'CFP credits generate ongoing revenue per DCFC based on utilization.', layer: 'state' },
+    { groupId: 'or-state', name: 'Oregon Clean Fuels Credits', amountPerPort: 12000, displayAmount: '$12,000/yr/port', details: 'CFP credits generate ongoing revenue per DCFC based on utilization.', layer: 'state' },
   ],
   MI: [
-    { name: 'DTE Energy DCFC Rebate', amountPerPort: 55000, displayAmount: '$55,000/port', details: 'DTE offers up to $55,000 per DCFC station.', layer: 'utility' },
+    { groupId: 'mi-utility', name: 'DTE Energy DCFC Rebate', amountPerPort: 55000, displayAmount: '$55,000/port', details: 'DTE offers up to $55,000 per DCFC station.', layer: 'utility' },
   ],
   IL: [
-    { name: 'IL Charge Ahead', amountPerPort: 45000, displayAmount: '$45,000/port', details: 'Up to $45,000 per DCFC through IL EPA.', layer: 'state' },
-    { name: 'ComEd EV Rebate', amountPerPort: 10000, displayAmount: '$10,000/port', details: 'ComEd offers up to $10,000 for commercial EV charging.', layer: 'utility' },
+    { groupId: 'il-state', name: 'IL Charge Ahead', amountPerPort: 45000, displayAmount: '$45,000/port', details: 'Up to $45,000 per DCFC through IL EPA.', layer: 'state' },
+    { groupId: 'il-utility', name: 'ComEd EV Rebate', amountPerPort: 10000, displayAmount: '$10,000/port', details: 'ComEd offers up to $10,000 for commercial EV charging.', layer: 'utility' },
   ],
   TX: [
-    { name: 'TCEQ DCFC Program', amountPerPort: 60000, displayAmount: '$60,000/port', details: 'VW settlement funds — up to $60K per DCFC. Check availability.', layer: 'state' },
+    { groupId: 'tx-state', name: 'TCEQ DCFC Program', amountPerPort: 60000, displayAmount: '$60,000/port', details: 'VW settlement funds — up to $60K per DCFC. Check availability.', layer: 'state' },
   ],
   FL: [
-    { name: 'FL NEVI Allocation', amountPctOfProject: 0.8, displayAmount: 'Up to 80% of project', details: 'Florida received $198M in federal NEVI. Covers up to 80% for highway corridor DCFC.', layer: 'state' },
+    { groupId: 'fl-state', name: 'FL NEVI Allocation', amountPctOfProject: 0.8, displayAmount: 'Up to 80% of project', details: 'Florida received $198M in federal NEVI. Covers up to 80% for highway corridor DCFC.', layer: 'state' },
   ],
   PA: [
-    { name: 'Driving PA Forward', amountPerPort: 40000, displayAmount: '$40,000/port', details: 'Up to $40,000 per DCFC through VW settlement program.', layer: 'state' },
+    { groupId: 'pa-state', name: 'Driving PA Forward', amountPerPort: 40000, displayAmount: '$40,000/port', details: 'Up to $40,000 per DCFC through VW settlement program.', layer: 'state' },
   ],
 };
 
@@ -407,52 +421,77 @@ export function getIncentives(site: SiteAnalysis): Incentive[] {
     ? site.teslaStalls * (TESLA_COST_PER_STALL + TESLA_INSTALL_PER_STALL)
     : site.l2Chargers * (L2_HARDWARE_COST + L2_INSTALL_COST) + site.dcfcChargers * (DCFC_HARDWARE_COST + DCFC_INSTALL_COST);
 
+  const installCost = site.chargingModel === 'tesla'
+    ? site.teslaStalls * TESLA_INSTALL_PER_STALL
+    : site.l2Chargers * L2_INSTALL_COST + site.dcfcChargers * DCFC_INSTALL_COST;
+
   const maxPerPort = 100000;
+
+  // --- Federal programs (mutually exclusive: 30C is more accessible, NEVI is alternative) ---
   const federal30cAmount = Math.min(totalProjectCost * 0.3, totalPorts * maxPerPort);
+  const neviAmount = totalProjectCost * 0.8;
 
   incentives.push({
     id: 'federal-30c',
     name: 'Federal 30C Tax Credit',
     description: '30% of hardware + installation costs',
     amount: `$${Math.round(federal30cAmount).toLocaleString()}`,
+    computedAmount: federal30cAmount,
     eligible: null,
     details: `30% of equipment + installation, up to $100,000 per port. Must be in eligible census tract. Expires June 2026.`,
     category: 'federal',
     expiresAt: 'Jun 2026',
+    isAlternative: false,
   });
 
   incentives.push({
     id: 'nevi',
     name: 'NEVI Formula Program',
-    description: 'Up to 80% of project costs for highway corridor locations',
-    amount: `$${Math.round(totalProjectCost * 0.8).toLocaleString()}`,
+    description: 'Up to 80% — highway corridor only',
+    amount: `$${Math.round(neviAmount).toLocaleString()}`,
+    computedAmount: neviAmount,
     eligible: null,
-    details: `National Electric Vehicle Infrastructure program covers up to 80% of costs for qualifying Alternative Fuel Corridor locations. Requires minimum 4 DCFC ports at 150kW+. Must be on designated Alternative Fuel Corridor. Expanding to all public roads in 2026.${site.chargingModel === 'tesla' ? ' Tesla Superchargers meet the 150kW+ requirement.' : ''}`,
+    details: `National Electric Vehicle Infrastructure program covers up to 80% of costs for qualifying Alternative Fuel Corridor locations. Requires minimum 4 DCFC ports at 150kW+.${site.chargingModel === 'tesla' ? ' Tesla Superchargers meet the 150kW+ requirement.' : ''}`,
     category: 'federal',
+    isAlternative: true, // shown as "OR" alternative — not summed
   });
 
+  // --- State & Utility programs (pick best per mutually-exclusive group) ---
   const statePrograms = STATE_INCENTIVES[site.state] || [];
-  const installCost = site.chargingModel === 'tesla'
-    ? site.teslaStalls * TESLA_INSTALL_PER_STALL
-    : site.l2Chargers * L2_INSTALL_COST + site.dcfcChargers * DCFC_INSTALL_COST;
 
-  statePrograms.forEach((prog, i) => {
+  const programsWithAmounts = statePrograms.map((prog, i) => {
     let computedAmount = 0;
     if (prog.amountPerPort) computedAmount = prog.amountPerPort * totalPorts;
     else if (prog.amountFlat) computedAmount = prog.amountFlat;
     else if (prog.amountPctOfProject) computedAmount = Math.round(totalProjectCost * prog.amountPctOfProject);
     else if (prog.amountPctOfInstall) computedAmount = Math.round(installCost * prog.amountPctOfInstall);
-
-    incentives.push({
-      id: `${prog.layer}-${i}`,
-      name: prog.name,
-      description: prog.details.slice(0, 80) + '...',
-      amount: `$${computedAmount.toLocaleString()}`,
-      eligible: true,
-      details: prog.details,
-      category: prog.layer,
-    });
+    return { ...prog, computedAmount, index: i };
   });
+
+  // Group by groupId — pick the highest-value program per group
+  const groups = new Map<string, typeof programsWithAmounts>();
+  for (const p of programsWithAmounts) {
+    const arr = groups.get(p.groupId) || [];
+    arr.push(p);
+    groups.set(p.groupId, arr);
+  }
+
+  for (const [, members] of groups) {
+    members.sort((a, b) => b.computedAmount - a.computedAmount);
+    members.forEach((prog, idx) => {
+      incentives.push({
+        id: `${prog.layer}-${prog.index}`,
+        name: prog.name,
+        description: prog.details.slice(0, 80) + '...',
+        amount: `$${prog.computedAmount.toLocaleString()}`,
+        computedAmount: prog.computedAmount,
+        eligible: true,
+        details: prog.details,
+        category: prog.layer,
+        isAlternative: idx > 0, // only the best in each group counts toward total
+      });
+    });
+  }
 
   return incentives;
 }
