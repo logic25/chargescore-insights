@@ -238,8 +238,11 @@ const Dashboard = () => {
         {/* VISIBLE: Site Aerial (teaser) */}
         <SiteAerial lat={site.lat} lng={site.lng} propertyType={site.propertyType} onPropertyTypeChange={(t) => setSite(prev => ({ ...prev, propertyType: t }))} onParkingEstimate={handleParkingEstimate} />
 
-        {/* VISIBLE: ChargeScore Gauge (teaser) */}
+        {/* VISIBLE: ChargeScore Gauge */}
         <ChargeScoreGauge score={chargeScore} />
+
+        {/* VISIBLE: Competition Map */}
+        <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
 
         {/* GATED: Everything below is blurred until email entry */}
         <div className={blurClass}>
@@ -266,8 +269,7 @@ const Dashboard = () => {
             {/* Network Comparison */}
             <NetworkComparison site={site} incentives={incentives} />
 
-            {/* Competition Map */}
-            <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
+
 
             {/* Parking Impact */}
             <ParkingImpact analysis={parking} />
