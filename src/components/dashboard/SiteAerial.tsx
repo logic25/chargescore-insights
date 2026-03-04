@@ -48,12 +48,18 @@ const SiteAerial = ({ lat, lng, onParkingEstimate }: SiteAerialProps) => {
     <div className="glass-card overflow-hidden">
       {/* Satellite Image */}
       <div className="relative">
-        <img
-          src={satelliteUrl}
-          alt={`Satellite view at ${lat.toFixed(4)}, ${lng.toFixed(4)}`}
-          className="h-[240px] w-full object-cover"
-          loading="lazy"
-        />
+        {satelliteUrl ? (
+          <img
+            src={satelliteUrl}
+            alt={`Satellite view at ${lat.toFixed(4)}, ${lng.toFixed(4)}`}
+            className="h-[240px] w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-[240px] w-full items-center justify-center bg-muted">
+            <p className="text-sm text-muted-foreground">Set VITE_GOOGLE_MAPS_KEY in environment variables to see satellite view</p>
+          </div>
+        )}
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-1 backdrop-blur-sm">
           <MapPin className="h-3 w-3 text-primary" />
           <span className="text-[10px] font-medium text-white">
