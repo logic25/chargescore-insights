@@ -128,10 +128,12 @@ export interface Incentive {
   name: string;
   description: string;
   amount: string;
+  computedAmount: number;
   eligible: boolean | null; // null = unknown
   details: string;
   category: 'federal' | 'state' | 'utility' | 'other';
   expiresAt?: string;
+  isAlternative?: boolean; // true = not counted in total (mutually exclusive with a selected program)
 }
 
 export interface ChargeScoreBreakdown {
