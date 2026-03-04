@@ -18,7 +18,7 @@ interface SiteAerialProps {
 }
 
 const SiteAerial = ({ lat, lng, propertyType, onPropertyTypeChange, onParkingEstimate }: SiteAerialProps) => {
-  const [lotSqFt, setLotSqFt] = useState(12000);
+  const [lotSqFt, setLotSqFt] = useState(50000);
   const [drawnLotSqFt, setDrawnLotSqFt] = useState<number | null>(null);
   const [showDrawTool, setShowDrawTool] = useState(false);
 
@@ -41,7 +41,7 @@ const SiteAerial = ({ lat, lng, propertyType, onPropertyTypeChange, onParkingEst
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+    <div className="overflow-hidden">
       {/* Satellite Image */}
       <div className="relative">
         {satelliteUrl ? (

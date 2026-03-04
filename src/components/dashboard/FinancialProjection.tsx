@@ -189,69 +189,31 @@ const FinancialProjection = ({ financials, incentives, site, nrelIncentives = []
         </div>
       </div>
 
-      {/* Summary + Chart */}
-      <div className="grid gap-4 border-t border-border p-4 lg:grid-cols-2">
-        {/* Summary Box */}
-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
-          <h3 className="mb-3 font-heading text-sm font-semibold text-primary">Investment Summary</h3>
-          <div className="space-y-2">
-            <SummaryRow label="Annual Gross Revenue" value={fmt(financials.annualRevenue)} className="text-success" bold />
-            <SummaryRow label="Annual Operating Costs" value={`-${fmt(financials.totalAnnualOperatingCost)}`} className="text-destructive" />
-            {isTesla && (
-              <SummaryRow label="  └ Tesla Service Fee" value={`-${fmt(financials.teslaServiceFeeAnnual)}`} className="text-muted-foreground" />
-            )}
-             <div className="my-2 border-t border-border" />
-            <SummaryRow label="Annual Net Profit" value={fmt(financials.annualNetRevenue)} className={financials.annualNetRevenue >= 0 ? 'text-success' : 'text-destructive'} bold />
-            <div className="my-2 border-t border-border" />
-            <SummaryRow label="Total Project Cost" value={fmt(financials.totalProjectCost)} />
-            <SummaryRow label="Estimated Incentives" value={`-${fmt(financials.estimatedIncentives)}`} className="text-success" />
-            <SummaryRow label="Net Investment" value={fmt(financials.netInvestment)} bold />
-            <SummaryRow
-              label="Payback Period"
-              value={isFinite(financials.paybackYears) ? `${financials.paybackYears} year${financials.paybackYears !== 1 ? 's' : ''}` : 'N/A'}
-              bold
-            />
-            <SummaryRow
-              label="15-Year NPV (10%)"
-              value={fmt(financials.npv15Year)}
-              className={financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}
-              bold
-            />
-            <SummaryRow
-              label="5-Year ROI"
-              value={isFinite(financials.fiveYearRoi) ? `${Math.round(financials.fiveYearRoi)}%` : '∞ (no cost)'}
-              className={financials.fiveYearRoi > 0 ? 'text-primary' : 'text-destructive'}
-              bold
-            />
-          </div>
-        </div>
-
-        {/* Cash Flow Chart */}
-        <div className="min-w-0">
-          <h3 className="mb-3 font-heading text-sm font-semibold text-foreground">15-Year Cumulative Cash Flow</h3>
-          <div className="overflow-x-auto">
-            <div className="min-w-[500px]">
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
-                  <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 10 }} interval={0} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(v) => {
-                    if (Math.abs(v) >= 1000000) return `$${(v / 1000000).toFixed(1)}M`;
-                    return `$${(v / 1000).toFixed(0)}k`;
-                  }} />
-                  <Tooltip
-                    contentStyle={{ background: '#fff', border: '1px solid hsl(214, 20%, 88%)', borderRadius: 8, fontSize: 12 }}
-                    labelStyle={{ color: '#1e293b' }}
-                    formatter={(value: number) => [fmt(value), 'Cash Flow']}
-                  />
-                  <Bar dataKey="value" radius={[3, 3, 0, 0]}>
-                    {chartData.map((entry, i) => (
-                      <Cell key={i} fill={entry.value >= 0 ? 'hsl(152, 60%, 38%)' : 'hsl(4, 72%, 50%)'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+      {/* Cash Flow Chart */}
+      <div className="border-t border-border p-4">
+        <h3 className="mb-3 font-heading text-sm font-semibold text-foreground">15-Year Cumulative Cash Flow</h3>
+        <div className="overflow-x-auto">
+          <div className="min-w-[500px]">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(214, 20%, 88%)" />
+                <XAxis dataKey="year" tick={{ fill: '#64748b', fontSize: 10 }} interval={0} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickFormatter={(v) => {
+                  if (Math.abs(v) >= 1000000) return `$${(v / 1000000).toFixed(1)}M`;
+                  return `$${(v / 1000).toFixed(0)}k`;
+                }} />
+                <Tooltip
+                  contentStyle={{ background: '#fff', border: '1px solid hsl(214, 20%, 88%)', borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: '#1e293b' }}
+                  formatter={(value: number) => [fmt(value), 'Cash Flow']}
+                />
+                <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                  {chartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.value >= 0 ? 'hsl(152, 60%, 38%)' : 'hsl(4, 72%, 50%)'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
@@ -266,11 +228,6 @@ const Row = ({ label, value, highlight }: { label: string; value: string; highli
   </div>
 );
 
-const SummaryRow = ({ label, value, bold, className }: { label: string; value: string; bold?: boolean; className?: string }) => (
-  <div className="flex items-center justify-between">
-    <span className={`text-sm ${bold ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{label}</span>
-    <span className={`font-mono text-sm ${bold ? 'font-bold' : ''} ${className || 'text-foreground'}`}>{value}</span>
-  </div>
-);
+
 
 export default FinancialProjection;

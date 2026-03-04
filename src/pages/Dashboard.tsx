@@ -15,11 +15,12 @@ import { getEstimatedEvRegistrations } from '@/data/evRegistrations';
 import { logAnalysis } from '@/lib/analytics';
 import SiteAerial from '@/components/dashboard/SiteAerial';
 import MapView from '@/components/dashboard/MapView';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ChargeScoreGauge from '@/components/dashboard/ChargeScoreGauge';
 import PropertyInputs, { type TrafficLevel, TRAFFIC_LEVEL_VPD } from '@/components/dashboard/PropertyInputs';
 import InvestmentSummary from '@/components/dashboard/InvestmentSummary';
 import RevenueCosts from '@/components/dashboard/RevenueCosts';
-import CashFlowChart from '@/components/dashboard/CashFlowChart';
+
 import FinancialProjection from '@/components/dashboard/FinancialProjection';
 import ParkingImpact from '@/components/dashboard/ParkingImpact';
 import NetworkComparison from '@/components/dashboard/NetworkComparison';
@@ -235,14 +236,24 @@ const Dashboard = () => {
       </header>
 
       <main className="p-4 space-y-4">
-        {/* VISIBLE: Site Aerial (teaser) */}
-        <SiteAerial lat={site.lat} lng={site.lng} propertyType={site.propertyType} onPropertyTypeChange={(t) => setSite(prev => ({ ...prev, propertyType: t }))} onParkingEstimate={handleParkingEstimate} />
+        {/* VISIBLE: Site Aerial + Competition Map (tabbed) */}
+        <Tabs defaultValue="satellite" className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+          <div className="border-b border-border px-4 pt-3">
+            <TabsList className="h-8">
+              <TabsTrigger value="satellite" className="text-xs">Satellite</TabsTrigger>
+              <TabsTrigger value="competition" className="text-xs">Competition</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="satellite" className="mt-0">
+            <SiteAerial lat={site.lat} lng={site.lng} propertyType={site.propertyType} onPropertyTypeChange={(t) => setSite(prev => ({ ...prev, propertyType: t }))} onParkingEstimate={handleParkingEstimate} />
+          </TabsContent>
+          <TabsContent value="competition" className="mt-0">
+            <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
+          </TabsContent>
+        </Tabs>
 
         {/* VISIBLE: ChargeScore Gauge */}
         <ChargeScoreGauge score={chargeScore} />
-
-        {/* VISIBLE: Competition Map */}
-        <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
 
         {/* GATED: Everything below is blurred until email entry */}
         <div className={blurClass}>
@@ -260,8 +271,7 @@ const Dashboard = () => {
             {/* Revenue & Costs (Year 1) */}
             <RevenueCosts financials={financials} />
 
-            {/* 15-Year Cash Flow Chart */}
-            <CashFlowChart financials={financials} />
+            {/* Financial Details + Cash Flow */}
 
             {/* Incentives Breakdown */}
             <FinancialProjection financials={financials} incentives={incentives} site={site} nrelIncentives={nrelIncentives} />
