@@ -2,22 +2,25 @@
 
 ## Problem
 
-The Google Maps key cannot be injected into the frontend via backend secrets. `import.meta.env.VITE_GOOGLE_MAPS_KEY` reads from the auto-managed `.env` file, which only contains Supabase config. Backend secrets are only accessible in edge functions.
+The satellite image on the dashboard is broken. The `<img>` tag points to a Google Maps Static API URL, but the request is failing (referrer restriction or API not enabled). When the image fails, there's no `onError` handler, so the browser just shows the alt text.
 
-## Solution: Edge function proxy for the API key
+## Plan
 
-Create a small edge function that returns the Google Maps API key to the frontend. The key stays stored as a backend secret, and the frontend fetches it once on app load.
+**Fix `src/components/dashboard/SiteAerial.tsx`:**
 
-### Steps
+1. Add an `onError` handler on the `<img>` tag that switches to a fallback state when the Google Static Map image fails to load.
+2. The fallback will show:
+   - An embedded Leaflet/OpenStreetMap satellite tile map as the primary fallback (using the same Leaflet library already installed), OR
+   - A cleaner placeholder with a map icon and coordinates if Leaflet is too heavy for this component.
 
-1. **Add the secret** -- Use the `add_secret` tool to store `GOOGLE_MAPS_KEY` (without the VITE_ prefix) as a backend secret
-2. **Create edge function** `supabase/functions/get-maps-key/index.ts` -- Returns the key from `Deno.env.get('GOOGLE_MAPS_KEY')` with CORS headers
-3. **Create a shared hook** `src/hooks/useGoogleMapsKey.ts` -- Fetches the key once from the edge function, caches it in a module-level variable so subsequent calls are instant
-4. **Update 3 files** to use the hook instead of `import.meta.env.VITE_GOOGLE_MAPS_KEY`:
-   - `src/components/AddressAutocomplete.tsx`
-   - `src/components/dashboard/ParkingLotMeasure.tsx`
-   - `src/lib/api/googleMaps.ts` (convert to accept key as parameter)
-5. **Update `SiteAerial.tsx`** to pass the key through
+**Recommended approach** — Use an OpenStreetMap static image as fallback:
+- On `<img onError>`, swap `src` to an OpenStreetMap-based static image tile (e.g., from `tile.openstreetmap.org`) or show the "Satellite view unavailable" placeholder with proper styling instead of broken alt text.
+- This requires no additional dependencies.
 
-This keeps the key out of the codebase while making it available to the frontend. The key is still a publishable key (secured by referrer restrictions in Google Cloud Console), so exposing it to the browser is standard practice.
+**Specifically:**
+- Add `useState` for `imageError`
+- Add `onError={() => setImageError(true)}` to the `<img>`
+- When `imageError` is true, render the fallback placeholder (styled nicely with a Map icon) instead of the broken image
+
+This is a quick fix that ensures users never see broken image alt text.
 
