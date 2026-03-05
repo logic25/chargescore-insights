@@ -75,6 +75,10 @@ const Dashboard = () => {
   }, []);
 
   const handleSpotsCounted = useCallback((count: number) => {
+    // Live count — no-op, just for display
+  }, []);
+
+  const handleSpotsConfirmed = useCallback((count: number) => {
     if (count > 0) {
       setSite(prev => ({ ...prev, totalParkingSpaces: count }));
       setAvailableForChargers(Math.floor(count * 0.33));
@@ -250,7 +254,7 @@ const Dashboard = () => {
               </TabsList>
             </div>
             <TabsContent value="satellite" className="mt-0">
-              <SiteAerial lat={site.lat} lng={site.lng} onSpotsCounted={handleSpotsCounted} />
+              <SiteAerial lat={site.lat} lng={site.lng} onSpotsCounted={handleSpotsCounted} onSpotsConfirmed={handleSpotsConfirmed} />
             </TabsContent>
             <TabsContent value="competition" className="mt-0">
               <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
