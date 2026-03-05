@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, DollarSign, Clock, BarChart3 } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, DollarSign, Clock, BarChart3, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
 import { fetchNearbyStations } from '@/lib/api/stations';
@@ -65,6 +65,7 @@ const Dashboard = () => {
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
   const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
+  const [activePanel, setActivePanel] = useState<'revenue' | 'investment' | 'payback' | 'npv' | null>('revenue');
 
   const handleGateUnlock = useCallback(() => {
     localStorage.setItem(GATE_UNLOCKED_KEY, 'true');
