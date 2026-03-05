@@ -55,6 +55,7 @@ const Dashboard = () => {
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
   const [availableForChargers, setAvailableForChargers] = useState(0);
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
+  const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
 
   const handleGateUnlock = useCallback(() => {
     localStorage.setItem(GATE_UNLOCKED_KEY, 'true');
@@ -82,6 +83,7 @@ const Dashboard = () => {
     if (count > 0) {
       setSite(prev => ({ ...prev, totalParkingSpaces: count }));
       setAvailableForChargers(Math.floor(count * 0.33));
+      setConfirmedSpotCount(count);
     }
   }, []);
 
@@ -273,6 +275,7 @@ const Dashboard = () => {
                 site={site} onChange={setSite}
                 trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
                 availableForChargers={availableForChargers}
+                confirmedSpotCount={confirmedSpotCount}
                 onParkingEstimate={handleParkingEstimate}
               />
               <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} nrelIncentives={nrelIncentives} />

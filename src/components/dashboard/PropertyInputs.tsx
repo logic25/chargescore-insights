@@ -32,14 +32,22 @@ interface PropertyInputsProps {
   trafficLevel: TrafficLevel;
   onTrafficLevelChange: (level: TrafficLevel) => void;
   availableForChargers?: number;
+  confirmedSpotCount?: number | null;
   onParkingEstimate?: (data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => void;
 }
 
-const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, availableForChargers = 0, onParkingEstimate }: PropertyInputsProps) => {
+const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, availableForChargers = 0, confirmedSpotCount, onParkingEstimate }: PropertyInputsProps) => {
   const [expanded, setExpanded] = useState(false);
   const [lotSqFt, setLotSqFt] = useState(50000);
   const [drawnLotSqFt, setDrawnLotSqFt] = useState<number | null>(null);
   const [manualSpotCount, setManualSpotCount] = useState<number | null>(null);
+
+  // Sync confirmed spot count from satellite map
+  useEffect(() => {
+    if (confirmedSpotCount != null && confirmedSpotCount > 0) {
+      setManualSpotCount(confirmedSpotCount);
+    }
+  }, [confirmedSpotCount]);
 
   const effectiveLotSqFt = drawnLotSqFt ?? lotSqFt;
   const estimatedParking = useMemo(() => estimateParkingSpots(effectiveLotSqFt), [effectiveLotSqFt]);
@@ -169,7 +177,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
           </div>
 
           <p className="text-[10px] text-muted-foreground/70">
-            💡 Use the <strong>Measure Lot</strong> button on the satellite map above to draw your lot outline, or type your actual spot count.
+            💡 Use the <strong>Count Spots</strong> tool on the satellite map above to tap each parking spot, or type your actual count.
           </p>
 
           {/* Charging Model Toggle */}
@@ -221,7 +229,17 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
           {/* Utilization + Electrical + State */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground">Peak Parking Utilization</Label>
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground">Peak Parking Utilization</Label>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[280px] text-xs">
+                    How full your parking lot gets at its busiest time. Higher utilization means less room for dedicated charger spots. Most retail lots peak at 60-80% on weekends.
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <span className="font-mono text-xs text-accent">{site.peakUtilization}%</span>
             </div>
             <Slider
