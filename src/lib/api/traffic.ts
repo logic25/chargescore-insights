@@ -1,10 +1,9 @@
 /**
- * HPMS (FHWA) – Annual Average Daily Traffic via Socrata Open Data API
- * Dataset: data.transportation.gov  (resource id: 4dez-3n4e)
- * Free, no key required (but accepts an app token for higher rate limits).
+ * HPMS (FHWA) – Annual Average Daily Traffic
+ * Proxied through edge function to avoid CORS issues and support app tokens.
  */
 
-const HPMS_BASE = 'https://datahub.transportation.gov/resource/4dez-3n4e.json';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface AadtResult {
   aadt: number | null;
@@ -14,7 +13,6 @@ export interface AadtResult {
 
 /**
  * Fetch AADT for the nearest road segment within `radiusMeters` of (lat, lng).
- * Returns the highest AADT found (closest major road wins).
  */
 export async function fetchAadt(
   lat: number,
@@ -22,40 +20,19 @@ export async function fetchAadt(
   radiusMeters = 500,
 ): Promise<AadtResult> {
   try {
-    const url = new URL(HPMS_BASE);
-    url.searchParams.set(
-      '$where',
-      `within_circle(the_geom, ${lat}, ${lng}, ${radiusMeters})`,
-    );
-    url.searchParams.set('$select', 'aadt_vn, route_id, year_record');
-    url.searchParams.set('$order', 'aadt_vn DESC');
-    url.searchParams.set('$limit', '5');
+    const { data, error } = await supabase.functions.invoke('get-traffic-data', {
+      body: { lat, lng, radiusMeters },
+    });
 
-    const res = await fetch(url.toString());
-    if (!res.ok) {
-      console.warn('HPMS API error', res.status);
+    if (error) {
+      console.warn('AADT edge function error', error);
       return { aadt: null, routeId: null, year: null };
     }
 
-    const rows: Array<{
-      aadt_vn?: string;
-      route_id?: string;
-      year_record?: string;
-    }> = await res.json();
-
-    if (!rows.length) {
-      // Widen search radius and try once more
-      if (radiusMeters < 2000) {
-        return fetchAadt(lat, lng, 2000);
-      }
-      return { aadt: null, routeId: null, year: null };
-    }
-
-    const top = rows[0];
     return {
-      aadt: top.aadt_vn ? parseInt(top.aadt_vn, 10) : null,
-      routeId: top.route_id ?? null,
-      year: top.year_record ? parseInt(top.year_record, 10) : null,
+      aadt: data?.aadt ?? null,
+      routeId: data?.routeId ?? null,
+      year: data?.year ?? null,
     };
   } catch (err) {
     console.error('fetchAadt failed', err);
