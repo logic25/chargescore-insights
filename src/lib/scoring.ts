@@ -37,6 +37,7 @@ export interface ScoringInputs {
   hasThreePhasePower: boolean | null;
   state?: string;
   zipCode?: string;
+  utilityName?: string | null;
 }
 
 export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult {
