@@ -9,17 +9,19 @@ interface MapViewProps {
   loading?: boolean;
 }
 
-const NETWORK_COLORS: Record<string, string> = {
-  'Tesla': '#ef4444',
-  'Tesla Destination': '#ef4444',
-  'ChargePoint': '#3b82f6',
-  'Blink': '#3b82f6',
-  'EVgo': '#22c55e',
-  'Electrify America': '#22c55e',
-};
+const NETWORK_PATTERNS: { pattern: RegExp; color: string }[] = [
+  { pattern: /tesla/i, color: '#ef4444' },
+  { pattern: /chargepoint/i, color: '#3b82f6' },
+  { pattern: /blink/i, color: '#3b82f6' },
+  { pattern: /evgo/i, color: '#22c55e' },
+  { pattern: /electrify\s*america/i, color: '#22c55e' },
+];
 
 function getStationColor(station: NearbyStation): string {
-  return NETWORK_COLORS[station.network] || '#888888';
+  for (const { pattern, color } of NETWORK_PATTERNS) {
+    if (pattern.test(station.network)) return color;
+  }
+  return '#888888';
 }
 
 const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
