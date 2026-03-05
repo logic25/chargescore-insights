@@ -1,15 +1,16 @@
 /**
  * Parcel / lot data via ArcGIS FeatureServers.
  * 1) NYC MapPLUTO for the 5 boroughs (free, no key).
- * 2) NYS Tax Parcels for the rest of NY state (free, no key).
+ * 2) NYS Tax Parcels for the rest of NY state (free, no key) — official NY.gov service.
  * Returns lot area (sq ft), building area, owner name for the tax lot.
  */
 
 const PLUTO_QUERY =
   'https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MAPPLUTO/FeatureServer/0/query';
 
+// Official NYS ITS GIS service — layer 0 is footprints, parcels are at the service-level query endpoint
 const NYS_PARCELS_QUERY =
-  'https://services6.arcgis.com/EbVsqZ18sv1kVJ3k/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer/1/query';
+  'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer/query';
 
 export interface ParcelResult {
   lotArea: number | null;       // sq ft
@@ -65,48 +66,57 @@ async function fetchMapPluto(lat: number, lng: number): Promise<ParcelResult> {
 
 /**
  * Query NYS Tax Parcels by point (all participating NY counties).
- * Covers Nassau, Suffolk, Westchester, etc.
+ * Uses service-level query which searches across all layers.
+ * Also tries individual layer queries as fallback.
  */
 async function fetchNysParcels(lat: number, lng: number): Promise<ParcelResult> {
-  try {
-    const url = new URL(NYS_PARCELS_QUERY);
-    url.searchParams.set('geometry', `${lng},${lat}`);
-    url.searchParams.set('geometryType', 'esriGeometryPoint');
-    url.searchParams.set('inSR', '4326');
-    url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
-    url.searchParams.set('outFields', 'PARCEL_ADDR,OWNER_TYPE,PROP_CLASS,CALC_ACRES,SQ_FT');
-    url.searchParams.set('returnGeometry', 'false');
-    url.searchParams.set('f', 'json');
+  // Try multiple layer endpoints since different counties may be on different layers
+  const layerUrls = [
+    'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer/0/query',
+    'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer/1/query',
+  ];
 
-    const res = await fetch(url.toString());
-    if (!res.ok) return empty;
+  for (const baseUrl of layerUrls) {
+    try {
+      const url = new URL(baseUrl);
+      url.searchParams.set('geometry', `${lng},${lat}`);
+      url.searchParams.set('geometryType', 'esriGeometryPoint');
+      url.searchParams.set('inSR', '4326');
+      url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
+      url.searchParams.set('outFields', '*');
+      url.searchParams.set('returnGeometry', 'false');
+      url.searchParams.set('f', 'json');
 
-    const data = await res.json();
-    const features = data?.features;
-    if (!features?.length) return empty;
+      const res = await fetch(url.toString());
+      if (!res.ok) continue;
 
-    const attrs = features[0].attributes;
-    // SQ_FT may not always be available; fall back to CALC_ACRES * 43560
-    const sqFt = attrs.SQ_FT ?? (attrs.CALC_ACRES ? Math.round(attrs.CALC_ACRES * 43560) : null);
+      const data = await res.json();
+      const features = data?.features;
+      if (!features?.length) continue;
 
-    return {
-      lotArea: sqFt,
-      bldgArea: null, // NYS parcels don't have building area
-      address: attrs.PARCEL_ADDR ?? null,
-      ownerName: attrs.OWNER_TYPE ?? null,
-      landUse: attrs.PROP_CLASS ?? null,
-      bbl: null,
-      source: 'nys_parcels',
-    };
-  } catch (err) {
-    console.error('NYS Tax Parcels query failed', err);
-    return empty;
+      const attrs = features[0].attributes;
+      // Field names vary — check common ones
+      const sqFt = attrs.SQ_FT ?? attrs.SHAPE_Area ?? (attrs.CALC_ACRES ? Math.round(attrs.CALC_ACRES * 43560) : null);
+
+      return {
+        lotArea: sqFt ? Math.round(Number(sqFt)) : null,
+        bldgArea: attrs.BLDG_SQ_FT ?? attrs.BldgArea ?? null,
+        address: attrs.PARCEL_ADDR ?? attrs.ADDR ?? attrs.Address ?? null,
+        ownerName: attrs.OWNER_TYPE ?? attrs.NAME ?? attrs.OwnerName ?? null,
+        landUse: attrs.PROP_CLASS ?? attrs.LAND_USE ?? attrs.LandUse ?? null,
+        bbl: null,
+        source: 'nys_parcels',
+      };
+    } catch (err) {
+      console.error(`NYS Tax Parcels query failed for ${baseUrl}`, err);
+    }
   }
+
+  return empty;
 }
 
 /**
  * Try MapPLUTO first (NYC), then fall back to NYS Tax Parcels for other NY locations.
- * For non-NY states, only MapPLUTO is attempted (returns empty if outside NYC).
  */
 export async function fetchParcelInfo(lat: number, lng: number, state?: string): Promise<ParcelResult> {
   // Try MapPLUTO first

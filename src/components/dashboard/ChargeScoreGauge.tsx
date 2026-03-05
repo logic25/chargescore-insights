@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Info } from 'lucide-react';
+import { Info, AlertTriangle, CheckCircle2, Zap, MapPin } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ChargeScoreResult, ScoreFactor } from '@/lib/scoring';
 
-interface ChargeScoreGaugeProps {
-  score: ChargeScoreResult;
+export interface SiteInsights {
+  floodZone: string | null;
+  isHighRisk: boolean;
+  highwayDistance: number | null;
+  highwayName: string | null;
+  utilityName: string | null;
+  isDAC: boolean;
+  isOnCorridor: boolean;
 }
 
-const ChargeScoreGauge = ({ score }: ChargeScoreGaugeProps) => {
+interface ChargeScoreGaugeProps {
+  score: ChargeScoreResult;
+  siteInsights?: SiteInsights;
+}
+
+const ChargeScoreGauge = ({ score, siteInsights }: ChargeScoreGaugeProps) => {
   const [displayScore, setDisplayScore] = useState(0);
 
   useEffect(() => {
@@ -115,6 +126,46 @@ const ChargeScoreGauge = ({ score }: ChargeScoreGaugeProps) => {
           ))}
         </div>
       </div>
+
+      {/* Site Insights badges */}
+      {siteInsights && (
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {siteInsights.floodZone && (
+            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+              siteInsights.isHighRisk 
+                ? 'bg-destructive/10 text-destructive border border-destructive/20' 
+                : 'bg-primary/10 text-primary border border-primary/20'
+            }`}>
+              {siteInsights.isHighRisk ? <AlertTriangle className="h-2.5 w-2.5" /> : <CheckCircle2 className="h-2.5 w-2.5" />}
+              Flood Zone {siteInsights.floodZone}
+            </span>
+          )}
+          {siteInsights.highwayDistance !== null && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground border border-border">
+              <MapPin className="h-2.5 w-2.5" />
+              {siteInsights.highwayDistance} mi to {siteInsights.highwayName || 'highway'}
+            </span>
+          )}
+          {siteInsights.utilityName && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground border border-border">
+              <Zap className="h-2.5 w-2.5" />
+              {siteInsights.utilityName}
+            </span>
+          )}
+          {siteInsights.isDAC && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 text-accent-foreground px-2 py-0.5 text-[10px] font-medium border border-accent/30">
+              <CheckCircle2 className="h-2.5 w-2.5" />
+              Disadvantaged Community
+            </span>
+          )}
+          {siteInsights.isOnCorridor && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium border border-primary/20">
+              <CheckCircle2 className="h-2.5 w-2.5" />
+              NEVI Corridor
+            </span>
+          )}
+        </div>
+      )}
 
       <p className="mt-4 text-xs text-muted-foreground leading-relaxed">{score.recommendation}</p>
     </motion.div>
