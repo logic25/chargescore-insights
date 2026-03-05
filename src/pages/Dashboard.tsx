@@ -74,6 +74,8 @@ const Dashboard = () => {
   const [popDensity, setPopDensity] = useState<number | null>(null);
   const [amenitiesCount, setAmenitiesCount] = useState(5);
   const [isDisadvantagedCommunity, setIsDisadvantagedCommunity] = useState(false);
+  const [isOnAltFuelCorridor, setIsOnAltFuelCorridor] = useState(false);
+  const [utilityInfo, setUtilityInfo] = useState<UtilityInfo>({ utilityName: null, commercialRate: null });
   const [aadtData, setAadtData] = useState<AadtResult>({ aadt: null, routeId: null, year: null });
   const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null, source: null });
 
