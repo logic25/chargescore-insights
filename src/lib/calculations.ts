@@ -348,7 +348,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$65,000/port',
       details: 'Up to $65,000 per DCFC for commercial locations. Must be publicly accessible. Apply at nyserda.ny.gov.',
       layer: 'state', verified: '2025-06', programStatus: 'accepting',
-      sourceUrl: 'https://www.nyserda.ny.gov/All-Programs/EV-Make-Ready/Charging-Station-Programs',
+      sourceUrl: 'https://www.nyserda.ny.gov/All-Programs/Charging-Station-Programs',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
     {
