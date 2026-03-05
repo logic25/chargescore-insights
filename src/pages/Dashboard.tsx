@@ -268,18 +268,18 @@ const Dashboard = () => {
         {/* ═══ ROW 1: Map (left) + Sidebar (right) ═══ */}
         <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr]">
           {/* Left: Map with tabs */}
-          <div className="min-h-0">
-            <Tabs defaultValue="satellite" className="border border-border rounded-xl overflow-hidden bg-card">
+          <div className="min-h-0 self-stretch">
+            <Tabs defaultValue="satellite" className="border border-border rounded-xl overflow-hidden bg-card h-full flex flex-col">
               <div className="flex items-center justify-between px-4 py-2 border-b border-border">
                 <TabsList className="h-8">
                   <TabsTrigger value="satellite" className="text-xs">Satellite</TabsTrigger>
                   <TabsTrigger value="competition" className="text-xs">Competition</TabsTrigger>
                 </TabsList>
               </div>
-              <TabsContent value="satellite" className="mt-0">
+              <TabsContent value="satellite" className="mt-0 flex-1 min-h-0">
                 <SiteAerial lat={site.lat} lng={site.lng} onSpotsCounted={handleSpotsCounted} onSpotsConfirmed={handleSpotsConfirmed} />
               </TabsContent>
-              <TabsContent value="competition" className="mt-0">
+              <TabsContent value="competition" className="mt-0 flex-1 min-h-0">
                 <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
               </TabsContent>
             </Tabs>
