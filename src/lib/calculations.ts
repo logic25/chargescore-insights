@@ -271,8 +271,23 @@ interface StateIncentive {
   layer: 'federal' | 'state' | 'utility';
 }
 
+// Eligibility check result
+interface EligibilityResult {
+  eligible: boolean | null; // true=yes, false=no, null=unknown/verify
+  reason?: string;          // why ineligible or what to verify
+}
+
+// Context passed into eligibility checks
+interface EligibilityInput {
+  site: SiteAnalysis;
+  context?: IncentiveContext;
+  totalPorts: number;
+  dcfcPorts: number;
+  totalProjectCost: number;
+}
+
 interface StateIncentiveGroup {
-  groupId: string;             // programs in same group are mutually exclusive
+  groupId: string;
   name: string;
   amountPerPort?: number;
   amountFlat?: number;
@@ -281,68 +296,291 @@ interface StateIncentiveGroup {
   displayAmount: string;
   details: string;
   layer: 'federal' | 'state' | 'utility';
-  utilityMatch?: string[];     // if set, only show when detected utility contains one of these (case-insensitive)
-  verified: string;            // date last verified (YYYY-MM)
-  expiresAt?: string;          // expiration date if known (YYYY-MM or 'ongoing')
+  utilityMatch?: string[];
+  verified: string;
+  expiresAt?: string;
   programStatus: 'active' | 'accepting' | 'waitlist' | 'closed' | 'expired';
+  // Eligibility check function — returns eligible status and reason
+  checkEligibility?: (input: EligibilityInput) => EligibilityResult;
 }
+
+// --- Common eligibility check helpers ---
+const requiresDCFC = (minPorts: number) => (input: EligibilityInput): EligibilityResult => {
+  if (input.dcfcPorts < minPorts) {
+    return { eligible: false, reason: `Requires minimum ${minPorts} DCFC ports (you have ${input.dcfcPorts})` };
+  }
+  return { eligible: true };
+};
+
+const requiresPublicAccess = () => (_input: EligibilityInput): EligibilityResult => {
+  // We assume commercial property types are public-access; multifamily is not
+  return { eligible: null, reason: 'Requires public access — verify site will be publicly accessible' };
+};
+
+const requiresDAC = () => (input: EligibilityInput): EligibilityResult => {
+  if (!input.context) return { eligible: null, reason: 'DAC status unknown' };
+  if (!input.context.isDAC) return { eligible: false, reason: 'Site is not in a disadvantaged community' };
+  return { eligible: true };
+};
+
+const requiresUtilityTerritory = () => (input: EligibilityInput): EligibilityResult => {
+  if (!input.context?.utilityName) return { eligible: null, reason: 'Utility territory not confirmed' };
+  return { eligible: true };
+};
+
+const alwaysEligible = () => (_input: EligibilityInput): EligibilityResult => ({ eligible: true });
+
+const combineChecks = (...checks: ((input: EligibilityInput) => EligibilityResult)[]) => {
+  return (input: EligibilityInput): EligibilityResult => {
+    for (const check of checks) {
+      const result = check(input);
+      if (result.eligible === false) return result;
+      if (result.eligible === null) return result; // unknown = stop and report
+    }
+    return { eligible: true };
+  };
+};
 
 const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
   NY: [
-    { groupId: 'ny-state-dcfc', name: 'NYSERDA NYSBIP', amountPerPort: 65000, displayAmount: '$65,000/port', details: 'Up to $65,000 per DCFC for commercial locations. Apply at nyserda.ny.gov. Program active as of 2025.', layer: 'state', verified: '2025-06', programStatus: 'accepting' },
-    { groupId: 'ny-state-dcfc', name: 'EVolve NY', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC. Competitive — apply at evolveny.nypa.gov. Funded through NYPA.', layer: 'state', verified: '2025-06', programStatus: 'accepting' },
-    { groupId: 'ny-state-small', name: 'Charge Ready NY 2.0', amountPerPort: 4000, displayAmount: '$4,000/port', details: '$3,000-$4,000 per port. $28M program budget. Stackable with NYSBIP. Administered by NYSERDA.', layer: 'state', verified: '2025-03', programStatus: 'accepting' },
-    // Utility programs — territory-filtered by detected utility name
-    { groupId: 'ny-utility-coned', name: 'Con Edison PowerReady', amountPctOfInstall: 0.85, displayAmount: 'Up to 85% of installation', details: 'Covers up to 85% of DCFC infrastructure in ConEd territory (NYC & Westchester). Max $1.2M. Part of NY Joint Utilities program.', layer: 'utility', utilityMatch: ['con ed', 'consolidated edison'], verified: '2025-06', programStatus: 'accepting' },
-    { groupId: 'ny-utility-pseg', name: 'PSEG Long Island Make-Ready', amountPctOfInstall: 0.50, displayAmount: 'Up to 50% of installation', details: 'PSEG Long Island covers up to 50% of make-ready infrastructure for commercial DCFC in Nassau & Suffolk counties. Part of LIPA Clean Energy programs.', layer: 'utility', utilityMatch: ['long island', 'lipa', 'pseg li', 'pseg long'], verified: '2025-06', programStatus: 'accepting' },
-    { groupId: 'ny-utility-nyseg', name: 'NYSEG/RG&E Make-Ready', amountPctOfInstall: 0.90, displayAmount: 'Up to 90% of installation', details: 'Avangrid utilities cover up to 90% of make-ready for public DCFC in upstate NY (NYSEG & RG&E territories).', layer: 'utility', utilityMatch: ['nyseg', 'rg&e', 'rochester gas', 'avangrid'], verified: '2025-03', programStatus: 'accepting' },
-    { groupId: 'ny-utility-ngrid', name: 'National Grid NY Make-Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'National Grid covers up to 100% of make-ready for public DCFC in its NY service territory (Brooklyn, Queens, Staten Island, upstate).', layer: 'utility', utilityMatch: ['national grid'], verified: '2025-03', programStatus: 'accepting' },
-    { groupId: 'ny-utility-chge', name: 'Central Hudson Make-Ready', amountPctOfInstall: 0.50, displayAmount: 'Up to 50% of installation', details: 'Central Hudson covers up to 50% of make-ready infrastructure in Hudson Valley territory.', layer: 'utility', utilityMatch: ['central hudson'], verified: '2025-03', programStatus: 'accepting' },
-    { groupId: 'ny-utility-oru', name: 'O&R Make-Ready', amountPctOfInstall: 0.50, displayAmount: 'Up to 50% of installation', details: 'Orange & Rockland covers up to 50% of make-ready for public DCFC in its service territory.', layer: 'utility', utilityMatch: ['orange', 'rockland', 'o&r'], verified: '2025-03', programStatus: 'accepting' },
+    {
+      groupId: 'ny-state-dcfc', name: 'NYSERDA NYSBIP', amountPerPort: 65000,
+      displayAmount: '$65,000/port',
+      details: 'Up to $65,000 per DCFC for commercial locations. Must be publicly accessible. Apply at nyserda.ny.gov.',
+      layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
+    {
+      groupId: 'ny-state-dcfc', name: 'EVolve NY', amountPerPort: 50000,
+      displayAmount: '$50,000/port',
+      details: 'Up to $50,000 per DCFC. Competitive — apply at evolveny.nypa.gov. Requires public access.',
+      layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
+    {
+      groupId: 'ny-state-small', name: 'Charge Ready NY 2.0', amountPerPort: 4000,
+      displayAmount: '$4,000/port',
+      details: '$3,000-$4,000 per port (L2 or DCFC). $28M program budget. Stackable with NYSBIP.',
+      layer: 'state', verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: alwaysEligible(),
+    },
+    {
+      groupId: 'ny-utility-coned', name: 'Con Edison PowerReady', amountPctOfInstall: 0.85,
+      displayAmount: 'Up to 85% of installation',
+      details: 'Covers up to 85% of DCFC infrastructure in ConEd territory (NYC & Westchester). Max $1.2M.',
+      layer: 'utility', utilityMatch: ['con ed', 'consolidated edison'],
+      verified: '2025-06', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
+    },
+    {
+      groupId: 'ny-utility-pseg', name: 'PSEG Long Island Make-Ready', amountPctOfInstall: 0.50,
+      displayAmount: 'Up to 50% of installation',
+      details: 'PSEG Long Island covers up to 50% of make-ready for commercial DCFC in Nassau & Suffolk counties.',
+      layer: 'utility', utilityMatch: ['long island', 'lipa', 'pseg li', 'pseg long'],
+      verified: '2025-06', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
+    },
+    {
+      groupId: 'ny-utility-nyseg', name: 'NYSEG/RG&E Make-Ready', amountPctOfInstall: 0.90,
+      displayAmount: 'Up to 90% of installation',
+      details: 'Avangrid utilities cover up to 90% of make-ready for public DCFC in upstate NY.',
+      layer: 'utility', utilityMatch: ['nyseg', 'rg&e', 'rochester gas', 'avangrid'],
+      verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
+    },
+    {
+      groupId: 'ny-utility-ngrid', name: 'National Grid NY Make-Ready', amountPctOfInstall: 1.0,
+      displayAmount: 'Up to 100% of installation',
+      details: 'National Grid covers up to 100% of make-ready for public DCFC in its NY service territory.',
+      layer: 'utility', utilityMatch: ['national grid'],
+      verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
+    },
+    {
+      groupId: 'ny-utility-chge', name: 'Central Hudson Make-Ready', amountPctOfInstall: 0.50,
+      displayAmount: 'Up to 50% of installation',
+      details: 'Central Hudson covers up to 50% of make-ready in Hudson Valley territory.',
+      layer: 'utility', utilityMatch: ['central hudson'],
+      verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
+    },
+    {
+      groupId: 'ny-utility-oru', name: 'O&R Make-Ready', amountPctOfInstall: 0.50,
+      displayAmount: 'Up to 50% of installation',
+      details: 'Orange & Rockland covers up to 50% of make-ready for public DCFC.',
+      layer: 'utility', utilityMatch: ['orange', 'rockland', 'o&r'],
+      verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
+    },
   ],
   CA: [
-    { groupId: 'ca-state', name: 'Fast Charge California', amountPerPort: 100000, displayAmount: '$100,000/port', details: 'Up to $100,000 per DCFC port. Successor to CALeVIP. CEC-administered.', layer: 'state', verified: '2025-06', programStatus: 'accepting' },
-    { groupId: 'ca-lcfs', name: 'LCFS Credits', amountPerPort: 15000, displayAmount: '$15,000/yr/port', details: 'Low Carbon Fuel Standard credits: $10-20K/yr per DCFC based on utilization. Ongoing revenue stream.', layer: 'state', verified: '2025-06', programStatus: 'active', expiresAt: 'ongoing' },
-    { groupId: 'ca-utility', name: 'SCE/PG&E Charge Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'Major utilities cover 100% of make-ready in disadvantaged communities.', layer: 'utility', verified: '2025-03', programStatus: 'accepting' },
+    {
+      groupId: 'ca-state', name: 'Fast Charge California', amountPerPort: 100000,
+      displayAmount: '$100,000/port',
+      details: 'Up to $100,000 per DCFC port. CEC-administered. Must be publicly accessible.',
+      layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
+    {
+      groupId: 'ca-lcfs', name: 'LCFS Credits', amountPerPort: 15000,
+      displayAmount: '$15,000/yr/port',
+      details: 'Low Carbon Fuel Standard credits: $10-20K/yr per DCFC based on utilization. Ongoing revenue.',
+      layer: 'state', verified: '2025-06', programStatus: 'active', expiresAt: 'ongoing',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
+    {
+      groupId: 'ca-utility', name: 'SCE/PG&E Charge Ready', amountPctOfInstall: 1.0,
+      displayAmount: 'Up to 100% of installation',
+      details: 'Major utilities cover 100% of make-ready. Priority for disadvantaged communities.',
+      layer: 'utility', verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: alwaysEligible(),
+    },
   ],
   MA: [
-    { groupId: 'ma-state', name: 'MassEVIP', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC through MassDEP. $14M program pool.', layer: 'state', verified: '2025-03', programStatus: 'accepting' },
-    { groupId: 'ma-utility', name: 'Eversource Make-Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'Eversource covers up to 100% of make-ready for public DCFC.', layer: 'utility', utilityMatch: ['eversource'], verified: '2025-03', programStatus: 'accepting' },
-    { groupId: 'ma-utility', name: 'National Grid EV Program', amountPerPort: 80000, displayAmount: '$80,000/port', details: 'Up to $80,000 per DCFC port in National Grid MA territory.', layer: 'utility', utilityMatch: ['national grid'], verified: '2025-03', programStatus: 'accepting' },
+    {
+      groupId: 'ma-state', name: 'MassEVIP', amountPerPort: 50000,
+      displayAmount: '$50,000/port',
+      details: 'Up to $50,000 per DCFC through MassDEP. $14M pool. Must be publicly accessible.',
+      layer: 'state', verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
+    {
+      groupId: 'ma-utility', name: 'Eversource Make-Ready', amountPctOfInstall: 1.0,
+      displayAmount: 'Up to 100% of installation',
+      details: 'Eversource covers up to 100% of make-ready for public DCFC.',
+      layer: 'utility', utilityMatch: ['eversource'], verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
+    },
+    {
+      groupId: 'ma-utility', name: 'National Grid EV Program', amountPerPort: 80000,
+      displayAmount: '$80,000/port',
+      details: 'Up to $80,000 per DCFC port in National Grid MA territory.',
+      layer: 'utility', utilityMatch: ['national grid'], verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
+    },
   ],
   CO: [
-    { groupId: 'co-state', name: 'Charge Ahead Colorado', amountPctOfProject: 0.8, displayAmount: 'Up to 80% of project', details: 'Up to 80% of total DCFC project cost with NO CAP for public stations. CEO-administered.', layer: 'state', verified: '2025-06', programStatus: 'accepting' },
-    { groupId: 'co-utility', name: 'Xcel Energy EV Program', amountPctOfInstall: 0.5, displayAmount: 'Up to 50% of installation', details: 'Make-ready support and reduced commercial EV rates.', layer: 'utility', utilityMatch: ['xcel'], verified: '2025-03', programStatus: 'accepting' },
+    {
+      groupId: 'co-state', name: 'Charge Ahead Colorado', amountPctOfProject: 0.8,
+      displayAmount: 'Up to 80% of project',
+      details: 'Up to 80% of total DCFC project cost with NO CAP for public stations.',
+      layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
+    {
+      groupId: 'co-utility', name: 'Xcel Energy EV Program', amountPctOfInstall: 0.5,
+      displayAmount: 'Up to 50% of installation',
+      details: 'Make-ready support and reduced commercial EV rates in Xcel territory.',
+      layer: 'utility', utilityMatch: ['xcel'], verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory()),
+    },
   ],
   NJ: [
-    { groupId: 'nj-state', name: 'It Pay$ to Plug In', amountPerPort: 100000, displayAmount: '$100,000/port', details: 'Up to $100,000 per DCFC PORT near transit and multifamily housing. NJ BPU-administered.', layer: 'state', verified: '2025-06', programStatus: 'accepting' },
-    { groupId: 'nj-utility', name: 'PSE&G Make-Ready', amountPctOfInstall: 0.7, displayAmount: 'Up to 70% of installation', details: 'PSE&G covers make-ready infrastructure costs.', layer: 'utility', utilityMatch: ['pseg', 'pse&g', 'public service'], verified: '2025-03', programStatus: 'accepting' },
+    {
+      groupId: 'nj-state', name: 'It Pay$ to Plug In', amountPerPort: 100000,
+      displayAmount: '$100,000/port',
+      details: 'Up to $100,000 per DCFC port. Priority near transit and multifamily housing.',
+      layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
+    {
+      groupId: 'nj-utility', name: 'PSE&G Make-Ready', amountPctOfInstall: 0.7,
+      displayAmount: 'Up to 70% of installation',
+      details: 'PSE&G covers make-ready infrastructure costs in its territory.',
+      layer: 'utility', utilityMatch: ['pseg', 'pse&g', 'public service'], verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
+    },
   ],
   CT: [
-    { groupId: 'ct-state', name: 'CT EV Charging Program', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC through state program. DEEP-administered.', layer: 'state', verified: '2025-03', programStatus: 'accepting' },
-    { groupId: 'ct-utility', name: 'Eversource CT Make-Ready', amountPctOfInstall: 0.5, displayAmount: 'Up to 50% of installation', details: 'Make-ready infrastructure support in Eversource CT territory.', layer: 'utility', utilityMatch: ['eversource'], verified: '2025-03', programStatus: 'accepting' },
+    {
+      groupId: 'ct-state', name: 'CT EV Charging Program', amountPerPort: 50000,
+      displayAmount: '$50,000/port',
+      details: 'Up to $50,000 per DCFC through DEEP.',
+      layer: 'state', verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
+    {
+      groupId: 'ct-utility', name: 'Eversource CT Make-Ready', amountPctOfInstall: 0.5,
+      displayAmount: 'Up to 50% of installation',
+      details: 'Make-ready support in Eversource CT territory.',
+      layer: 'utility', utilityMatch: ['eversource'], verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory()),
+    },
   ],
   WA: [
-    { groupId: 'wa-state', name: 'WA State EV Grants', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50K per DCFC. $85M+ program with multiple funding rounds.', layer: 'state', verified: '2025-03', programStatus: 'accepting' },
+    {
+      groupId: 'wa-state', name: 'WA State EV Grants', amountPerPort: 50000,
+      displayAmount: '$50,000/port',
+      details: 'Up to $50K per DCFC. $85M+ program.',
+      layer: 'state', verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
   ],
   OR: [
-    { groupId: 'or-state', name: 'Oregon Clean Fuels Credits', amountPerPort: 12000, displayAmount: '$12,000/yr/port', details: 'CFP credits generate ongoing revenue per DCFC based on utilization.', layer: 'state', verified: '2025-06', programStatus: 'active', expiresAt: 'ongoing' },
+    {
+      groupId: 'or-state', name: 'Oregon Clean Fuels Credits', amountPerPort: 12000,
+      displayAmount: '$12,000/yr/port',
+      details: 'CFP credits generate ongoing revenue per DCFC based on utilization.',
+      layer: 'state', verified: '2025-06', programStatus: 'active', expiresAt: 'ongoing',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
   ],
   MI: [
-    { groupId: 'mi-utility', name: 'DTE Energy DCFC Rebate', amountPerPort: 55000, displayAmount: '$55,000/port', details: 'DTE offers up to $55,000 per DCFC station.', layer: 'utility', utilityMatch: ['dte'], verified: '2025-03', programStatus: 'accepting' },
+    {
+      groupId: 'mi-utility', name: 'DTE Energy DCFC Rebate', amountPerPort: 55000,
+      displayAmount: '$55,000/port',
+      details: 'DTE offers up to $55,000 per DCFC station in its territory.',
+      layer: 'utility', utilityMatch: ['dte'], verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
+    },
   ],
   IL: [
-    { groupId: 'il-state', name: 'IL Charge Ahead', amountPerPort: 45000, displayAmount: '$45,000/port', details: 'Up to $45,000 per DCFC through IL EPA.', layer: 'state', verified: '2025-03', programStatus: 'accepting' },
-    { groupId: 'il-utility', name: 'ComEd EV Rebate', amountPerPort: 10000, displayAmount: '$10,000/port', details: 'ComEd offers up to $10,000 for commercial EV charging.', layer: 'utility', utilityMatch: ['comed', 'commonwealth edison'], verified: '2025-03', programStatus: 'accepting' },
+    {
+      groupId: 'il-state', name: 'IL Charge Ahead', amountPerPort: 45000,
+      displayAmount: '$45,000/port',
+      details: 'Up to $45,000 per DCFC through IL EPA.',
+      layer: 'state', verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
+    {
+      groupId: 'il-utility', name: 'ComEd EV Rebate', amountPerPort: 10000,
+      displayAmount: '$10,000/port',
+      details: 'ComEd offers up to $10,000 for commercial EV charging in its territory.',
+      layer: 'utility', utilityMatch: ['comed', 'commonwealth edison'], verified: '2025-03', programStatus: 'accepting',
+      checkEligibility: combineChecks(requiresUtilityTerritory()),
+    },
   ],
   TX: [
-    { groupId: 'tx-state', name: 'TCEQ DCFC Program', amountPerPort: 60000, displayAmount: '$60,000/port', details: 'VW settlement funds — up to $60K per DCFC. Check availability — funds limited.', layer: 'state', verified: '2025-03', programStatus: 'waitlist', expiresAt: '2026-09' },
+    {
+      groupId: 'tx-state', name: 'TCEQ DCFC Program', amountPerPort: 60000,
+      displayAmount: '$60,000/port',
+      details: 'VW settlement funds — up to $60K per DCFC. Limited remaining funds.',
+      layer: 'state', verified: '2025-03', programStatus: 'waitlist', expiresAt: '2026-09',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
   ],
   FL: [
-    { groupId: 'fl-state', name: 'FL NEVI Allocation', amountPctOfProject: 0.8, displayAmount: 'Up to 80% of project', details: 'Florida received $198M in federal NEVI. Covers up to 80% for highway corridor DCFC.', layer: 'state', verified: '2025-06', programStatus: 'accepting' },
+    {
+      groupId: 'fl-state', name: 'FL NEVI Allocation', amountPctOfProject: 0.8,
+      displayAmount: 'Up to 80% of project',
+      details: 'Florida $198M NEVI allocation. Covers up to 80% for highway corridor DCFC. Requires corridor location.',
+      layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      checkEligibility: (input) => {
+        if (!input.context) return { eligible: null, reason: 'Corridor status unknown' };
+        if (!input.context.isOnCorridor) return { eligible: false, reason: 'Site is not on a designated highway corridor' };
+        if (input.dcfcPorts < 4) return { eligible: false, reason: `Requires minimum 4 DCFC ports (you have ${input.dcfcPorts})` };
+        return { eligible: true };
+      },
+    },
   ],
   PA: [
-    { groupId: 'pa-state', name: 'Driving PA Forward', amountPerPort: 40000, displayAmount: '$40,000/port', details: 'Up to $40,000 per DCFC through VW settlement program. Limited remaining funds.', layer: 'state', verified: '2025-03', programStatus: 'waitlist', expiresAt: '2026-06' },
+    {
+      groupId: 'pa-state', name: 'Driving PA Forward', amountPerPort: 40000,
+      displayAmount: '$40,000/port',
+      details: 'Up to $40,000 per DCFC through VW settlement. Limited remaining funds.',
+      layer: 'state', verified: '2025-03', programStatus: 'waitlist', expiresAt: '2026-06',
+      checkEligibility: combineChecks(requiresDCFC(1)),
+    },
   ],
 };
 
@@ -423,10 +661,13 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): I
   const statePrograms = STATE_INCENTIVES[site.state] || [];
   const detectedUtility = context?.utilityName?.toLowerCase() ?? '';
 
+  const dcfcPorts = site.chargingModel === 'tesla' ? site.teslaStalls : site.dcfcChargers;
+  const eligInput: EligibilityInput = { site, context, totalPorts, dcfcPorts, totalProjectCost };
+
   // Filter: utility programs with utilityMatch only show if the detected utility matches
   const filteredPrograms = statePrograms.filter(prog => {
-    if (!prog.utilityMatch) return true; // no territory restriction — always show
-    if (!detectedUtility) return false;  // utility unknown — skip territory-specific programs
+    if (!prog.utilityMatch) return true;
+    if (!detectedUtility) return false;
     return prog.utilityMatch.some(kw => detectedUtility.includes(kw));
   });
 
@@ -436,7 +677,13 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): I
     else if (prog.amountFlat) computedAmount = prog.amountFlat;
     else if (prog.amountPctOfProject) computedAmount = Math.round(totalProjectCost * prog.amountPctOfProject);
     else if (prog.amountPctOfInstall) computedAmount = Math.round(installCost * prog.amountPctOfInstall);
-    return { ...prog, computedAmount, index: i };
+
+    // Run eligibility check if defined
+    const eligResult = prog.checkEligibility
+      ? prog.checkEligibility(eligInput)
+      : { eligible: true as boolean | null };
+
+    return { ...prog, computedAmount, index: i, eligResult };
   });
 
   // Group by groupId — pick the highest-value program per group
@@ -450,17 +697,26 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): I
   for (const [, members] of groups) {
     members.sort((a, b) => b.computedAmount - a.computedAmount);
     members.forEach((prog, idx) => {
-      // Skip expired programs
+      // Skip expired programs entirely
       if (prog.programStatus === 'expired' || prog.programStatus === 'closed') return;
+
+      const isEligible = prog.eligResult.eligible;
+      const ineligibleReason = prog.eligResult.reason;
 
       incentives.push({
         id: `${prog.layer}-${prog.index}`,
         name: prog.name,
-        description: prog.details.slice(0, 80) + '...',
-        amount: `$${prog.computedAmount.toLocaleString()}`,
-        computedAmount: prog.computedAmount,
-        eligible: true,
-        details: prog.details,
+        description: isEligible === false
+          ? `NOT ELIGIBLE — ${ineligibleReason}`
+          : isEligible === null
+            ? `${ineligibleReason || 'Verify eligibility'}`
+            : prog.details.slice(0, 80) + '...',
+        amount: isEligible === false ? '$0' : `$${prog.computedAmount.toLocaleString()}`,
+        computedAmount: isEligible === false ? 0 : prog.computedAmount,
+        eligible: isEligible,
+        details: isEligible === false
+          ? `${prog.details}\n\nNOT ELIGIBLE: ${ineligibleReason}`
+          : prog.details,
         category: prog.layer,
         isAlternative: idx > 0,
         verified: prog.verified,
