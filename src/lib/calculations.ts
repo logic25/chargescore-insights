@@ -77,9 +77,9 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
     .filter(i => i.eligible && !i.isAlternative)
     .reduce((sum, i) => sum + (i.computedAmount ?? 0), 0);
 
-  // Also include federal 30C (eligible=null but not alternative)
+  // Include federal 30C only if eligible (true or null/unknown — NOT false)
   const federal30c = incentives.find(i => i.id === 'federal-30c');
-  const federalAmount = federal30c ? federal30c.computedAmount : 0;
+  const federalAmount = (federal30c && federal30c.eligible !== false) ? federal30c.computedAmount : 0;
   const selectedTotal = totalIncentiveAmount + federalAmount;
 
   const estimatedIncentives = Math.min(selectedTotal, totalProjectCost);
@@ -164,8 +164,9 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
     .filter(i => i.eligible && !i.isAlternative)
     .reduce((sum, i) => sum + (i.computedAmount ?? 0), 0);
 
+  // Include federal 30C only if eligible (true or null/unknown — NOT false)
   const federal30c = incentives.find(i => i.id === 'federal-30c');
-  const federalAmount = federal30c ? federal30c.computedAmount : 0;
+  const federalAmount = (federal30c && federal30c.eligible !== false) ? federal30c.computedAmount : 0;
   const selectedTotal = totalIncentiveAmount + federalAmount;
 
   const estimatedIncentives = Math.min(selectedTotal, totalProjectCost);
@@ -336,7 +337,12 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
   ],
 };
 
-export function getIncentives(site: SiteAnalysis): Incentive[] {
+export interface IncentiveContext {
+  isDAC: boolean;            // Disadvantaged community — required for 30C
+  isOnCorridor: boolean;     // Alt fuel corridor — required for NEVI
+}
+
+export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): Incentive[] {
   const incentives: Incentive[] = [];
 
   const totalPorts = site.chargingModel === 'tesla'
@@ -353,31 +359,52 @@ export function getIncentives(site: SiteAnalysis): Incentive[] {
 
   const maxPerPort = 100000;
 
-  // --- Federal programs (mutually exclusive: 30C is more accessible, NEVI is alternative) ---
+  // --- Federal 30C: requires eligible census tract (DAC / low-income) ---
   const federal30cAmount = Math.min(totalProjectCost * 0.3, totalPorts * maxPerPort);
-  const neviAmount = totalProjectCost * 0.8;
+  const is30cEligible = context ? context.isDAC : null;
 
   incentives.push({
     id: 'federal-30c',
     name: 'Federal 30C Tax Credit',
-    description: '30% of hardware + installation costs',
-    amount: `$${Math.round(federal30cAmount).toLocaleString()}`,
-    computedAmount: federal30cAmount,
-    eligible: null,
-    details: `30% of equipment + installation, up to $100,000 per port. Must be in eligible census tract. Expires June 2026.`,
+    description: is30cEligible === false
+      ? 'NOT ELIGIBLE — site is not in a qualifying census tract'
+      : '30% of hardware + installation costs',
+    amount: is30cEligible === false ? '$0' : `$${Math.round(federal30cAmount).toLocaleString()}`,
+    computedAmount: is30cEligible === false ? 0 : federal30cAmount,
+    eligible: is30cEligible,
+    details: is30cEligible === false
+      ? 'This site is NOT in an eligible low-income or disadvantaged census tract. The 30C Alternative Fuel Vehicle Refueling Property Credit requires the property to be in a qualifying area per IRS guidance. Consider NEVI or state/utility programs instead.'
+      : `30% of equipment + installation, up to $100,000 per port. Must be in eligible census tract. Expires June 2026.`,
     category: 'federal',
     expiresAt: 'Jun 2026',
     isAlternative: false,
   });
 
+  // --- NEVI: requires alt fuel corridor + minimum 4 DCFC ports at 150kW+ ---
+  const neviAmount = totalProjectCost * 0.8;
+  const meetsNeviPortReq = site.chargingModel === 'tesla'
+    ? site.teslaStalls >= 4
+    : site.dcfcChargers >= 4;
+  const isNeviEligible = context
+    ? (context.isOnCorridor && meetsNeviPortReq)
+    : null;
+
+  const neviIneligibleReasons: string[] = [];
+  if (context && !context.isOnCorridor) neviIneligibleReasons.push('site is not on a designated Alternative Fuel Corridor');
+  if (context && !meetsNeviPortReq) neviIneligibleReasons.push(`minimum 4 DCFC ports required (you have ${site.chargingModel === 'tesla' ? site.teslaStalls : site.dcfcChargers})`);
+
   incentives.push({
     id: 'nevi',
     name: 'NEVI Formula Program',
-    description: 'Up to 80% — highway corridor only',
-    amount: `$${Math.round(neviAmount).toLocaleString()}`,
-    computedAmount: neviAmount,
-    eligible: null,
-    details: `National Electric Vehicle Infrastructure program covers up to 80% of costs for qualifying Alternative Fuel Corridor locations. Requires minimum 4 DCFC ports at 150kW+.${site.chargingModel === 'tesla' ? ' Tesla Superchargers meet the 150kW+ requirement.' : ''}`,
+    description: isNeviEligible === false
+      ? `NOT ELIGIBLE — ${neviIneligibleReasons.join('; ')}`
+      : 'Up to 80% — highway corridor only',
+    amount: isNeviEligible === false ? '$0' : `$${Math.round(neviAmount).toLocaleString()}`,
+    computedAmount: isNeviEligible === false ? 0 : neviAmount,
+    eligible: isNeviEligible,
+    details: isNeviEligible === false
+      ? `This site does not qualify for NEVI: ${neviIneligibleReasons.join('; ')}. NEVI requires the location to be on a designated Alternative Fuel Corridor with at least 4 DCFC ports rated 150kW+.`
+      : `National Electric Vehicle Infrastructure program covers up to 80% of costs for qualifying Alternative Fuel Corridor locations. Requires minimum 4 DCFC ports at 150kW+.${site.chargingModel === 'tesla' ? ' Tesla Superchargers meet the 150kW+ requirement.' : ''}`,
     category: 'federal',
     isAlternative: true, // shown as "OR" alternative — not summed
   });

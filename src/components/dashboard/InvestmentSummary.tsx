@@ -133,21 +133,23 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
                 <div key={layer}>
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-0.5">{label}</p>
                   {selected.map((inc) => (
-                    <div key={inc.id} className="flex items-center justify-between py-0.5">
+                    <div key={inc.id} className={`flex items-center justify-between py-0.5 ${inc.eligible === false ? 'opacity-50' : ''}`}>
                       <span className="text-[11px] text-muted-foreground/70 flex items-center">
-                        ├─ {inc.name}
+                        ├─ {inc.eligible === false ? <span className="line-through">{inc.name}</span> : inc.name}
+                        {inc.eligible === false && <span className="ml-1 text-[9px] text-destructive font-semibold">(not eligible)</span>}
                         {inc.eligible === null && <span className="ml-1 text-[9px] text-amber">(verify)</span>}
                       </span>
-                      <span className="font-mono text-[11px] text-muted-foreground/70">{inc.amount}</span>
+                      <span className={`font-mono text-[11px] text-muted-foreground/70 ${inc.eligible === false ? 'line-through' : ''}`}>{inc.amount}</span>
                     </div>
                   ))}
                   {alternatives.map((inc) => (
-                    <div key={inc.id} className="flex items-center justify-between py-0.5 opacity-40">
+                    <div key={inc.id} className={`flex items-center justify-between py-0.5 ${inc.eligible === false ? 'opacity-30' : 'opacity-40'}`}>
                       <span className="text-[11px] text-muted-foreground/70 flex items-center">
-                        └─ <span className="italic ml-0.5">or {inc.name}</span>
+                        └─ <span className={`ml-0.5 ${inc.eligible === false ? 'line-through' : 'italic'}`}>{inc.eligible === false ? inc.name : `or ${inc.name}`}</span>
+                        {inc.eligible === false && <span className="ml-1 text-[9px] text-destructive font-semibold">(not eligible)</span>}
                         {inc.eligible === null && <span className="ml-1 text-[9px] text-amber">(verify)</span>}
                       </span>
-                      <span className="font-mono text-[11px] text-muted-foreground/70 line-through">{inc.amount}</span>
+                      <span className={`font-mono text-[11px] text-muted-foreground/70 ${inc.eligible === false ? '' : 'line-through'}`}>{inc.amount}</span>
                     </div>
                   ))}
                 </div>
