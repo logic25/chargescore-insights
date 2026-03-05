@@ -162,14 +162,24 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   let gridScore = 60;
   if (inputs.hasThreePhasePower === true) gridScore = 90;
   else if (inputs.hasThreePhasePower === false) gridScore = 30;
+  
+  // Boost score if we know the utility (commercial service likely available)
+  const utilityName = inputs.utilityName ?? null;
+  if (utilityName && inputs.hasThreePhasePower === null) {
+    // Known utility = at least basic commercial service exists
+    gridScore = 65;
+  }
+
   factors.push({
     name: 'Grid Capacity',
     score: gridScore,
     weight: 0.05,
     weightedScore: gridScore * 0.05,
     tooltip: 'Can the electrical grid handle high-power DCFC? V4 Superchargers need 480V three-phase power. Properties with existing high-power service score higher.',
-    dataSource: 'User input / utility data',
-    rawValue: inputs.hasThreePhasePower === null ? 'Unknown' : (inputs.hasThreePhasePower ? 'Three-phase available' : 'May need upgrade'),
+    dataSource: utilityName ? `NREL Utility Rates API — ${utilityName}` : 'User input / utility data',
+    rawValue: inputs.hasThreePhasePower === null
+      ? (utilityName ? `Utility: ${utilityName} (service type unknown)` : 'Unknown')
+      : (inputs.hasThreePhasePower ? 'Three-phase available' : 'May need upgrade'),
   });
 
   // FACTOR 8: Incentive Eligibility (10%)
