@@ -661,10 +661,13 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): I
   const statePrograms = STATE_INCENTIVES[site.state] || [];
   const detectedUtility = context?.utilityName?.toLowerCase() ?? '';
 
+  const dcfcPorts = site.chargingModel === 'tesla' ? site.teslaStalls : site.dcfcChargers;
+  const eligInput: EligibilityInput = { site, context, totalPorts, dcfcPorts, totalProjectCost };
+
   // Filter: utility programs with utilityMatch only show if the detected utility matches
   const filteredPrograms = statePrograms.filter(prog => {
-    if (!prog.utilityMatch) return true; // no territory restriction — always show
-    if (!detectedUtility) return false;  // utility unknown — skip territory-specific programs
+    if (!prog.utilityMatch) return true;
+    if (!detectedUtility) return false;
     return prog.utilityMatch.some(kw => detectedUtility.includes(kw));
   });
 
@@ -674,7 +677,13 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): I
     else if (prog.amountFlat) computedAmount = prog.amountFlat;
     else if (prog.amountPctOfProject) computedAmount = Math.round(totalProjectCost * prog.amountPctOfProject);
     else if (prog.amountPctOfInstall) computedAmount = Math.round(installCost * prog.amountPctOfInstall);
-    return { ...prog, computedAmount, index: i };
+
+    // Run eligibility check if defined
+    const eligResult = prog.checkEligibility
+      ? prog.checkEligibility(eligInput)
+      : { eligible: true as boolean | null };
+
+    return { ...prog, computedAmount, index: i, eligResult };
   });
 
   // Group by groupId — pick the highest-value program per group
@@ -688,17 +697,26 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): I
   for (const [, members] of groups) {
     members.sort((a, b) => b.computedAmount - a.computedAmount);
     members.forEach((prog, idx) => {
-      // Skip expired programs
+      // Skip expired programs entirely
       if (prog.programStatus === 'expired' || prog.programStatus === 'closed') return;
+
+      const isEligible = prog.eligResult.eligible;
+      const ineligibleReason = prog.eligResult.reason;
 
       incentives.push({
         id: `${prog.layer}-${prog.index}`,
         name: prog.name,
-        description: prog.details.slice(0, 80) + '...',
-        amount: `$${prog.computedAmount.toLocaleString()}`,
-        computedAmount: prog.computedAmount,
-        eligible: true,
-        details: prog.details,
+        description: isEligible === false
+          ? `NOT ELIGIBLE — ${ineligibleReason}`
+          : isEligible === null
+            ? `${ineligibleReason || 'Verify eligibility'}`
+            : prog.details.slice(0, 80) + '...',
+        amount: isEligible === false ? '$0' : `$${prog.computedAmount.toLocaleString()}`,
+        computedAmount: isEligible === false ? 0 : prog.computedAmount,
+        eligible: isEligible,
+        details: isEligible === false
+          ? `${prog.details}\n\nNOT ELIGIBLE: ${ineligibleReason}`
+          : prog.details,
         category: prog.layer,
         isAlternative: idx > 0,
         verified: prog.verified,
