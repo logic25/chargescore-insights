@@ -263,7 +263,7 @@ const Dashboard = () => {
           </div>
 
           {/* Right: Score + Property Inputs + Parking Impact */}
-          <div className="space-y-3 min-h-0 overflow-y-auto max-h-[660px] lg:max-h-[620px]">
+          <div className="space-y-3 min-h-0">
             {/* ChargeScore compact */}
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-4">
