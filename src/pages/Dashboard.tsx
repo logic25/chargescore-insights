@@ -212,13 +212,7 @@ const Dashboard = () => {
     incentivesPerStall: site.state === 'NY' ? 45000 : site.state === 'CA' ? 50000 : 30000,
   }), [chargeScore.totalScore, site.teslaStalls, site.pricePerKwh, site.electricityCostPerKwh, site.teslaServiceFeePerKwh, site.state]);
 
-  // Legacy calculations (still used by other panels)
-  const incentiveContext = useMemo(() => ({ isDAC: siteData.isDAC, isOnCorridor: siteData.isOnCorridor, utilityName: utilityInfo.utilityName }), [siteData.isDAC, siteData.isOnCorridor, utilityInfo.utilityName]);
-  const incentives = useMemo(() => getIncentives(site, incentiveContext), [site, incentiveContext]);
-  const financials = useMemo(() => calculateFinancials(site, incentives), [site, incentives]);
-  const parking = useMemo(() => calculateParkingImpact(site), [site]);
-  const demandCharge = useMemo(() => calculateDemandCharge(site), [site]);
-
+  // NREL incentives (async)
   const [nrelIncentives, setNrelIncentives] = useState<NrelIncentive[]>([]);
   useEffect(() => {
     if (site.state) {
@@ -230,6 +224,13 @@ const Dashboard = () => {
       }).then(setNrelIncentives);
     }
   }, [site.state, site.address, utilityInfo.companyId, utilityInfo.utilityName]);
+
+  // Legacy calculations (still used by other panels)
+  const incentiveContext = useMemo(() => ({ isDAC: siteData.isDAC, isOnCorridor: siteData.isOnCorridor, utilityName: utilityInfo.utilityName }), [siteData.isDAC, siteData.isOnCorridor, utilityInfo.utilityName]);
+  const incentives = useMemo(() => getIncentives(site, incentiveContext, nrelIncentives), [site, incentiveContext, nrelIncentives]);
+  const financials = useMemo(() => calculateFinancials(site, incentives), [site, incentives]);
+  const parking = useMemo(() => calculateParkingImpact(site), [site]);
+  const demandCharge = useMemo(() => calculateDemandCharge(site), [site]);
 
   // Log analysis for ML
   useEffect(() => {
@@ -327,7 +328,7 @@ const Dashboard = () => {
                 parcelData={parcelData}
                 onParkingEstimate={handleParkingEstimate}
               />
-              <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} nrelIncentives={nrelIncentives} />
+              <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
             </div>
 
             {/* Row 3: 15-Year Cash Flow + Parking Impact */}
