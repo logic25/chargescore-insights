@@ -9,13 +9,14 @@ export interface NrelIncentive {
   status: string;
   enacted_date: string;
   amended_date?: string;
+  utilityId?: number | null;
 }
 
 // Keywords that indicate a program is relevant to commercial EV charging infrastructure
 const EVSE_KEYWORDS = [
   'charging', 'charger', 'evse', 'electric vehicle supply',
   'infrastructure', 'station', 'make-ready', 'make ready',
-  'refueling', 'fueling infrastructure', 'alt fuel', 'alternative fuel infrastructure',
+  'refueling', 'fueling infrastructure',
   'dcfc', 'fast charge', 'level 2', 'level 3',
 ];
 
@@ -25,6 +26,7 @@ const EXCLUDE_KEYWORDS = [
   'hov lane', 'high occupancy', 'license plate', 'registration fee',
   'inspection', 'idling', 'procurement', 'medium-duty', 'heavy-duty',
   'bus', 'transit', 'school', 'last updated', 'comprehensive review',
+  'building code', 'parking requirement', 'weight limit', 'toll',
 ];
 
 function isRelevantToEVCharging(item: any): boolean {
@@ -40,47 +42,61 @@ function isRelevantToEVCharging(item: any): boolean {
   const techs: string[] = item.technologies || [];
   if (techs.length > 0 && !techs.includes('ELEC') && !techs.includes('PHEV') && !techs.includes('HEV')) return false;
 
-  // Check category — prefer infrastructure-related
+  // If it's a "Laws and Regulations" type, only include if clearly about infrastructure incentives
   const cats: any[] = item.categories || [];
   const catCodes = cats.map((c: any) => c.code);
-  const hasInfraOrStation = catCodes.includes('STATION') || catCodes.includes('FLEET') || catCodes.includes('GOV');
-
-  // If it's a "Laws and Regulations" type, only include if clearly about infrastructure incentives
-  if (item.type === 'Laws and Regulations' && !hasInfraOrStation) return false;
+  if (item.type === 'Laws and Regulations' && !catCodes.includes('STATION')) return false;
 
   return true;
 }
 
-export async function fetchStateIncentives(stateCode: string): Promise<NrelIncentive[]> {
+export interface FetchIncentivesOptions {
+  stateCode: string;
+  utilityCompanyId?: string | null; // NREL utility company_id to filter utility-specific programs
+}
+
+export async function fetchStateIncentives(opts: FetchIncentivesOptions): Promise<NrelIncentive[]> {
   try {
     const params = new URLSearchParams({
       api_key: NREL_API_KEY,
-      jurisdiction: stateCode,
+      jurisdiction: opts.stateCode,
       limit: '200',
     });
     const res = await fetch(`https://developer.nrel.gov/api/transportation-incentives-laws/v1.json?${params}`);
     if (!res.ok) throw new Error(`NREL Incentives API error: ${res.status}`);
     const data = await res.json();
 
-    // Filter for incentive-type entries that are relevant to EV charging infrastructure
     return (data.result || [])
       .filter((r: any) => {
         // Only include incentive types (not pure laws/regulations)
         const isIncentiveType = r.type === 'State Incentives' || r.type === 'Incentives' || r.type === 'Utility / Private Incentives';
-
-        // Also allow laws that specifically create charging incentive programs
         const isRelevantLaw = r.type === 'Laws and Regulations' && isRelevantToEVCharging(r);
-
         if (!isIncentiveType && !isRelevantLaw) return false;
 
-        // For incentive types, still filter for EVSE relevance
-        return isRelevantToEVCharging(r);
-      })
-      .filter((r: any) => {
-        // Exclude repealed/expired programs
+        // Filter for EVSE relevance
+        if (!isRelevantToEVCharging(r)) return false;
+
+        // Exclude repealed/expired
         if (r.status === 'repealed' || r.status === 'expired') return false;
+
+        // If program has a utility_id, only show if it matches the site's utility
+        if (r.utility_id != null && opts.utilityCompanyId) {
+          if (String(r.utility_id) !== String(opts.utilityCompanyId)) return false;
+        }
+
         return true;
-      });
+      })
+      .map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        state: r.state,
+        type: r.type,
+        description: r.plaintext?.slice(0, 200) || '',
+        status: r.status || 'active',
+        enacted_date: r.enacted_date,
+        amended_date: r.amended_date,
+        utilityId: r.utility_id,
+      }));
   } catch (err) {
     console.error('Failed to fetch NREL incentives:', err);
     return [];

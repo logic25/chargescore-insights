@@ -74,7 +74,7 @@ const Dashboard = () => {
   const [popDensity, setPopDensity] = useState<number | null>(null);
   const [amenitiesCount, setAmenitiesCount] = useState(5);
   const [siteData, setSiteData] = useState<SiteDataResult>({ isDAC: false, isOnCorridor: false, floodZone: null, floodZoneSubtype: null, isHighRisk: false });
-  const [utilityInfo, setUtilityInfo] = useState<UtilityInfo>({ utilityName: null, commercialRate: null });
+  const [utilityInfo, setUtilityInfo] = useState<UtilityInfo>({ utilityName: null, commercialRate: null, companyId: null });
   const [aadtData, setAadtData] = useState<AadtResult>({ aadt: null, routeId: null, year: null });
   const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null, source: null });
   const [highwayProximity, setHighwayProximity] = useState<HighwayProximity>({ distanceMiles: null, routeName: null, isInterstate: false });
@@ -221,8 +221,8 @@ const Dashboard = () => {
 
   const [nrelIncentives, setNrelIncentives] = useState<NrelIncentive[]>([]);
   useEffect(() => {
-    if (site.state) fetchStateIncentives(site.state).then(setNrelIncentives);
-  }, [site.state]);
+    if (site.state) fetchStateIncentives({ stateCode: site.state, utilityCompanyId: utilityInfo.companyId }).then(setNrelIncentives);
+  }, [site.state, utilityInfo.companyId]);
 
   // Log analysis for ML
   useEffect(() => {
