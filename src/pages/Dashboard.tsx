@@ -8,6 +8,8 @@ import { fetchStateIncentives, type NrelIncentive } from '@/lib/api/incentives';
 import { fetchPlannedStations, type PlannedStationData } from '@/lib/api/plannedStations';
 import { fetchCensusTractFips, fetchMultiFamilyPct, fetchPopDensity } from '@/lib/api/census';
 import { fetchNearbyAmenities } from '@/lib/api/amenities';
+import { fetchAadt, type AadtResult } from '@/lib/api/traffic';
+import { fetchParcelInfo, type ParcelResult } from '@/lib/api/parcel';
 import { calculateFinancials, calculateParkingImpact, calculateDemandCharge, getIncentives } from '@/lib/calculations';
 import { calculateChargeScoreV2, projectRevenue, type ChargeScoreResult, type RevenueProjection } from '@/lib/scoring';
 import { findNearestAirport } from '@/data/airports';
@@ -69,6 +71,8 @@ const Dashboard = () => {
   const [popDensity, setPopDensity] = useState<number | null>(null);
   const [amenitiesCount, setAmenitiesCount] = useState(5);
   const [isDisadvantagedCommunity, setIsDisadvantagedCommunity] = useState(false);
+  const [aadtData, setAadtData] = useState<AadtResult>({ aadt: null, routeId: null, year: null });
+  const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null });
 
   const handleParkingEstimate = useCallback((data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => {
     setSite(prev => ({ ...prev, totalParkingSpaces: data.totalSpots }));
@@ -122,6 +126,16 @@ const Dashboard = () => {
     fetchNearbyAmenities(site.lat, site.lng).then(setAmenitiesCount);
   }, [site.lat, site.lng]);
 
+  // Fetch AADT traffic data from HPMS
+  useEffect(() => {
+    fetchAadt(site.lat, site.lng).then(setAadtData);
+  }, [site.lat, site.lng]);
+
+  // Fetch parcel data from NYC MapPLUTO
+  useEffect(() => {
+    fetchParcelInfo(site.lat, site.lng).then(setParcelData);
+  }, [site.lat, site.lng]);
+
   // Computed scoring data from stations
   const stationMetrics = useMemo(() => {
     const dcfcStations = stations.filter(s => s.chargerType === 'DCFC' || s.chargerType === 'Tesla');
@@ -149,7 +163,7 @@ const Dashboard = () => {
 
   // ChargeScore V2
   const chargeScore: ChargeScoreResult = useMemo(() => calculateChargeScoreV2({
-    aadtVpd: TRAFFIC_LEVEL_VPD[trafficLevel],
+    aadtVpd: aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel],
     evRegistrations,
     nearestDcfcMiles: stationMetrics.nearestDcfcMiles,
     dcfcWithin5Miles: stationMetrics.dcfcWithin5Miles,
@@ -168,7 +182,7 @@ const Dashboard = () => {
     hasThreePhasePower: hasThreePhasePower,
     state: site.state,
     zipCode: site.zipCode,
-  }), [trafficLevel, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, isDisadvantagedCommunity, hasThreePhasePower, site.state, site.zipCode]);
+  }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, isDisadvantagedCommunity, hasThreePhasePower, site.state, site.zipCode]);
 
   // Revenue projection from ChargeScore
   const revenueProjection: RevenueProjection = useMemo(() => projectRevenue({
@@ -276,6 +290,8 @@ const Dashboard = () => {
                 trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
                 availableForChargers={availableForChargers}
                 confirmedSpotCount={confirmedSpotCount}
+                aadtData={aadtData}
+                parcelData={parcelData}
                 onParkingEstimate={handleParkingEstimate}
               />
               <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} nrelIncentives={nrelIncentives} />
