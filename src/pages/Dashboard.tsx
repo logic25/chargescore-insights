@@ -287,8 +287,8 @@ const Dashboard = () => {
 
       <main className="p-4 space-y-3">
         {/* Row 1 (ungated): Map tabs + ChargeScore Gauge */}
-        <div className="grid items-start gap-3 lg:grid-cols-2">
-          <Tabs defaultValue="satellite" className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
+          <Tabs defaultValue="satellite" className="h-full rounded-xl border border-border bg-card shadow-sm overflow-hidden">
             <div className="border-b border-border px-4 pt-3">
               <TabsList className="h-8">
                 <TabsTrigger value="satellite" className="text-xs">Satellite</TabsTrigger>

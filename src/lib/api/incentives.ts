@@ -103,7 +103,10 @@ function utilityMatchesSite(programTitle: string, siteUtilityName: string): bool
 
 function isRelevantToEVCharging(item: any): boolean {
   const text = `${item.title ?? ''} ${item.plaintext ?? ''} ${item.text ?? ''}`.toLowerCase();
+  const title = (item.title ?? '').toLowerCase();
 
+  // Exclude planning-only NEVI records (not direct install funding opportunities)
+  if (title.includes('nevi') && title.includes('planning')) return false;
   if (EXCLUDE_KEYWORDS.some(kw => text.includes(kw))) return false;
   if (!EVSE_KEYWORDS.some(kw => text.includes(kw))) return false;
 

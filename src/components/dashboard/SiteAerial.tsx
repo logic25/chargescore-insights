@@ -155,7 +155,7 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
 
   return (
     <div className="overflow-hidden">
-      <div className="relative h-[300px]">
+      <div className="relative h-[360px] lg:h-[560px]">
         <div ref={containerRef} style={{ height: '100%', width: '100%' }} />
 
         {/* Coordinate badge */}

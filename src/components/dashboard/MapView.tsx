@@ -92,7 +92,7 @@ const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
         </div>
       </div>
       <div className="relative">
-        <div ref={containerRef} className="h-[400px] w-full lg:h-[460px]" />
+        <div ref={containerRef} className="h-[360px] w-full lg:h-[560px]" />
         {loading && (
           <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-background/50 backdrop-blur-sm">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
