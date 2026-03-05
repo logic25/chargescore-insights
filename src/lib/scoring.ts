@@ -58,7 +58,7 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     weight: 0.22,
     weightedScore: trafficScore * 0.22,
     tooltip: 'How many vehicles drive past this location daily (AADT). Higher traffic = more potential EV charging customers. Sites above 20,000 VPD are considered excellent.',
-    dataSource: 'User estimate (State DOT AADT coming soon)',
+    dataSource: 'FHWA HPMS (Highway Performance Monitoring System)',
     rawValue: inputs.aadtVpd ? `${inputs.aadtVpd.toLocaleString()} VPD` : 'Not available — using estimate',
   });
 
