@@ -830,7 +830,7 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext, nr
           ? `NOT ELIGIBLE — ${ineligibleReason}`
           : isEligible === null
             ? `${ineligibleReason || 'Verify eligibility'}`
-            : prog.details.slice(0, 80) + '...',
+            : prog.details,
         amount: isEligible === false ? '$0' : `$${prog.computedAmount.toLocaleString()}`,
         computedAmount: isEligible === false ? 0 : prog.computedAmount,
         eligible: isEligible,
@@ -883,7 +883,7 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext, nr
       incentives.push({
         id: `nrel-${nrel.id}`,
         name: nrel.title,
-        description: computed?.description || nrel.description?.slice(0, 100) || 'Contact program for details.',
+        description: computed?.description || (nrel.description && nrel.description.length > 150 ? nrel.description.slice(0, 150) + '…' : nrel.description) || 'Contact program for details.',
         amount: hasAmount ? `$${computedAmount.toLocaleString()}` : 'Contact for details',
         computedAmount: hasAmount ? computedAmount : 0,
         eligible: true,
