@@ -81,7 +81,7 @@ const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
   }, [lat, lng, stations]);
 
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-hidden h-full flex flex-col">
       <div className="flex items-center justify-between border-b border-border p-4">
         <h2 className="font-heading text-sm font-semibold text-foreground">Competition Map</h2>
         <div className="flex items-center gap-3 text-xs">
@@ -91,7 +91,7 @@ const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
           <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#888' }} /> Other</span>
         </div>
       </div>
-      <div className="relative">
+      <div className="relative flex-1 min-h-0">
         <div ref={containerRef} className="h-full min-h-[360px] w-full" />
         {loading && (
           <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-background/50 backdrop-blur-sm">
