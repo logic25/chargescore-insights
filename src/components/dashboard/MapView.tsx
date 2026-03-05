@@ -74,7 +74,14 @@ const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
         );
     });
 
+    // Fix tiles when tab becomes visible (container goes from 0 to real size)
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    observer.observe(containerRef.current);
+
     return () => {
+      observer.disconnect();
       map.remove();
       mapRef.current = null;
     };
