@@ -2,33 +2,25 @@
 
 ## Problem
 
-Programs like "ZEV Rebate" and "ZEV Fueling Infrastructure Grant for Municipalities" are showing as eligible, but they're only available to municipal/government entities. The app currently has no mechanism to filter programs by applicant type (commercial vs. municipal/government).
+The satellite image on the dashboard is broken. The `<img>` tag points to a Google Maps Static API URL, but the request is failing (referrer restriction or API not enabled). When the image fails, there's no `onError` handler, so the browser just shows the alt text.
 
-## Approach
+## Plan
 
-**1. Add municipality/government keyword detection to `src/lib/api/incentives.ts`**
+**Fix `src/components/dashboard/SiteAerial.tsx`:**
 
-Add a new exclusion filter that detects programs restricted to municipalities/government entities. Programs with titles or descriptions containing keywords like "for municipalities", "municipal fleet", "government", "public agency", "local government" should be filtered out **unless** the user's `propertyType` indicates a government-owned property.
+1. Add an `onError` handler on the `<img>` tag that switches to a fallback state when the Google Static Map image fails to load.
+2. The fallback will show:
+   - An embedded Leaflet/OpenStreetMap satellite tile map as the primary fallback (using the same Leaflet library already installed), OR
+   - A cleaner placeholder with a map icon and coordinates if Leaflet is too heavy for this component.
 
-Since the existing property types don't include a "government/municipal" option, we have two choices:
+**Recommended approach** — Use an OpenStreetMap static image as fallback:
+- On `<img onError>`, swap `src` to an OpenStreetMap-based static image tile (e.g., from `tile.openstreetmap.org`) or show the "Satellite view unavailable" placeholder with proper styling instead of broken alt text.
+- This requires no additional dependencies.
 
-- **Option A**: Simply exclude municipality-only programs for all users (since the app targets commercial property owners, not government entities).
-- **Option B**: Add a "Government / Municipal" property type option so the rare government user can see those programs.
+**Specifically:**
+- Add `useState` for `imageError`
+- Add `onError={() => setImageError(true)}` to the `<img>`
+- When `imageError` is true, render the fallback placeholder (styled nicely with a Map icon) instead of the broken image
 
-**Recommendation: Option A** — the app's target user is a commercial property owner. Municipality-only programs should be excluded via `EXCLUDE_KEYWORDS` additions. This is the simplest, most correct fix.
-
-**2. Changes to `src/lib/api/incentives.ts`**
-
-Add these keywords to `EXCLUDE_KEYWORDS`:
-- `'for municipalities'`, `'municipal fleet'`, `'municipal govern'`, `'public agency'`, `'local government'`, `'zev rebate'` (the ZEV Rebate is a vehicle purchase rebate, not infrastructure)
-
-This will cause `isRelevantToEVCharging` to return `false` for these programs, removing them from results entirely.
-
-**3. Verify no false positives**
-
-Ensure the new keywords don't accidentally exclude legitimate infrastructure programs. The keywords are specific enough (e.g., "for municipalities" rather than just "municipal") to avoid collateral filtering.
-
-## Files to Change
-
-- `src/lib/api/incentives.ts` — add municipality/government-restricted keywords to `EXCLUDE_KEYWORDS`
+This is a quick fix that ensures users never see broken image alt text.
 

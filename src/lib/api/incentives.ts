@@ -30,6 +30,8 @@ const EXCLUDE_KEYWORDS = [
   'inspection', 'idling', 'procurement', 'medium-duty', 'heavy-duty',
   'bus', 'transit', 'school', 'last updated', 'comprehensive review',
   'building code', 'parking requirement', 'weight limit', 'toll',
+  'for municipalities', 'municipal fleet', 'municipal govern',
+  'public agency', 'local government', 'zev rebate',
 ];
 
 // Known utility names in NREL program titles — used to detect utility-specific programs
