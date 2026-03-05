@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Info, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import { Info, ChevronDown, ChevronRight, ExternalLink, Check, X, AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
@@ -38,6 +38,61 @@ const LAYER_LABELS: Record<string, string> = {
 
 const LAYER_ORDER: string[] = ['federal', 'state', 'utility'];
 
+const EligibilityBadge = ({ eligible }: { eligible: boolean | null }) => {
+  if (eligible === false) {
+    return (
+      <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-destructive">
+        <X className="h-2.5 w-2.5" /> Not Eligible
+      </span>
+    );
+  }
+  if (eligible === null) {
+    return (
+      <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-600">
+        <AlertTriangle className="h-2.5 w-2.5" /> Verify
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-0.5 rounded-full bg-success/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-success">
+      <Check className="h-2.5 w-2.5" /> Eligible
+    </span>
+  );
+};
+
+const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
+  const ineligible = inc.eligible === false;
+  return (
+    <div className={`flex items-start justify-between gap-2 rounded-md px-2 py-1.5 ${
+      ineligible ? 'bg-muted/30 opacity-60' : isAlt ? 'bg-muted/20' : 'bg-success/5'
+    }`}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`text-xs font-medium ${ineligible ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+            {isAlt && !ineligible ? `or: ${inc.name}` : inc.name}
+          </span>
+          <EligibilityBadge eligible={inc.eligible} />
+        </div>
+        {inc.details && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate cursor-help">
+                {inc.description}
+              </p>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-sm text-xs leading-relaxed">{inc.details}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+      <span className={`font-mono text-xs font-semibold whitespace-nowrap mt-0.5 ${
+        ineligible ? 'text-muted-foreground line-through' : isAlt ? 'text-muted-foreground' : 'text-success'
+      }`}>
+        {ineligible ? '$0' : inc.amount}
+      </span>
+    </div>
+  );
+};
+
 const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nrelIncentives = [] }: Props) => {
   const [showNrelPrograms, setShowNrelPrograms] = useState(false);
   const [showYear1, setShowYear1] = useState(false);
@@ -53,11 +108,16 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
   const netProfit = financials.annualNetRevenue;
   const monthlyProfit = netProfit / 12;
 
-  // Group incentives by layer
-  const incentivesByLayer = LAYER_ORDER.map(layer => ({
+  // Split incentives: eligible selected, ineligible, and alternatives
+  const eligibleSelected = incentives.filter(i => !i.isAlternative && i.eligible !== false);
+  const ineligible = incentives.filter(i => !i.isAlternative && i.eligible === false);
+  const alternatives = incentives.filter(i => i.isAlternative);
+
+  // Group eligible by layer for display
+  const eligibleByLayer = LAYER_ORDER.map(layer => ({
     layer,
     label: LAYER_LABELS[layer],
-    items: incentives.filter(i => i.category === layer),
+    items: eligibleSelected.filter(i => i.category === layer),
   })).filter(g => g.items.length > 0);
 
   return (
@@ -116,47 +176,59 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
           </div>
         </div>
 
-        {/* Incentives by Layer */}
-        <div>
+        {/* ===== INCENTIVES SECTION ===== */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-success flex items-center">
+            <span className="text-sm font-medium text-success flex items-center">
               Less: Incentives
-              <InfoTip text="Best-case realistic incentive stack. Only non-overlapping programs are summed. Alternative programs shown in gray — you'd pick one OR the other, not both." />
+              <InfoTip text="Only eligible, non-overlapping programs are summed. Ineligible and alternative programs are shown separately and NOT included in the total." />
             </span>
-            <span className="font-mono text-sm font-semibold text-success">({fmt(financials.estimatedIncentives)})</span>
+            <span className="font-mono text-sm font-bold text-success">({fmt(financials.estimatedIncentives)})</span>
           </div>
-          <div className="ml-4 mt-2 space-y-2">
-            {incentivesByLayer.map(({ layer, label, items }) => {
-              const selected = items.filter(i => !i.isAlternative);
-              const alternatives = items.filter(i => i.isAlternative);
-              return (
-                <div key={layer}>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-0.5">{label}</p>
-                  {selected.map((inc) => (
-                    <div key={inc.id} className={`flex items-center justify-between py-0.5 ${inc.eligible === false ? 'opacity-50' : ''}`}>
-                      <span className="text-[11px] text-muted-foreground/70 flex items-center">
-                        ├─ {inc.eligible === false ? <span className="line-through">{inc.name}</span> : inc.name}
-                        {inc.eligible === false && <span className="ml-1 text-[9px] text-destructive font-semibold">(not eligible)</span>}
-                        {inc.eligible === null && <span className="ml-1 text-[9px] text-amber">(verify)</span>}
-                      </span>
-                      <span className={`font-mono text-[11px] text-muted-foreground/70 ${inc.eligible === false ? 'line-through' : ''}`}>{inc.amount}</span>
-                    </div>
-                  ))}
-                  {alternatives.map((inc) => (
-                    <div key={inc.id} className={`flex items-center justify-between py-0.5 ${inc.eligible === false ? 'opacity-30' : 'opacity-40'}`}>
-                      <span className="text-[11px] text-muted-foreground/70 flex items-center">
-                        └─ <span className={`ml-0.5 ${inc.eligible === false ? 'line-through' : 'italic'}`}>{inc.eligible === false ? inc.name : `or ${inc.name}`}</span>
-                        {inc.eligible === false && <span className="ml-1 text-[9px] text-destructive font-semibold">(not eligible)</span>}
-                        {inc.eligible === null && <span className="ml-1 text-[9px] text-amber">(verify)</span>}
-                      </span>
-                      <span className={`font-mono text-[11px] text-muted-foreground/70 ${inc.eligible === false ? '' : 'line-through'}`}>{inc.amount}</span>
-                    </div>
+
+          {/* Eligible incentives — these count toward total */}
+          {eligibleByLayer.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] uppercase tracking-wider text-success/80 font-semibold">
+                ✓ Applied to your project
+              </p>
+              {eligibleByLayer.map(({ layer, label, items }) => (
+                <div key={layer} className="space-y-1">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 ml-1">{label}</p>
+                  {items.map(inc => (
+                    <IncentiveRow key={inc.id} inc={inc} isAlt={false} />
                   ))}
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {/* Ineligible incentives — clearly separated */}
+          {ineligible.length > 0 && (
+            <div className="space-y-1 border-t border-border/50 pt-2">
+              <p className="text-[10px] uppercase tracking-wider text-destructive/70 font-semibold">
+                ✗ Not eligible at this site
+              </p>
+              {ineligible.map(inc => (
+                <IncentiveRow key={inc.id} inc={inc} isAlt={false} />
+              ))}
+            </div>
+          )}
+
+          {/* Alternative programs — not summed */}
+          {alternatives.length > 0 && (
+            <div className="space-y-1 border-t border-border/50 pt-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-semibold">
+                Alternatives (pick one — not stacked)
+              </p>
+              {alternatives.map(inc => (
+                <IncentiveRow key={inc.id} inc={inc} isAlt={true} />
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* NREL Additional Programs */}
         {nrelIncentives.length > 0 && (
           <div>
             <button
