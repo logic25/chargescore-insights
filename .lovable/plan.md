@@ -1,59 +1,26 @@
 
 
-## Dashboard Layout Redesign — Eliminate Dead Space
+## Problem
 
-### Problem
-The current layout is a single wide column stacking everything vertically: full-width map → metrics strip → ChargeScore + Investment side-by-side → cash flow → property inputs way at the bottom. This creates massive dead space and buries the property inputs (which directly affect the score and financials) where users will never find them.
+The satellite image on the dashboard is broken. The `<img>` tag points to a Google Maps Static API URL, but the request is failing (referrer restriction or API not enabled). When the image fails, there's no `onError` handler, so the browser just shows the alt text.
 
-### New Layout: 3-Column Dense Dashboard
+## Plan
 
-The core idea: **put the map and property inputs side-by-side in the top row**, so users see their site AND can tweak inputs immediately. Everything fits above the fold on desktop.
+**Fix `src/components/dashboard/SiteAerial.tsx`:**
 
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ ← ChargeScore    1970 Merrick Rd, Merrick NY     Download Report│  header
-├────────────────────────────────┬─────────────────────────────────┤
-│                                │  ChargeScore: 66 (C+)          │
-│   Satellite Map / Competition  │  Grade explanation              │
-│   (tabs)                       │  ─────────────────────          │
-│   ~400px tall                  │  Property & Charging Inputs     │
-│                                │  (property type, traffic,       │
-│                                │   stalls slider, pricing,       │
-│                                │   parking utilization)          │
-│                                │  ─────────────────────          │
-│                                │  Parking Impact (compact)       │
-├────────────────────────────────┴─────────────────────────────────┤
-│  $4,303/mo  │  $0 out-of-pocket  │  1yr payback  │  $525K NPV  │  metrics strip
-├─────────────────────────────────┬────────────────────────────────┤
-│  Investment Summary             │  15-Year Cumulative Cash Flow  │
-│  (incentives, costs, stalls)    │  (bar chart)                   │
-└─────────────────────────────────┴────────────────────────────────┘
-```
+1. Add an `onError` handler on the `<img>` tag that switches to a fallback state when the Google Static Map image fails to load.
+2. The fallback will show:
+   - An embedded Leaflet/OpenStreetMap satellite tile map as the primary fallback (using the same Leaflet library already installed), OR
+   - A cleaner placeholder with a map icon and coordinates if Leaflet is too heavy for this component.
 
-### Changes to `src/pages/Dashboard.tsx`
+**Recommended approach** — Use an OpenStreetMap static image as fallback:
+- On `<img onError>`, swap `src` to an OpenStreetMap-based static image tile (e.g., from `tile.openstreetmap.org`) or show the "Satellite view unavailable" placeholder with proper styling instead of broken alt text.
+- This requires no additional dependencies.
 
-**Row 1** — Side-by-side: Map (left, ~60%) + Right sidebar containing:
-- ChargeScore gauge (compact — just the score arc, grade, and brief verdict)
-- PropertyInputs (expanded by default, not collapsed)  
-- ParkingImpact (compact inline)
+**Specifically:**
+- Add `useState` for `imageError`
+- Add `onError={() => setImageError(true)}` to the `<img>`
+- When `imageError` is true, render the fallback placeholder (styled nicely with a Map icon) instead of the broken image
 
-**Row 2** — Key metrics strip (unchanged, stays as the 4-column bar)
-
-**Row 3** — Side-by-side: InvestmentSummary (left) + FinancialProjection/cash flow chart (right)
-
-### Changes to `src/components/dashboard/PropertyInputs.tsx`
-- Default `expanded` to `true` instead of `false` — inputs should be visible immediately
-- Remove the collapse toggle entirely or make it always expanded in this context
-
-### Changes to `src/components/dashboard/ChargeScoreGauge.tsx`  
-- No structural changes, but it will render in the narrower right column so it needs to stay responsive (it already is)
-
-### Changes to `src/components/dashboard/ParkingImpact.tsx`
-- No changes needed, it's already compact
-
-### What this fixes
-- Property inputs are immediately visible next to the map — users see the site and can tweak inputs without scrolling
-- No dead space — the right column is packed with actionable controls
-- Financial details (Investment Summary + Cash Flow) sit together in row 3 as the user approved
-- The map is still prominent but shares the row instead of hogging the full width
+This is a quick fix that ensures users never see broken image alt text.
 

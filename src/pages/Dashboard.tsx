@@ -240,30 +240,34 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1440px]">
-        {/* ═══ SECTION 1: Full-width Map with ChargeScore Overlay ═══ */}
-        <div className="relative">
-          <Tabs defaultValue="satellite" className="border-b border-border">
-            <div className="flex items-center justify-between bg-card px-4 py-2">
-              <TabsList className="h-8">
-                <TabsTrigger value="satellite" className="text-xs">Satellite</TabsTrigger>
-                <TabsTrigger value="competition" className="text-xs">Competition</TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent value="satellite" className="mt-0">
-              <SiteAerial lat={site.lat} lng={site.lng} onSpotsCounted={handleSpotsCounted} onSpotsConfirmed={handleSpotsConfirmed} />
-            </TabsContent>
-            <TabsContent value="competition" className="mt-0">
-              <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
-            </TabsContent>
-          </Tabs>
+      <main className="mx-auto max-w-[1440px] p-4 space-y-3">
+        {/* ═══ ROW 1: Map (left) + Sidebar (right) ═══ */}
+        <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
+          {/* Left: Map with tabs */}
+          <div className="min-h-0">
+            <Tabs defaultValue="satellite" className="border border-border rounded-xl overflow-hidden bg-card">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+                <TabsList className="h-8">
+                  <TabsTrigger value="satellite" className="text-xs">Satellite</TabsTrigger>
+                  <TabsTrigger value="competition" className="text-xs">Competition</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="satellite" className="mt-0">
+                <SiteAerial lat={site.lat} lng={site.lng} onSpotsCounted={handleSpotsCounted} onSpotsConfirmed={handleSpotsConfirmed} />
+              </TabsContent>
+              <TabsContent value="competition" className="mt-0">
+                <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
+              </TabsContent>
+            </Tabs>
+          </div>
 
-          {/* Floating ChargeScore Badge */}
-          <div className="absolute top-14 right-4 z-10">
-            <div className="rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-lg p-3 w-[200px]">
-              <div className="flex items-center gap-3">
+          {/* Right: Score + Property Inputs + Parking Impact */}
+          <div className="space-y-3 min-h-0 overflow-y-auto max-h-[660px] lg:max-h-[620px]">
+            {/* ChargeScore compact */}
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-4">
                 <div className="relative flex-shrink-0">
-                  <svg width="56" height="56" viewBox="0 0 160 160">
+                  <svg width="72" height="72" viewBox="0 0 160 160">
                     <circle cx="80" cy="80" r="70" fill="none" stroke="currentColor" className="text-border" strokeWidth="12"
                       strokeDasharray={`${2 * Math.PI * 70 * 0.75} ${2 * Math.PI * 70 * 0.25}`}
                       strokeLinecap="round" transform="rotate(135 80 80)" />
@@ -274,63 +278,78 @@ const Dashboard = () => {
                       strokeLinecap="round" transform="rotate(135 80 80)" />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-mono text-base font-bold" style={{ color: chargeScore.totalScore >= 70 ? 'hsl(163, 100%, 42%)' : chargeScore.totalScore >= 45 ? 'hsl(45, 97%, 56%)' : 'hsl(0, 84%, 60%)' }}>
+                    <span className="font-mono text-xl font-bold" style={{ color: chargeScore.totalScore >= 70 ? 'hsl(163, 100%, 42%)' : chargeScore.totalScore >= 45 ? 'hsl(45, 97%, 56%)' : 'hsl(0, 84%, 60%)' }}>
                       {chargeScore.totalScore}
                     </span>
                   </div>
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">ChargeScore™</p>
                   {chargeScore.grade && (
-                    <span className="font-mono text-lg font-bold text-primary">{chargeScore.grade}</span>
+                    <span className="font-mono text-2xl font-bold text-primary">{chargeScore.grade}</span>
                   )}
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{site.address}</p>
                 </div>
               </div>
             </div>
+
+            {/* Property Inputs — expanded by default */}
+            <PropertyInputs
+              site={site} onChange={setSite}
+              trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
+              confirmedSpotCount={confirmedSpotCount}
+              aadtData={aadtData}
+              parcelData={parcelData}
+              onParkingEstimate={handleParkingEstimate}
+              defaultExpanded
+            />
+
+            {/* Parking Impact */}
+            <ParkingImpact analysis={parking} />
           </div>
         </div>
 
-        {/* ═══ SECTION 2: Key Metrics Strip ═══ */}
-        <div className="border-b border-border bg-card">
+        {/* ═══ ROW 2: Key Metrics Strip ═══ */}
+        <div className="rounded-xl border border-border bg-card">
           <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
-            <div className="px-4 py-4 text-center">
+            <div className="px-4 py-3 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <TrendingUp className="h-3.5 w-3.5 text-success" />
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Monthly Revenue</span>
               </div>
-              <p className={`font-mono text-2xl font-bold ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+              <p className={`font-mono text-xl font-bold ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                 {fmt(monthlyProfit)}
               </p>
               <p className="text-[10px] text-muted-foreground">/mo net profit</p>
             </div>
-            <div className="px-4 py-4 text-center">
+            <div className="px-4 py-3 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <DollarSign className="h-3.5 w-3.5 text-primary" />
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Out-of-Pocket</span>
               </div>
-              <p className={`font-mono text-2xl font-bold ${financials.netInvestment <= 0 ? 'text-success' : 'text-foreground'}`}>
+              <p className={`font-mono text-xl font-bold ${financials.netInvestment <= 0 ? 'text-success' : 'text-foreground'}`}>
                 {fmt(financials.netInvestment)}
               </p>
               <p className="text-[10px] text-muted-foreground">after incentives</p>
             </div>
-            <div className="px-4 py-4 text-center">
+            <div className="px-4 py-3 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <Clock className="h-3.5 w-3.5 text-accent" />
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Payback</span>
               </div>
-              <p className="font-mono text-2xl font-bold text-foreground">
+              <p className="font-mono text-xl font-bold text-foreground">
                 {isFinite(financials.paybackYears) && financials.paybackYears < 100
                   ? `${financials.paybackYears}yr`
                   : 'N/A'}
               </p>
               <p className="text-[10px] text-muted-foreground">to breakeven</p>
             </div>
-            <div className="px-4 py-4 text-center">
+            <div className="px-4 py-3 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <BarChart3 className="h-3.5 w-3.5 text-primary" />
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">15-Year NPV</span>
               </div>
-              <p className={`font-mono text-2xl font-bold ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
+              <p className={`font-mono text-xl font-bold ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
                 {fmt(financials.npv15Year)}
               </p>
               <p className="text-[10px] text-muted-foreground">at 8% discount</p>
@@ -338,10 +357,10 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* ═══ GATED CONTENT ═══ */}
+        {/* ═══ GATED CONTENT: ROW 3 ═══ */}
         <div className={blurClass}>
-          <div className="p-4 space-y-3">
-            {/* ═══ SECTION 3: ChargeScore Details + Investment Summary ═══ */}
+          <div className="space-y-3">
+            {/* ChargeScore Details + Investment Summary */}
             <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
               <ChargeScoreGauge score={chargeScore} siteInsights={{
                 floodZone: siteData.floodZone,
@@ -355,21 +374,8 @@ const Dashboard = () => {
               <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
             </div>
 
-            {/* ═══ SECTION 4: 15-Year Cash Flow (full width) ═══ */}
+            {/* 15-Year Cash Flow */}
             <FinancialProjection financials={financials} />
-
-            {/* ═══ SECTION 5: Property Inputs + Parking Impact ═══ */}
-            <div className="grid items-start gap-3 lg:grid-cols-2">
-              <PropertyInputs
-                site={site} onChange={setSite}
-                trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
-                confirmedSpotCount={confirmedSpotCount}
-                aadtData={aadtData}
-                parcelData={parcelData}
-                onParkingEstimate={handleParkingEstimate}
-              />
-              <ParkingImpact analysis={parking} />
-            </div>
           </div>
         </div>
       </main>

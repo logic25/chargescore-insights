@@ -36,10 +36,11 @@ interface PropertyInputsProps {
   aadtData?: AadtResult;
   parcelData?: ParcelResult;
   onParkingEstimate?: (data: { lotSqFt: number; totalSpots: number }) => void;
+  defaultExpanded?: boolean;
 }
 
-const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, confirmedSpotCount, aadtData, parcelData, onParkingEstimate }: PropertyInputsProps) => {
-  const [expanded, setExpanded] = useState(false);
+const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, confirmedSpotCount, aadtData, parcelData, onParkingEstimate, defaultExpanded = false }: PropertyInputsProps) => {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [lotSqFt, setLotSqFt] = useState(50000);
   const [drawnLotSqFt, setDrawnLotSqFt] = useState<number | null>(null);
   const [manualSpotCount, setManualSpotCount] = useState<number | null>(null);
