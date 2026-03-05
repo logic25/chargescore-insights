@@ -1,40 +1,21 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { MapPin, Pencil, X } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { MapPin, CircleDot, X, Undo2, Trash2 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 interface SiteAerialProps {
   lat: number;
   lng: number;
-  onMeasured?: (data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => void;
+  onSpotsCounted?: (count: number) => void;
 }
 
-function calculateArea(latlngs: L.LatLng[], map: L.Map): number {
-  if (latlngs.length < 3) return 0;
-  const projected = latlngs.map(ll => map.latLngToLayerPoint(ll));
-  let area = 0;
-  for (let i = 0; i < projected.length; i++) {
-    const j = (i + 1) % projected.length;
-    area += projected[i].x * projected[j].y;
-    area -= projected[j].x * projected[i].y;
-  }
-  area = Math.abs(area) / 2;
-  const center = latlngs[0];
-  const metersPerPixel = 40075016.686 * Math.abs(Math.cos(center.lat * Math.PI / 180)) / Math.pow(2, map.getZoom() + 8);
-  const areaMeters = area * metersPerPixel * metersPerPixel;
-  return Math.round(areaMeters * 10.764);
-}
-
-const SiteAerial = ({ lat, lng, onMeasured }: SiteAerialProps) => {
+const SiteAerial = ({ lat, lng, onSpotsCounted }: SiteAerialProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const [drawMode, setDrawMode] = useState(false);
-  const [points, setPoints] = useState<L.LatLng[]>([]);
-  const [lotSqFt, setLotSqFt] = useState<number | null>(null);
-  const polygonRef = useRef<L.Polygon | null>(null);
+  const [countMode, setCountMode] = useState(false);
+  const [spots, setSpots] = useState<L.LatLng[]>([]);
   const markersRef = useRef<L.CircleMarker[]>([]);
-  const polylineRef = useRef<L.Polyline | null>(null);
+  const labelsRef = useRef<L.Marker[]>([]);
   const clickHandlerRef = useRef<((e: L.LeafletMouseEvent) => void) | null>(null);
 
   // Initialize map
@@ -65,22 +46,21 @@ const SiteAerial = ({ lat, lng, onMeasured }: SiteAerialProps) => {
     return () => { map.remove(); mapRef.current = null; };
   }, [lat, lng]);
 
-  // Toggle draw mode click handler
+  // Toggle count mode click handler
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    // Remove previous handler
     if (clickHandlerRef.current) {
       map.off('click', clickHandlerRef.current);
       clickHandlerRef.current = null;
     }
 
-    if (drawMode) {
+    if (countMode) {
       map.dragging.disable();
       map.getContainer().style.cursor = 'crosshair';
       const handler = (e: L.LeafletMouseEvent) => {
-        setPoints(prev => [...prev, e.latlng]);
+        setSpots(prev => [...prev, e.latlng]);
       };
       clickHandlerRef.current = handler;
       map.on('click', handler);
@@ -94,54 +74,47 @@ const SiteAerial = ({ lat, lng, onMeasured }: SiteAerialProps) => {
         map.off('click', clickHandlerRef.current);
       }
     };
-  }, [drawMode]);
+  }, [countMode]);
 
-  // Draw polygon/polyline when points change
+  // Draw spot markers when spots change
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
+    // Clear old markers & labels
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
-    if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
-    if (polygonRef.current) { polygonRef.current.remove(); polygonRef.current = null; }
+    labelsRef.current.forEach(m => m.remove());
+    labelsRef.current = [];
 
-    if (points.length === 0) { setLotSqFt(null); return; }
-
-    points.forEach((p) => {
+    spots.forEach((p, i) => {
       const marker = L.circleMarker(p, {
-        radius: 5, color: '#00d4aa', fillColor: '#00d4aa', fillOpacity: 1, weight: 2,
+        radius: 7, color: '#fff', fillColor: '#00d4aa', fillOpacity: 0.9, weight: 2,
       }).addTo(map);
       markersRef.current.push(marker);
+
+      const label = L.marker(p, {
+        icon: L.divIcon({
+          html: `<div style="width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.8);">${i + 1}</div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
+          className: '',
+        }),
+        interactive: false,
+      }).addTo(map);
+      labelsRef.current.push(label);
     });
 
-    if (points.length < 3) {
-      polylineRef.current = L.polyline(points, {
-        color: '#00d4aa', weight: 2, dashArray: '6 4',
-      }).addTo(map);
-    } else {
-      polygonRef.current = L.polygon(points, {
-        color: '#00d4aa', fillColor: '#00d4aa', fillOpacity: 0.25, weight: 2,
-      }).addTo(map);
+    onSpotsCounted?.(spots.length);
+  }, [spots, onSpotsCounted]);
 
-      const areaSqFt = calculateArea(points, map);
-      setLotSqFt(areaSqFt);
-      const totalSpots = Math.floor(areaSqFt / 340);
-      const availableForChargers = Math.floor(totalSpots * 0.33);
-      onMeasured?.({ lotSqFt: areaSqFt, totalSpots, availableForChargers });
-    }
-  }, [points, onMeasured]);
+  const handleClear = useCallback(() => { setSpots([]); }, []);
+  const handleUndo = useCallback(() => setSpots(prev => prev.slice(0, -1)), []);
 
-  const handleClear = useCallback(() => { setPoints([]); setLotSqFt(null); }, []);
-  const handleUndo = useCallback(() => setPoints(prev => prev.slice(0, -1)), []);
-
-  const toggleDraw = useCallback(() => {
-    if (drawMode) {
-      // Exiting draw mode — clear drawings
-      handleClear();
-    }
-    setDrawMode(prev => !prev);
-  }, [drawMode, handleClear]);
+  const toggleCount = useCallback(() => {
+    if (countMode) handleClear();
+    setCountMode(prev => !prev);
+  }, [countMode, handleClear]);
 
   return (
     <div className="overflow-hidden">
@@ -156,64 +129,56 @@ const SiteAerial = ({ lat, lng, onMeasured }: SiteAerialProps) => {
           </span>
         </div>
 
-        {/* Draw mode toggle */}
+        {/* Count mode controls */}
         <div className="absolute top-2 right-2 z-[1000] flex items-center gap-1.5">
-          {drawMode && (
+          {countMode && (
             <>
               <button
                 type="button"
                 onClick={handleUndo}
-                disabled={points.length === 0}
-                className="rounded bg-black/60 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm hover:bg-black/80 disabled:opacity-40 transition-colors"
+                disabled={spots.length === 0}
+                className="flex items-center gap-1 rounded bg-black/60 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm hover:bg-black/80 disabled:opacity-40 transition-colors"
               >
-                Undo
+                <Undo2 className="h-3 w-3" /> Undo
               </button>
               <button
                 type="button"
                 onClick={handleClear}
-                disabled={points.length === 0}
-                className="rounded bg-black/60 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm hover:bg-black/80 disabled:opacity-40 transition-colors"
+                disabled={spots.length === 0}
+                className="flex items-center gap-1 rounded bg-black/60 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm hover:bg-black/80 disabled:opacity-40 transition-colors"
               >
-                Clear
+                <Trash2 className="h-3 w-3" /> Clear
               </button>
             </>
           )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={toggleDraw}
-                className={`flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium backdrop-blur-sm transition-colors ${
-                  drawMode
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-black/60 text-white hover:bg-black/80'
-                }`}
-              >
-                {drawMode ? <X className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
-                {drawMode ? 'Exit Draw' : 'Measure Lot'}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[200px] text-xs">
-              {drawMode ? 'Click map corners to draw your parking lot outline (min 3 points)' : 'Draw on the map to measure your parking lot area'}
-            </TooltipContent>
-          </Tooltip>
+          <button
+            type="button"
+            onClick={toggleCount}
+            className={`flex items-center gap-1 rounded px-2.5 py-1.5 text-[10px] font-semibold backdrop-blur-sm transition-colors ${
+              countMode
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-black/60 text-white hover:bg-black/80'
+            }`}
+          >
+            {countMode ? <X className="h-3 w-3" /> : <CircleDot className="h-3 w-3" />}
+            {countMode ? 'Done Counting' : 'Count Spots'}
+          </button>
         </div>
 
-        {/* Draw mode instructions */}
-        {drawMode && points.length < 3 && (
+        {/* Count mode instructions */}
+        {countMode && spots.length === 0 && (
           <div className="absolute top-2 left-2 z-[1000] rounded bg-black/60 px-2.5 py-1.5 backdrop-blur-sm">
             <span className="text-[10px] font-medium text-white">
-              Click {3 - points.length} more corner{3 - points.length !== 1 ? 's' : ''} to measure
+              Tap each parking spot to count
             </span>
           </div>
         )}
 
-        {/* Measurement result overlay */}
-        {lotSqFt !== null && lotSqFt > 0 && (
+        {/* Spot count overlay */}
+        {countMode && spots.length > 0 && (
           <div className="absolute bottom-2 right-2 z-[1000] rounded-lg bg-black/70 px-3 py-2 backdrop-blur-sm">
-            <div className="text-[10px] text-white/70">Measured Area</div>
-            <div className="font-mono text-sm font-bold text-primary">{lotSqFt.toLocaleString()} sq ft</div>
-            <div className="text-[10px] text-white/70">~{Math.floor(lotSqFt / 340)} spots</div>
+            <div className="text-[10px] text-white/70">Spots Counted</div>
+            <div className="font-mono text-2xl font-bold text-primary">{spots.length}</div>
           </div>
         )}
       </div>
