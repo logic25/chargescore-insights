@@ -10,10 +10,8 @@ import { fetchCensusTractFips, fetchMultiFamilyPct, fetchPopDensity } from '@/li
 import { fetchNearbyAmenities } from '@/lib/api/amenities';
 import { fetchAadt, type AadtResult } from '@/lib/api/traffic';
 import { fetchParcelInfo, type ParcelResult } from '@/lib/api/parcel';
-import { fetchIsDisadvantagedCommunity } from '@/lib/api/dac';
-import { fetchIsOnAltFuelCorridor } from '@/lib/api/corridors';
+import { fetchSiteData, type SiteDataResult } from '@/lib/api/siteData';
 import { fetchUtilityInfo, type UtilityInfo } from '@/lib/api/utilityInfo';
-import { fetchFloodZone, type FloodZoneResult } from '@/lib/api/floodZone';
 import { fetchNearestHighway, type HighwayProximity } from '@/lib/api/highway';
 import { calculateFinancials, calculateParkingImpact, calculateDemandCharge, getIncentives } from '@/lib/calculations';
 import { calculateChargeScoreV2, projectRevenue, type ChargeScoreResult, type RevenueProjection } from '@/lib/scoring';
@@ -75,12 +73,10 @@ const Dashboard = () => {
   const [multiFamilyPct, setMultiFamilyPct] = useState<number | null>(null);
   const [popDensity, setPopDensity] = useState<number | null>(null);
   const [amenitiesCount, setAmenitiesCount] = useState(5);
-  const [isDisadvantagedCommunity, setIsDisadvantagedCommunity] = useState(false);
-  const [isOnAltFuelCorridor, setIsOnAltFuelCorridor] = useState(false);
+  const [siteData, setSiteData] = useState<SiteDataResult>({ isDAC: false, isOnCorridor: false, floodZone: null, floodZoneSubtype: null, isHighRisk: false });
   const [utilityInfo, setUtilityInfo] = useState<UtilityInfo>({ utilityName: null, commercialRate: null });
   const [aadtData, setAadtData] = useState<AadtResult>({ aadt: null, routeId: null, year: null });
   const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null, source: null });
-  const [floodZone, setFloodZone] = useState<FloodZoneResult>({ floodZone: null, floodZoneSubtype: null, isHighRisk: false });
   const [highwayProximity, setHighwayProximity] = useState<HighwayProximity>({ distanceMiles: null, routeName: null, isInterstate: false });
 
   const handleParkingEstimate = useCallback((data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => {
