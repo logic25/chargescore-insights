@@ -22,68 +22,70 @@ serve(async (req: Request) => {
       });
     }
 
-    const url = new URL(HPMS_BASE);
-    url.searchParams.set('$where', `within_circle(the_geom, ${lat}, ${lng}, ${radiusMeters})`);
-    url.searchParams.set('$select', 'aadt_vn, route_id, year_record');
-    url.searchParams.set('$order', 'aadt_vn DESC');
-    url.searchParams.set('$limit', '5');
-
-    // Add app token if available
     const appToken = Deno.env.get('SOCRATA_APP_TOKEN');
-    if (appToken) {
-      url.searchParams.set('$$app_token', appToken);
-    }
 
-    const res = await fetch(url.toString());
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('HPMS API error', res.status, text);
-      return new Response(JSON.stringify({ aadt: null, routeId: null, year: null }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Try multiple radii: 500m, 2000m, 5000m
+    const radii = [radiusMeters, 2000, 5000];
 
-    const rows = await res.json();
+    for (const r of radii) {
+      const url = new URL(HPMS_BASE);
+      url.searchParams.set('$where', `within_circle(the_geom, ${lat}, ${lng}, ${r})`);
+      // Try both common field names — aadt_vn (value numeric) and aadt
+      url.searchParams.set('$select', 'aadt_vn, aadt, route_id, route_name, year_record');
+      url.searchParams.set('$order', 'aadt_vn DESC NULL LAST, aadt DESC NULL LAST');
+      url.searchParams.set('$limit', '5');
+      if (appToken) url.searchParams.set('$$app_token', appToken);
 
-    if (!rows.length) {
-      // Widen radius if small
-      if (radiusMeters < 2000) {
-        // Retry with wider radius
-        const url2 = new URL(HPMS_BASE);
-        url2.searchParams.set('$where', `within_circle(the_geom, ${lat}, ${lng}, 2000)`);
-        url2.searchParams.set('$select', 'aadt_vn, route_id, year_record');
-        url2.searchParams.set('$order', 'aadt_vn DESC');
-        url2.searchParams.set('$limit', '5');
-        if (appToken) url2.searchParams.set('$$app_token', appToken);
+      const res = await fetch(url.toString());
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`HPMS API error at ${r}m`, res.status, text);
+        
+        // If the field names caused an error, try simpler query
+        if (res.status === 400) {
+          const url2 = new URL(HPMS_BASE);
+          url2.searchParams.set('$where', `within_circle(the_geom, ${lat}, ${lng}, ${r})`);
+          url2.searchParams.set('$select', 'aadt_vn, route_id, year_record');
+          url2.searchParams.set('$order', 'aadt_vn DESC');
+          url2.searchParams.set('$limit', '5');
+          if (appToken) url2.searchParams.set('$$app_token', appToken);
 
-        const res2 = await fetch(url2.toString());
-        if (res2.ok) {
-          const rows2 = await res2.json();
-          if (rows2.length) {
-            const top = rows2[0];
-            return new Response(JSON.stringify({
-              aadt: top.aadt_vn ? parseInt(top.aadt_vn, 10) : null,
-              routeId: top.route_id ?? null,
-              year: top.year_record ? parseInt(top.year_record, 10) : null,
-            }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+          const res2 = await fetch(url2.toString());
+          if (res2.ok) {
+            const rows2 = await res2.json();
+            if (rows2.length) {
+              const top = rows2[0];
+              return new Response(JSON.stringify({
+                aadt: top.aadt_vn ? parseInt(top.aadt_vn, 10) : null,
+                routeId: top.route_id ?? null,
+                year: top.year_record ? parseInt(top.year_record, 10) : null,
+              }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+          } else {
+            await res2.text();
           }
-        } else {
-          await res2.text();
         }
+        continue;
       }
-      return new Response(JSON.stringify({ aadt: null, routeId: null, year: null }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+
+      const rows = await res.json();
+      if (rows.length) {
+        const top = rows[0];
+        const aadtValue = top.aadt_vn ?? top.aadt ?? null;
+        return new Response(JSON.stringify({
+          aadt: aadtValue ? parseInt(String(aadtValue), 10) : null,
+          routeId: top.route_id ?? top.route_name ?? null,
+          year: top.year_record ? parseInt(top.year_record, 10) : null,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
-    const top = rows[0];
-    return new Response(JSON.stringify({
-      aadt: top.aadt_vn ? parseInt(top.aadt_vn, 10) : null,
-      routeId: top.route_id ?? null,
-      year: top.year_record ? parseInt(top.year_record, 10) : null,
-    }), {
+    // No results at any radius
+    return new Response(JSON.stringify({ aadt: null, routeId: null, year: null }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
