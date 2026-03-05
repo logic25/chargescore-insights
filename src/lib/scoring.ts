@@ -33,6 +33,7 @@ export interface ScoringInputs {
   propertyType: string;
   amenitiesNearby: number;
   totalParkingSpots: number;
+  peakUtilization: number;
   isDisadvantagedCommunity: boolean;
   hasThreePhasePower: boolean | null;
   state?: string;
@@ -148,14 +149,21 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   else if (inputs.totalParkingSpots >= 15) parkingScore = 60;
   else if (inputs.totalParkingSpots >= 8) parkingScore = 40;
   else parkingScore = 10;
+
+  // Utilization adjustment: busy lots = more customers = more sessions
+  const util = inputs.peakUtilization;
+  if (util >= 60 && util <= 85) parkingScore = Math.min(parkingScore + 15, 100); // sweet spot
+  else if (util > 95) parkingScore = Math.max(parkingScore - 15, 0); // too full
+  else if (util < 40) parkingScore = Math.max(parkingScore - 10, 0); // low traffic
+
   factors.push({
     name: 'Parking Capacity',
     score: parkingScore,
     weight: 0.05,
     weightedScore: parkingScore * 0.05,
-    tooltip: 'Enough parking to dedicate spaces to EV charging without hurting existing business. Tesla requires minimum 8 dedicated spaces.',
+    tooltip: 'Enough parking to dedicate spaces to EV charging without hurting existing business. Utilization between 60-85% is ideal — it signals high foot traffic with room for dedicated stalls.',
     dataSource: 'User input',
-    rawValue: `${inputs.totalParkingSpots} spots`,
+    rawValue: `${inputs.totalParkingSpots} spots · ${inputs.peakUtilization}% peak utilization`,
   });
 
   // FACTOR 7: Grid Capacity (5%)
