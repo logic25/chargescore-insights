@@ -281,15 +281,28 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
                     <div key={nrel.id} className="rounded border border-border bg-muted/30 p-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-medium text-foreground/80">{nrel.title}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-[11px] font-medium text-foreground/80">{nrel.title}</p>
+                            <EligibilityBadge eligible={nrel.eligible ?? null} />
+                            {nrel.category && (
+                              <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-muted-foreground">
+                                {nrel.category}
+                              </span>
+                            )}
+                          </div>
                           <p className="mt-0.5 text-[10px] text-muted-foreground">{nrel.type}</p>
                           {nrel.description && (
                             <p className="mt-1 text-[10px] text-muted-foreground/70 line-clamp-2">{nrel.description}</p>
                           )}
                         </div>
-                        <a href={`https://afdc.energy.gov/laws/${nrel.id}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 text-primary hover:text-primary/80">
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-[10px] font-semibold text-success">
+                            {nrel.estimatedBenefit ? nrel.estimatedBenefit : 'Amount TBD'}
+                          </span>
+                          <a href={`https://afdc.energy.gov/laws/${nrel.id}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 text-primary hover:text-primary/80">
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
                       </div>
                     </div>
                   ))}
