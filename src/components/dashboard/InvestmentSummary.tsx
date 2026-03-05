@@ -9,7 +9,9 @@ interface Props {
   financials: FinancialProjection;
   incentives: Incentive[];
   stalls: number;
+  kwhPerStallPerDay: number;
   onStallsChange?: (stalls: number) => void;
+  onUtilizationChange?: (kwh: number) => void;
 }
 
 const fmt = (n: number) => {
@@ -133,7 +135,7 @@ const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
   );
 };
 
-const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: Props) => {
+const InvestmentSummary = ({ financials, incentives, stalls, kwhPerStallPerDay, onStallsChange, onUtilizationChange }: Props) => {
   const [showYear1, setShowYear1] = useState(false);
   const outOfPocket = financials.netInvestment;
   const outOfPocketColor = outOfPocket <= 0
@@ -186,6 +188,30 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: P
               className="py-2"
             />
             <p className="text-[10px] text-muted-foreground/60">Drag to adjust — all financials update instantly</p>
+          </div>
+        )}
+
+        {/* Utilization Slider */}
+        {onUtilizationChange && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground flex items-center">
+                Charging Utilization
+                <InfoTip text="Average kWh dispensed per stall per day. 150 = low traffic, 250 = medium (Tesla default), 400 = high-traffic corridor. This directly scales your revenue projection." />
+              </Label>
+              <span className="font-mono text-sm font-bold text-primary">{kwhPerStallPerDay} kWh/stall/day</span>
+            </div>
+            <Slider
+              value={[kwhPerStallPerDay]}
+              onValueChange={([v]) => onUtilizationChange(v)}
+              min={50} max={500} step={25}
+              className="py-2"
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground/60">
+              <span>Low (50)</span>
+              <span>Medium (250)</span>
+              <span>High (500)</span>
+            </div>
           </div>
         )}
 

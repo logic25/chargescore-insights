@@ -53,6 +53,7 @@ const Dashboard = () => {
     electricalService: 'unknown',
     chargingModel: 'tesla',
     teslaStalls: 6,
+    kwhPerStallPerDay: 250,
     l2Chargers: 4,
     dcfcChargers: 2,
     pricePerKwh: 0.42,
