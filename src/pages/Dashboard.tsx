@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, DollarSign, Clock, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
 import { fetchNearbyStations } from '@/lib/api/stations';
@@ -31,6 +31,11 @@ import ReportGate from '@/components/ReportGate';
 
 const GATE_UNLOCKED_KEY = 'chargescore_gate_unlocked';
 
+const fmt = (n: number) => {
+  if (!isFinite(n)) return '—';
+  return n < 0 ? `-$${Math.abs(Math.round(n)).toLocaleString()}` : `$${Math.round(n).toLocaleString()}`;
+};
+
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -58,7 +63,6 @@ const Dashboard = () => {
   const [stations, setStations] = useState<NearbyStation[]>([]);
   const [stationsLoading, setStationsLoading] = useState(true);
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
-  
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
   const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
 
@@ -83,9 +87,7 @@ const Dashboard = () => {
     setSite(prev => ({ ...prev, totalParkingSpaces: data.totalSpots }));
   }, []);
 
-  const handleSpotsCounted = useCallback((count: number) => {
-    // Live count — no-op, just for display
-  }, []);
+  const handleSpotsCounted = useCallback((_count: number) => {}, []);
 
   const handleSpotsConfirmed = useCallback((count: number) => {
     if (count > 0) {
@@ -102,55 +104,20 @@ const Dashboard = () => {
       .finally(() => setStationsLoading(false));
   }, [site.lat, site.lng]);
 
-  // Fetch planned stations
-  useEffect(() => {
-    fetchPlannedStations(site.lat, site.lng, 5).then(setPlannedData);
-  }, [site.lat, site.lng]);
-
-  // Fetch census tract
-  useEffect(() => {
-    fetchCensusTractFips(site.lat, site.lng).then(setCensusTractFips);
-  }, [site.lat, site.lng]);
-
-  // Fetch DAC, Corridor, Flood Zone via edge function
-  useEffect(() => {
-    fetchSiteData(site.lat, site.lng).then(setSiteData);
-  }, [site.lat, site.lng]);
-
-  // Fetch utility info (name + commercial rate)
-  useEffect(() => {
-    fetchUtilityInfo(site.lat, site.lng).then(setUtilityInfo);
-  }, [site.lat, site.lng]);
-
-  // Fetch census housing + population data
+  useEffect(() => { fetchPlannedStations(site.lat, site.lng, 5).then(setPlannedData); }, [site.lat, site.lng]);
+  useEffect(() => { fetchCensusTractFips(site.lat, site.lng).then(setCensusTractFips); }, [site.lat, site.lng]);
+  useEffect(() => { fetchSiteData(site.lat, site.lng).then(setSiteData); }, [site.lat, site.lng]);
+  useEffect(() => { fetchUtilityInfo(site.lat, site.lng).then(setUtilityInfo); }, [site.lat, site.lng]);
   useEffect(() => {
     if (!censusTractFips) return;
     fetchMultiFamilyPct(censusTractFips).then(setMultiFamilyPct);
     fetchPopDensity(censusTractFips).then(setPopDensity);
   }, [censusTractFips]);
+  useEffect(() => { fetchNearbyAmenities(site.lat, site.lng).then(setAmenitiesCount); }, [site.lat, site.lng]);
+  useEffect(() => { fetchAadt(site.lat, site.lng).then(setAadtData); }, [site.lat, site.lng]);
+  useEffect(() => { fetchParcelInfo(site.lat, site.lng, site.state).then(setParcelData); }, [site.lat, site.lng, site.state]);
+  useEffect(() => { fetchNearestHighway(site.lat, site.lng).then(setHighwayProximity); }, [site.lat, site.lng]);
 
-  // Fetch amenities
-  useEffect(() => {
-    fetchNearbyAmenities(site.lat, site.lng).then(setAmenitiesCount);
-  }, [site.lat, site.lng]);
-
-  // Fetch AADT traffic data from HPMS
-  useEffect(() => {
-    fetchAadt(site.lat, site.lng).then(setAadtData);
-  }, [site.lat, site.lng]);
-
-  // Fetch parcel data (MapPLUTO → NYS Tax Parcels fallback)
-  useEffect(() => {
-    fetchParcelInfo(site.lat, site.lng, site.state).then(setParcelData);
-  }, [site.lat, site.lng, site.state]);
-
-
-  // Fetch nearest highway
-  useEffect(() => {
-    fetchNearestHighway(site.lat, site.lng).then(setHighwayProximity);
-  }, [site.lat, site.lng]);
-
-  // Computed scoring data from stations
   const stationMetrics = useMemo(() => {
     const dcfcStations = stations.filter(s => s.chargerType === 'DCFC' || s.chargerType === 'Tesla');
     const nearestDcfc = dcfcStations.length > 0
@@ -168,14 +135,11 @@ const Dashboard = () => {
 
   const nearestAirport = useMemo(() => findNearestAirport(site.lat, site.lng), [site.lat, site.lng]);
   const evRegistrations = useMemo(() => getEstimatedEvRegistrations(site.state), [site.state]);
-
-  // Has three-phase power inference from electrical service
   const hasThreePhasePower = useMemo(() => {
     if (site.electricalService === 'unknown') return null;
     return site.electricalService.includes('480v');
   }, [site.electricalService]);
 
-  // ChargeScore V2
   const chargeScore: ChargeScoreResult = useMemo(() => calculateChargeScoreV2({
     aadtVpd: aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel],
     evRegistrations,
@@ -199,7 +163,6 @@ const Dashboard = () => {
     utilityName: utilityInfo.utilityName,
   }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, siteData, hasThreePhasePower, site.state, site.zipCode, utilityInfo]);
 
-  // Revenue projection from ChargeScore
   const revenueProjection: RevenueProjection = useMemo(() => projectRevenue({
     chargeScore: chargeScore.totalScore,
     numStalls: site.teslaStalls,
@@ -210,7 +173,6 @@ const Dashboard = () => {
     incentivesPerStall: site.state === 'NY' ? 45000 : site.state === 'CA' ? 50000 : 30000,
   }), [chargeScore.totalScore, site.teslaStalls, site.pricePerKwh, site.electricityCostPerKwh, site.teslaServiceFeePerKwh, site.state]);
 
-  // NREL incentives (async)
   const [nrelIncentives, setNrelIncentives] = useState<NrelIncentive[]>([]);
   useEffect(() => {
     if (site.state) {
@@ -223,14 +185,12 @@ const Dashboard = () => {
     }
   }, [site.state, site.address, utilityInfo.companyId, utilityInfo.utilityName]);
 
-  // Legacy calculations (still used by other panels)
   const incentiveContext = useMemo(() => ({ isDAC: siteData.isDAC, isOnCorridor: siteData.isOnCorridor, utilityName: utilityInfo.utilityName }), [siteData.isDAC, siteData.isOnCorridor, utilityInfo.utilityName]);
   const incentives = useMemo(() => getIncentives(site, incentiveContext, nrelIncentives), [site, incentiveContext, nrelIncentives]);
   const financials = useMemo(() => calculateFinancials(site, incentives), [site, incentives]);
   const parking = useMemo(() => calculateParkingImpact(site), [site]);
   const demandCharge = useMemo(() => calculateDemandCharge(site), [site]);
 
-  // Log analysis for ML
   useEffect(() => {
     if (chargeScore.totalScore > 0) {
       void logAnalysis({
@@ -247,32 +207,29 @@ const Dashboard = () => {
     }
   }, [chargeScore.totalScore]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Use light mode
-  useEffect(() => {
-    document.documentElement.classList.remove('dark');
-  }, []);
+  useEffect(() => { document.documentElement.classList.remove('dark'); }, []);
 
   const blurClass = gateUnlocked ? '' : 'blur-md pointer-events-none select-none';
+  const monthlyProfit = financials.annualNetRevenue / 12;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Report Gate */}
       {!gateUnlocked && chargeScore.totalScore > 0 && (
         <ReportGate chargeScore={chargeScore.totalScore} onUnlock={handleGateUnlock} />
       )}
 
-      {/* Header */}
-      <header className="border-b border-border bg-card/80 backdrop-blur-xl">
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+      {/* Compact Header */}
+      <header className="border-b border-border bg-card/80 backdrop-blur-xl sticky top-0 z-30">
+        <div className="flex h-12 items-center justify-between px-4">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/')}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <Zap className="h-5 w-5 text-primary" />
-            <span className="font-heading text-lg font-bold">ChargeScore</span>
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="font-heading text-sm font-bold">ChargeScore</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="hidden text-sm text-muted-foreground sm:block">{site.address}</span>
+            <span className="hidden text-xs text-muted-foreground sm:block truncate max-w-[300px]">{site.address}</span>
             {gateUnlocked && (
               <ReportGenerator
                 site={site} score={chargeScore} financials={financials}
@@ -283,11 +240,11 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="p-4 space-y-3">
-        {/* Row 1 (ungated): Map tabs + ChargeScore Gauge */}
-        <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)]">
-          <Tabs defaultValue="satellite" className="h-full rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-            <div className="border-b border-border px-4 pt-3">
+      <main className="mx-auto max-w-[1440px]">
+        {/* ═══ SECTION 1: Full-width Map with ChargeScore Overlay ═══ */}
+        <div className="relative">
+          <Tabs defaultValue="satellite" className="border-b border-border">
+            <div className="flex items-center justify-between bg-card px-4 py-2">
               <TabsList className="h-8">
                 <TabsTrigger value="satellite" className="text-xs">Satellite</TabsTrigger>
                 <TabsTrigger value="competition" className="text-xs">Competition</TabsTrigger>
@@ -301,27 +258,107 @@ const Dashboard = () => {
             </TabsContent>
           </Tabs>
 
-          <ChargeScoreGauge score={chargeScore} siteInsights={{
-            floodZone: siteData.floodZone,
-            isHighRisk: siteData.isHighRisk,
-            highwayDistance: highwayProximity.distanceMiles,
-            highwayName: highwayProximity.routeName,
-            utilityName: utilityInfo.utilityName,
-            isDAC: siteData.isDAC,
-            isOnCorridor: siteData.isOnCorridor,
-          }} />
+          {/* Floating ChargeScore Badge */}
+          <div className="absolute top-14 right-4 z-10">
+            <div className="rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-lg p-3 w-[200px]">
+              <div className="flex items-center gap-3">
+                <div className="relative flex-shrink-0">
+                  <svg width="56" height="56" viewBox="0 0 160 160">
+                    <circle cx="80" cy="80" r="70" fill="none" stroke="currentColor" className="text-border" strokeWidth="12"
+                      strokeDasharray={`${2 * Math.PI * 70 * 0.75} ${2 * Math.PI * 70 * 0.25}`}
+                      strokeLinecap="round" transform="rotate(135 80 80)" />
+                    <circle cx="80" cy="80" r="70" fill="none"
+                      stroke={chargeScore.totalScore >= 70 ? 'hsl(163, 100%, 42%)' : chargeScore.totalScore >= 45 ? 'hsl(45, 97%, 56%)' : 'hsl(0, 84%, 60%)'}
+                      strokeWidth="12"
+                      strokeDasharray={`${(chargeScore.totalScore / 100) * 2 * Math.PI * 70 * 0.75} ${2 * Math.PI * 70 - (chargeScore.totalScore / 100) * 2 * Math.PI * 70 * 0.75}`}
+                      strokeLinecap="round" transform="rotate(135 80 80)" />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="font-mono text-base font-bold" style={{ color: chargeScore.totalScore >= 70 ? 'hsl(163, 100%, 42%)' : chargeScore.totalScore >= 45 ? 'hsl(45, 97%, 56%)' : 'hsl(0, 84%, 60%)' }}>
+                      {chargeScore.totalScore}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">ChargeScore™</p>
+                  {chargeScore.grade && (
+                    <span className="font-mono text-lg font-bold text-primary">{chargeScore.grade}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* GATED: Everything below is blurred until email entry */}
+        {/* ═══ SECTION 2: Key Metrics Strip ═══ */}
+        <div className="border-b border-border bg-card">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
+            <div className="px-4 py-4 text-center">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <TrendingUp className="h-3.5 w-3.5 text-success" />
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Monthly Revenue</span>
+              </div>
+              <p className={`font-mono text-2xl font-bold ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {fmt(monthlyProfit)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">/mo net profit</p>
+            </div>
+            <div className="px-4 py-4 text-center">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <DollarSign className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Out-of-Pocket</span>
+              </div>
+              <p className={`font-mono text-2xl font-bold ${financials.netInvestment <= 0 ? 'text-success' : 'text-foreground'}`}>
+                {fmt(financials.netInvestment)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">after incentives</p>
+            </div>
+            <div className="px-4 py-4 text-center">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <Clock className="h-3.5 w-3.5 text-accent" />
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Payback</span>
+              </div>
+              <p className="font-mono text-2xl font-bold text-foreground">
+                {isFinite(financials.paybackYears) && financials.paybackYears < 100
+                  ? `${financials.paybackYears}yr`
+                  : 'N/A'}
+              </p>
+              <p className="text-[10px] text-muted-foreground">to breakeven</p>
+            </div>
+            <div className="px-4 py-4 text-center">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">15-Year NPV</span>
+              </div>
+              <p className={`font-mono text-2xl font-bold ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
+                {fmt(financials.npv15Year)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">at 8% discount</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ GATED CONTENT ═══ */}
         <div className={blurClass}>
-          <div className="space-y-3">
-            {/* Row 2: Investment Summary + 15-Year Cash Flow */}
-            <div className="grid items-start gap-3 lg:grid-cols-2">
+          <div className="p-4 space-y-3">
+            {/* ═══ SECTION 3: ChargeScore Details + Investment Summary ═══ */}
+            <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+              <ChargeScoreGauge score={chargeScore} siteInsights={{
+                floodZone: siteData.floodZone,
+                isHighRisk: siteData.isHighRisk,
+                highwayDistance: highwayProximity.distanceMiles,
+                highwayName: highwayProximity.routeName,
+                utilityName: utilityInfo.utilityName,
+                isDAC: siteData.isDAC,
+                isOnCorridor: siteData.isOnCorridor,
+              }} />
               <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
-              <FinancialProjection financials={financials} />
             </div>
 
-            {/* Row 3: Property Inputs + Parking Impact */}
+            {/* ═══ SECTION 4: 15-Year Cash Flow (full width) ═══ */}
+            <FinancialProjection financials={financials} />
+
+            {/* ═══ SECTION 5: Property Inputs + Parking Impact ═══ */}
             <div className="grid items-start gap-3 lg:grid-cols-2">
               <PropertyInputs
                 site={site} onChange={setSite}
