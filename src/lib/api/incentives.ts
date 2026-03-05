@@ -20,7 +20,7 @@ const EVSE_KEYWORDS = [
   'dcfc', 'fast charge', 'level 2', 'level 3',
 ];
 
-// Keywords that indicate a program is NOT relevant (fleet mandates, HOV, registration, etc.)
+// Keywords that indicate a program is NOT relevant
 const EXCLUDE_KEYWORDS = [
   'fleet requirement', 'zev sales', 'zev production', 'emission standard',
   'hov lane', 'high occupancy', 'license plate', 'registration fee',
@@ -29,20 +29,82 @@ const EXCLUDE_KEYWORDS = [
   'building code', 'parking requirement', 'weight limit', 'toll',
 ];
 
+// Known utility names in NREL program titles — used to detect utility-specific programs
+const KNOWN_UTILITY_NAMES = [
+  'con edison', 'coned', 'consolidated edison',
+  'national grid',
+  'nyseg', 'new york state electric',
+  'rochester gas', 'rg&e', 'rge',
+  'central hudson',
+  'orange & rockland', 'orange and rockland', 'o&r utilities',
+  'pseg', 'public service electric',
+  'long island power', 'lipa',
+  'fishers island',
+  'north shore towers',
+  'village of rockville', 'village of freeport',
+  'eversource', 'avangrid',
+  'sce', 'southern california edison',
+  'pg&e', 'pacific gas',
+  'sdg&e', 'san diego gas',
+  'ladwp', 'los angeles department',
+  'dte', 'consumers energy',
+  'comed', 'commonwealth edison',
+  'xcel', 'duke energy', 'dominion',
+  'fpl', 'florida power', 'tampa electric',
+  'peco', 'ppl electric', 'duquesne',
+];
+
+function isUtilitySpecificProgram(title: string): boolean {
+  const lower = title.toLowerCase();
+  return KNOWN_UTILITY_NAMES.some(name => lower.includes(name));
+}
+
+// Alias map: canonical utility name -> all known variations
+const UTILITY_ALIASES: Record<string, string[]> = {
+  'long island power authority': ['long island', 'lipa', 'pseg long island', 'pseg li'],
+  'consolidated edison': ['con edison', 'coned', 'con ed'],
+  'national grid': ['national grid'],
+  'rochester gas and electric': ['rg&e', 'rge', 'rochester gas'],
+  'new york state electric': ['nyseg'],
+  'central hudson': ['central hudson'],
+  'orange and rockland': ['o&r', 'orange & rockland', 'orange and rockland'],
+  'fishers island': ['fishers island'],
+  'north shore towers': ['north shore towers'],
+  'village of rockville': ['village of rockville'],
+  'village of freeport': ['village of freeport'],
+};
+
+function utilityMatchesSite(programTitle: string, siteUtilityName: string): boolean {
+  const title = programTitle.toLowerCase();
+  const utility = siteUtilityName.toLowerCase();
+
+  // Direct containment
+  if (title.includes(utility)) return true;
+
+  // Check alias map: find which utility the site belongs to, then check if program matches
+  for (const [canonical, aliases] of Object.entries(UTILITY_ALIASES)) {
+    const siteIsThisUtility = utility.includes(canonical) || aliases.some(a => utility.includes(a));
+    if (siteIsThisUtility) {
+      // Does the program title match this same utility?
+      return title.includes(canonical) || aliases.some(a => title.includes(a));
+    }
+  }
+
+  // Fallback: check if significant words overlap
+  const utilityWords = utility.split(/\s+/).filter(w => w.length > 3);
+  const matchCount = utilityWords.filter(w => title.includes(w)).length;
+  return matchCount >= 2;
+}
+
 function isRelevantToEVCharging(item: any): boolean {
   const text = `${item.title ?? ''} ${item.plaintext ?? ''} ${item.text ?? ''}`.toLowerCase();
 
-  // Exclude items matching exclusion patterns
   if (EXCLUDE_KEYWORDS.some(kw => text.includes(kw))) return false;
-
-  // Must match at least one EVSE keyword
   if (!EVSE_KEYWORDS.some(kw => text.includes(kw))) return false;
 
-  // Check technology tags — must include ELEC (EVs)
   const techs: string[] = item.technologies || [];
   if (techs.length > 0 && !techs.includes('ELEC') && !techs.includes('PHEV') && !techs.includes('HEV')) return false;
 
-  // If it's a "Laws and Regulations" type, only include if clearly about infrastructure incentives
   const cats: any[] = item.categories || [];
   const catCodes = cats.map((c: any) => c.code);
   if (item.type === 'Laws and Regulations' && !catCodes.includes('STATION')) return false;
@@ -52,7 +114,8 @@ function isRelevantToEVCharging(item: any): boolean {
 
 export interface FetchIncentivesOptions {
   stateCode: string;
-  utilityCompanyId?: string | null; // NREL utility company_id to filter utility-specific programs
+  utilityCompanyId?: string | null;
+  utilityName?: string | null;
 }
 
 export async function fetchStateIncentives(opts: FetchIncentivesOptions): Promise<NrelIncentive[]> {
@@ -68,20 +131,25 @@ export async function fetchStateIncentives(opts: FetchIncentivesOptions): Promis
 
     return (data.result || [])
       .filter((r: any) => {
-        // Only include incentive types (not pure laws/regulations)
         const isIncentiveType = r.type === 'State Incentives' || r.type === 'Incentives' || r.type === 'Utility / Private Incentives';
         const isRelevantLaw = r.type === 'Laws and Regulations' && isRelevantToEVCharging(r);
         if (!isIncentiveType && !isRelevantLaw) return false;
 
-        // Filter for EVSE relevance
         if (!isRelevantToEVCharging(r)) return false;
 
-        // Exclude repealed/expired
         if (r.status === 'repealed' || r.status === 'expired') return false;
 
-        // If program has a utility_id, only show if it matches the site's utility
+        // --- Utility territory filtering ---
+        // If program has an explicit utility_id, check against site's utility
         if (r.utility_id != null && opts.utilityCompanyId) {
           if (String(r.utility_id) !== String(opts.utilityCompanyId)) return false;
+        }
+
+        // If program title mentions a specific utility, only show if it matches the site's utility
+        const title = r.title || '';
+        if (isUtilitySpecificProgram(title)) {
+          if (!opts.utilityName) return false; // can't verify — skip
+          if (!utilityMatchesSite(title, opts.utilityName)) return false;
         }
 
         return true;
