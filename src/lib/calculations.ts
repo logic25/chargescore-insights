@@ -590,7 +590,96 @@ export interface IncentiveContext {
   utilityName?: string | null; // Detected utility — filters utility-specific programs
 }
 
-export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): Incentive[] {
+// --- NREL program amount parser ---
+// Known NREL program IDs with computable amounts
+interface NrelAmountRule {
+  match: (title: string, text: string) => boolean;
+  compute: (totalProjectCost: number, installCost: number, totalPorts: number, dcfcPorts: number) => { amount: number; description: string };
+}
+
+const NREL_AMOUNT_RULES: NrelAmountRule[] = [
+  {
+    // NY Alternative Fueling Infrastructure Tax Credit — 50% of infrastructure cost
+    match: (title) => /alternative\s+fuel.*(?:tax\s+credit|infrastructure\s+(?:tax\s+)?credit)/i.test(title),
+    compute: (totalProjectCost) => ({
+      amount: Math.round(totalProjectCost * 0.5),
+      description: 'State tax credit equal to 50% of EV charging infrastructure cost (NY Tax Law 187-b).',
+    }),
+  },
+  {
+    // Generic "X% of cost" pattern
+    match: (_, text) => /\b(\d{1,3})\s?%\s+of\s+(the\s+)?(infrastructure|project|equipment|installation|total)\s+cost/i.test(text),
+    compute: (totalProjectCost, _install, _total, _dcfc) => {
+      // We'll extract the % dynamically in the converter below
+      return { amount: 0, description: '' };
+    },
+  },
+  {
+    // Per-port dollar amounts like "$X,XXX per port/charger/station"
+    match: (_, text) => /\$\s?\d[\d,]+\s+(?:per|\/)\s*(?:port|charger|station|unit)/i.test(text),
+    compute: () => ({ amount: 0, description: '' }),
+  },
+];
+
+function computeNrelAmount(
+  title: string,
+  text: string,
+  totalProjectCost: number,
+  installCost: number,
+  totalPorts: number,
+  dcfcPorts: number,
+): { amount: number; description: string } | null {
+  const combined = `${title} ${text}`.toLowerCase();
+
+  // Known program: Alternative Fueling Infrastructure Tax Credit (50%)
+  if (/alternative\s+fuel.*(?:infrastructure|fueling)/i.test(title) && combined.includes('50%')) {
+    return {
+      amount: Math.round(totalProjectCost * 0.5),
+      description: 'State tax credit = 50% of EV charging infrastructure cost (NY Tax Law 187-b).',
+    };
+  }
+
+  // Generic percentage of cost
+  const pctMatch = combined.match(/(?:tax\s+credit|rebate|grant|incentive|covers?|up\s+to)\s+(?:is\s+)?(?:equal\s+to\s+)?(\d{1,3})\s?%\s+of\s+(?:the\s+)?(?:infrastructure|project|equipment|installation|total|eligible)\s+cost/i);
+  if (pctMatch) {
+    const pct = parseInt(pctMatch[1], 10) / 100;
+    return {
+      amount: Math.round(totalProjectCost * pct),
+      description: `${pctMatch[1]}% of project cost.`,
+    };
+  }
+
+  // Per-port amounts like "$50,000 per port"
+  const perPortMatch = combined.match(/\$\s?([\d,]+)\s+(?:per|\/)\s*(?:port|charger|station|unit|connector)/i);
+  if (perPortMatch) {
+    const perPort = parseInt(perPortMatch[1].replace(/,/g, ''), 10);
+    if (perPort > 0 && perPort < 500000) {
+      return {
+        amount: perPort * totalPorts,
+        description: `$${perPort.toLocaleString()} per port × ${totalPorts} ports.`,
+      };
+    }
+  }
+
+  // Flat dollar amount like "up to $X,XXX"
+  const flatMatch = combined.match(/up\s+to\s+\$\s?([\d,]+(?:\.\d+)?)\s*(?:million|per\s+project)?/i);
+  if (flatMatch) {
+    let flatAmount = parseFloat(flatMatch[1].replace(/,/g, ''));
+    if (combined.includes('million')) flatAmount *= 1_000_000;
+    if (flatAmount > 0 && flatAmount < 10_000_000) {
+      return {
+        amount: Math.min(flatAmount, totalProjectCost),
+        description: `Up to $${flatAmount.toLocaleString()}.`,
+      };
+    }
+  }
+
+  return null;
+}
+
+import type { NrelIncentive } from '@/lib/api/incentives';
+
+export function getIncentives(site: SiteAnalysis, context?: IncentiveContext, nrelPrograms?: NrelIncentive[]): Incentive[] {
   const incentives: Incentive[] = [];
 
   const totalPorts = site.chargingModel === 'tesla'
@@ -726,5 +815,61 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): I
     });
   }
 
+  // --- NREL API programs: convert to Incentive objects with computed amounts ---
+  if (nrelPrograms && nrelPrograms.length > 0) {
+    // Track which curated programs we already have by name similarity
+    const curatedNames = new Set(incentives.map(i => i.name.toLowerCase()));
+
+    for (const nrel of nrelPrograms) {
+      // Skip if we already have a curated version of this program
+      const nrelNameLower = nrel.title.toLowerCase();
+      const isDuplicate = Array.from(curatedNames).some(name => {
+        // Check for significant word overlap
+        const words = name.split(/\s+/).filter(w => w.length > 3);
+        const matchCount = words.filter(w => nrelNameLower.includes(w)).length;
+        return matchCount >= 2;
+      });
+      if (isDuplicate) continue;
+
+      // Skip laws/regulations — only show actual financial incentives
+      if (nrel.type === 'Laws and Regulations') continue;
+
+      // Compute amount from description
+      const computed = computeNrelAmount(
+        nrel.title,
+        nrel.description || '',
+        totalProjectCost,
+        installCost,
+        totalPorts,
+        dcfcPorts,
+      );
+
+      const category = nrel.category || inferNrelCategory(nrel.type);
+      const computedAmount = computed?.amount ?? 0;
+      const hasAmount = computedAmount > 0;
+
+      incentives.push({
+        id: `nrel-${nrel.id}`,
+        name: nrel.title,
+        description: computed?.description || nrel.description?.slice(0, 100) || 'Contact program for details.',
+        amount: hasAmount ? `$${computedAmount.toLocaleString()}` : 'Contact for details',
+        computedAmount: hasAmount ? computedAmount : 0,
+        eligible: true,
+        details: `${nrel.description || nrel.title}\n\nSource: NREL AFDC • https://afdc.energy.gov/laws/${nrel.id}`,
+        category,
+        isAlternative: false,
+        programStatus: 'active',
+      });
+    }
+  }
+
   return incentives;
+}
+
+function inferNrelCategory(type: string): 'federal' | 'state' | 'utility' | 'other' {
+  const t = type.toLowerCase();
+  if (t.includes('utility') || t.includes('private')) return 'utility';
+  if (t.includes('state')) return 'state';
+  if (t.includes('federal')) return 'federal';
+  return 'other';
 }
