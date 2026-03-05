@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, DollarSign, Clock, BarChart3 } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, DollarSign, Clock, BarChart3, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
 import { fetchNearbyStations } from '@/lib/api/stations';
@@ -65,6 +65,7 @@ const Dashboard = () => {
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
   const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
+  const [activePanel, setActivePanel] = useState<'revenue' | 'investment' | 'payback' | 'npv' | null>('revenue');
 
   const handleGateUnlock = useCallback(() => {
     localStorage.setItem(GATE_UNLOCKED_KEY, 'true');
@@ -262,7 +263,7 @@ const Dashboard = () => {
           </div>
 
           {/* Right: Score + Property Inputs + Parking Impact */}
-          <div className="space-y-3 min-h-0 overflow-y-auto max-h-[660px] lg:max-h-[620px]">
+          <div className="space-y-3 min-h-0">
             {/* ChargeScore compact */}
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-4">
@@ -309,74 +310,54 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* ═══ ROW 2: Key Metrics Strip ═══ */}
+        {/* ═══ ROW 2: Clickable Metrics Strip ═══ */}
         <div className="rounded-xl border border-border bg-card">
-          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
-            <div className="px-4 py-3 text-center">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <TrendingUp className="h-3.5 w-3.5 text-success" />
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Monthly Revenue</span>
-              </div>
-              <p className={`font-mono text-xl font-bold ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {fmt(monthlyProfit)}
-              </p>
-              <p className="text-[10px] text-muted-foreground">/mo net profit</p>
-            </div>
-            <div className="px-4 py-3 text-center">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <DollarSign className="h-3.5 w-3.5 text-primary" />
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Out-of-Pocket</span>
-              </div>
-              <p className={`font-mono text-xl font-bold ${financials.netInvestment <= 0 ? 'text-success' : 'text-foreground'}`}>
-                {fmt(financials.netInvestment)}
-              </p>
-              <p className="text-[10px] text-muted-foreground">after incentives</p>
-            </div>
-            <div className="px-4 py-3 text-center">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <Clock className="h-3.5 w-3.5 text-accent" />
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Payback</span>
-              </div>
-              <p className="font-mono text-xl font-bold text-foreground">
-                {isFinite(financials.paybackYears) && financials.paybackYears < 100
-                  ? `${financials.paybackYears}yr`
-                  : 'N/A'}
-              </p>
-              <p className="text-[10px] text-muted-foreground">to breakeven</p>
-            </div>
-            <div className="px-4 py-3 text-center">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">15-Year NPV</span>
-              </div>
-              <p className={`font-mono text-xl font-bold ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
-                {fmt(financials.npv15Year)}
-              </p>
-              <p className="text-[10px] text-muted-foreground">at 8% discount</p>
-            </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4">
+            {([
+              { key: 'revenue' as const, icon: TrendingUp, iconClass: 'text-success', label: 'Monthly Revenue', value: fmt(monthlyProfit), valueClass: monthlyProfit >= 0 ? 'text-success' : 'text-destructive', sub: '/mo net profit' },
+              { key: 'investment' as const, icon: DollarSign, iconClass: 'text-primary', label: 'Out-of-Pocket', value: fmt(financials.netInvestment), valueClass: financials.netInvestment <= 0 ? 'text-success' : 'text-foreground', sub: 'after incentives' },
+              { key: 'payback' as const, icon: Clock, iconClass: 'text-accent', label: 'Payback', value: isFinite(financials.paybackYears) && financials.paybackYears < 100 ? `${financials.paybackYears}yr` : 'N/A', valueClass: 'text-foreground', sub: 'to breakeven' },
+              { key: 'npv' as const, icon: BarChart3, iconClass: 'text-primary', label: '15-Year NPV', value: fmt(financials.npv15Year), valueClass: financials.npv15Year > 0 ? 'text-success' : 'text-destructive', sub: 'at 8% discount' },
+            ] as const).map((card, i) => (
+              <button
+                key={card.key}
+                onClick={() => setActivePanel(prev => prev === card.key ? null : card.key)}
+                className={`px-4 py-3 text-center transition-colors relative ${i > 0 ? 'border-l border-border' : ''} ${activePanel === card.key ? 'bg-primary/5 ring-2 ring-inset ring-primary rounded-t-xl' : 'hover:bg-muted/50'}`}
+              >
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <card.icon className={`h-3.5 w-3.5 ${card.iconClass}`} />
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{card.label}</span>
+                </div>
+                <p className={`font-mono text-xl font-bold ${card.valueClass}`}>{card.value}</p>
+                <p className="text-[10px] text-muted-foreground">{card.sub}</p>
+                <ChevronDown className={`h-3 w-3 mx-auto mt-1 text-muted-foreground transition-transform ${activePanel === card.key ? 'rotate-180' : ''}`} />
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* ═══ GATED CONTENT: ROW 3 ═══ */}
+        {/* ═══ GATED CONTENT: Expandable Detail Panel ═══ */}
         <div className={blurClass}>
-          <div className="space-y-3">
-            {/* ChargeScore Details + Investment Summary */}
-            <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-              <ChargeScoreGauge score={chargeScore} siteInsights={{
-                floodZone: siteData.floodZone,
-                isHighRisk: siteData.isHighRisk,
-                highwayDistance: highwayProximity.distanceMiles,
-                highwayName: highwayProximity.routeName,
-                utilityName: utilityInfo.utilityName,
-                isDAC: siteData.isDAC,
-                isOnCorridor: siteData.isOnCorridor,
-              }} />
-              <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
-            </div>
-
-            {/* 15-Year Cash Flow */}
+          {activePanel === 'revenue' && (
+            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
+          )}
+          {activePanel === 'investment' && (
+            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
+          )}
+          {activePanel === 'payback' && (
+            <ChargeScoreGauge score={chargeScore} siteInsights={{
+              floodZone: siteData.floodZone,
+              isHighRisk: siteData.isHighRisk,
+              highwayDistance: highwayProximity.distanceMiles,
+              highwayName: highwayProximity.routeName,
+              utilityName: utilityInfo.utilityName,
+              isDAC: siteData.isDAC,
+              isOnCorridor: siteData.isOnCorridor,
+            }} />
+          )}
+          {activePanel === 'npv' && (
             <FinancialProjection financials={financials} />
-          </div>
+          )}
         </div>
       </main>
     </div>
