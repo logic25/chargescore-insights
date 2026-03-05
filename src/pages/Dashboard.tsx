@@ -307,7 +307,15 @@ const Dashboard = () => {
             </TabsContent>
           </Tabs>
 
-          <ChargeScoreGauge score={chargeScore} />
+          <ChargeScoreGauge score={chargeScore} siteInsights={{
+            floodZone: floodZone.floodZone,
+            isHighRisk: floodZone.isHighRisk,
+            highwayDistance: highwayProximity.distanceMiles,
+            highwayName: highwayProximity.routeName,
+            utilityName: utilityInfo.utilityName,
+            isDAC: isDisadvantagedCommunity,
+            isOnCorridor: isOnAltFuelCorridor,
+          }} />
         </div>
 
         {/* GATED: Everything below is blurred until email entry */}
