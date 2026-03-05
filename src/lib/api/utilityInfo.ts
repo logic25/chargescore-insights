@@ -28,4 +28,3 @@ export async function fetchUtilityInfo(lat: number, lng: number): Promise<Utilit
     return { utilityName: null, commercialRate: null, companyId: null };
   }
 }
-}
