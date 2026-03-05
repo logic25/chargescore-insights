@@ -58,7 +58,7 @@ const Dashboard = () => {
   const [stations, setStations] = useState<NearbyStation[]>([]);
   const [stationsLoading, setStationsLoading] = useState(true);
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
-  const [, setAvailableForChargers] = useState(0);
+  
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
   const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
 
