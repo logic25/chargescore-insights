@@ -114,14 +114,9 @@ const Dashboard = () => {
     fetchCensusTractFips(site.lat, site.lng).then(setCensusTractFips);
   }, [site.lat, site.lng]);
 
-  // Fetch DAC status from CEJST
+  // Fetch DAC, Corridor, Flood Zone via edge function
   useEffect(() => {
-    fetchIsDisadvantagedCommunity(site.lat, site.lng).then(setIsDisadvantagedCommunity);
-  }, [site.lat, site.lng]);
-
-  // Fetch Alt Fuel Corridor status
-  useEffect(() => {
-    fetchIsOnAltFuelCorridor(site.lat, site.lng).then(setIsOnAltFuelCorridor);
+    fetchSiteData(site.lat, site.lng).then(setSiteData);
   }, [site.lat, site.lng]);
 
   // Fetch utility info (name + commercial rate)
@@ -151,10 +146,6 @@ const Dashboard = () => {
     fetchParcelInfo(site.lat, site.lng, site.state).then(setParcelData);
   }, [site.lat, site.lng, site.state]);
 
-  // Fetch FEMA flood zone
-  useEffect(() => {
-    fetchFloodZone(site.lat, site.lng).then(setFloodZone);
-  }, [site.lat, site.lng]);
 
   // Fetch nearest highway
   useEffect(() => {
@@ -199,16 +190,16 @@ const Dashboard = () => {
     multiFamilyPct,
     popDensity,
     nearestMajorAirportMiles: nearestAirport.distance,
-    isOnAltFuelCorridor,
+    isOnAltFuelCorridor: siteData.isOnCorridor,
     propertyType: site.propertyType,
     amenitiesNearby: amenitiesCount,
     totalParkingSpots: site.totalParkingSpaces,
-    isDisadvantagedCommunity,
+    isDisadvantagedCommunity: siteData.isDAC,
     hasThreePhasePower: hasThreePhasePower,
     state: site.state,
     zipCode: site.zipCode,
     utilityName: utilityInfo.utilityName,
-  }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, isDisadvantagedCommunity, isOnAltFuelCorridor, hasThreePhasePower, site.state, site.zipCode, utilityInfo]);
+  }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, siteData, hasThreePhasePower, site.state, site.zipCode, utilityInfo]);
 
   // Revenue projection from ChargeScore
   const revenueProjection: RevenueProjection = useMemo(() => projectRevenue({
