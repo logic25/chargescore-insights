@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { SiteAnalysis, PropertyType, ElectricalService } from '@/types/chargeScore';
 import { PROPERTY_TYPE_LABELS, ELECTRICAL_SERVICE_LABELS } from '@/types/chargeScore';
 import { estimateParkingSpots } from '@/lib/api/googleMaps';
+import type { AadtResult } from '@/lib/api/traffic';
+import type { ParcelResult } from '@/lib/api/parcel';
 
 export type TrafficLevel = 'highway' | 'main' | 'side' | 'residential';
 
@@ -33,14 +35,23 @@ interface PropertyInputsProps {
   onTrafficLevelChange: (level: TrafficLevel) => void;
   availableForChargers?: number;
   confirmedSpotCount?: number | null;
+  aadtData?: AadtResult;
+  parcelData?: ParcelResult;
   onParkingEstimate?: (data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => void;
 }
 
-const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, availableForChargers = 0, confirmedSpotCount, onParkingEstimate }: PropertyInputsProps) => {
+const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, availableForChargers = 0, confirmedSpotCount, aadtData, parcelData, onParkingEstimate }: PropertyInputsProps) => {
   const [expanded, setExpanded] = useState(false);
   const [lotSqFt, setLotSqFt] = useState(50000);
   const [drawnLotSqFt, setDrawnLotSqFt] = useState<number | null>(null);
   const [manualSpotCount, setManualSpotCount] = useState<number | null>(null);
+
+  // Sync lot area from MapPLUTO parcel data
+  useEffect(() => {
+    if (parcelData?.lotArea && parcelData.lotArea > 0) {
+      setLotSqFt(parcelData.lotArea);
+    }
+  }, [parcelData?.lotArea]);
 
   // Sync confirmed spot count from satellite map
   useEffect(() => {
@@ -113,7 +124,12 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">
-                Lot Size (sq ft) {drawnLotSqFt && <span className="text-primary text-[10px]">— measured from map</span>}
+                Lot Size (sq ft)
+                {parcelData?.lotArea ? (
+                  <span className="text-primary text-[10px]"> — from NYC MapPLUTO</span>
+                ) : drawnLotSqFt ? (
+                  <span className="text-primary text-[10px]"> — measured from map</span>
+                ) : null}
               </Label>
               <Input
                 type="number"
@@ -125,6 +141,11 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
                   setDrawnLotSqFt(null);
                 }}
               />
+              {parcelData?.ownerName && (
+                <p className="text-[9px] text-muted-foreground/60">
+                  Owner: {parcelData.ownerName}
+                </p>
+              )}
             </div>
           </div>
 
@@ -213,17 +234,34 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">
               Traffic Level <span className="text-[10px] text-muted-foreground/60">(nearest road)</span>
+              {aadtData?.aadt && (
+                <span className="text-primary text-[10px] ml-1">
+                  — {aadtData.aadt.toLocaleString()} VPD from HPMS{aadtData.year ? ` (${aadtData.year})` : ''}
+                </span>
+              )}
             </Label>
-            <Select value={trafficLevel} onValueChange={(v) => onTrafficLevelChange(v as TrafficLevel)}>
-              <SelectTrigger className="amber-input h-9 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(TRAFFIC_LEVEL_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {aadtData?.aadt ? (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-sm font-bold text-primary">{aadtData.aadt.toLocaleString()} VPD</span>
+                  <span className="text-[10px] text-muted-foreground">FHWA HPMS Data</span>
+                </div>
+                {aadtData.routeId && (
+                  <p className="text-[9px] text-muted-foreground/60 mt-0.5">Route: {aadtData.routeId}</p>
+                )}
+              </div>
+            ) : (
+              <Select value={trafficLevel} onValueChange={(v) => onTrafficLevelChange(v as TrafficLevel)}>
+                <SelectTrigger className="amber-input h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TRAFFIC_LEVEL_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Utilization + Electrical + State */}
