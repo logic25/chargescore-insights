@@ -71,7 +71,7 @@ const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
             Network: ${station.network}<br/>
             Type: ${station.chargerType}<br/>
             Ports: ${station.numPorts}<br/>
-            Distance: ${station.distanceMiles} mi
+            Distance: ${station.distanceMiles.toFixed(1)} mi
           </div>`
         );
     });
