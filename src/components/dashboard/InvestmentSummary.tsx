@@ -4,14 +4,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import type { FinancialProjection, Incentive } from '@/types/chargeScore';
-import type { NrelIncentive } from '@/lib/api/incentives';
 
 interface Props {
   financials: FinancialProjection;
   incentives: Incentive[];
   stalls: number;
   onStallsChange?: (stalls: number) => void;
-  nrelIncentives?: NrelIncentive[];
 }
 
 const fmt = (n: number) => {
@@ -127,8 +125,7 @@ const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
   );
 };
 
-const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nrelIncentives = [] }: Props) => {
-  const [showNrelPrograms, setShowNrelPrograms] = useState(false);
+const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: Props) => {
   const [showYear1, setShowYear1] = useState(false);
   const outOfPocket = financials.netInvestment;
   const outOfPocketColor = outOfPocket <= 0
@@ -262,55 +259,6 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
           )}
         </div>
 
-        {/* NREL Additional Programs — only actual incentives, not laws/regulations */}
-        {(() => {
-          const actualIncentives = nrelIncentives.filter(n => n.type !== 'Laws and Regulations');
-          if (actualIncentives.length === 0) return null;
-          return (
-            <div>
-              <button
-                className="flex w-full items-center gap-1 rounded-lg border border-border bg-muted/50 p-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
-                onClick={() => setShowNrelPrograms(!showNrelPrograms)}
-              >
-                {showNrelPrograms ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                Additional Programs ({actualIncentives.length})
-              </button>
-              {showNrelPrograms && (
-                <div className="mt-2 space-y-1.5 pl-1">
-                  {actualIncentives.map((nrel) => (
-                    <div key={nrel.id} className="rounded border border-border bg-muted/30 p-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="text-[11px] font-medium text-foreground/80">{nrel.title}</p>
-                            <EligibilityBadge eligible={nrel.eligible ?? null} />
-                            {nrel.category && (
-                              <span className="inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[8px] uppercase tracking-wide text-muted-foreground">
-                                {nrel.category}
-                              </span>
-                            )}
-                          </div>
-                          <p className="mt-0.5 text-[10px] text-muted-foreground">{nrel.type}</p>
-                          {nrel.description && (
-                            <p className="mt-1 text-[10px] text-muted-foreground/70 line-clamp-2">{nrel.description}</p>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-[10px] font-semibold text-success">
-                            {nrel.estimatedBenefit ? nrel.estimatedBenefit : 'Amount TBD'}
-                          </span>
-                          <a href={`https://afdc.energy.gov/laws/${nrel.id}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 text-primary hover:text-primary/80">
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })()}
 
         {/* Divider */}
         <div className="border-t border-border" />
