@@ -262,35 +262,42 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange, nre
           )}
         </div>
 
-        {/* NREL Additional Programs */}
-        {nrelIncentives.length > 0 && (
-          <div>
-            <button
-              className="flex w-full items-center gap-1 rounded-lg border border-border bg-muted/50 p-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
-              onClick={() => setShowNrelPrograms(!showNrelPrograms)}
-            >
-              {showNrelPrograms ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-              Additional Programs ({nrelIncentives.length})
-            </button>
-            {showNrelPrograms && (
-              <div className="mt-2 space-y-1.5 pl-1">
-                {nrelIncentives.map((nrel) => (
-                  <div key={nrel.id} className="rounded border border-border bg-muted/30 p-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-[11px] font-medium text-foreground/80">{nrel.title}</p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">{nrel.type}</p>
+        {/* NREL Additional Programs — only actual incentives, not laws/regulations */}
+        {(() => {
+          const actualIncentives = nrelIncentives.filter(n => n.type !== 'Laws and Regulations');
+          if (actualIncentives.length === 0) return null;
+          return (
+            <div>
+              <button
+                className="flex w-full items-center gap-1 rounded-lg border border-border bg-muted/50 p-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted"
+                onClick={() => setShowNrelPrograms(!showNrelPrograms)}
+              >
+                {showNrelPrograms ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                Additional Programs ({actualIncentives.length})
+              </button>
+              {showNrelPrograms && (
+                <div className="mt-2 space-y-1.5 pl-1">
+                  {actualIncentives.map((nrel) => (
+                    <div key={nrel.id} className="rounded border border-border bg-muted/30 p-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-medium text-foreground/80">{nrel.title}</p>
+                          <p className="mt-0.5 text-[10px] text-muted-foreground">{nrel.type}</p>
+                          {nrel.description && (
+                            <p className="mt-1 text-[10px] text-muted-foreground/70 line-clamp-2">{nrel.description}</p>
+                          )}
+                        </div>
+                        <a href={`https://afdc.energy.gov/laws/${nrel.id}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 text-primary hover:text-primary/80">
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
                       </div>
-                      <a href={`https://afdc.energy.gov/laws/${nrel.id}`} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 text-primary hover:text-primary/80">
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Divider */}
         <div className="border-t border-border" />
