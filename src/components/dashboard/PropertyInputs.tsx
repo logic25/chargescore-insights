@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -33,20 +32,19 @@ interface PropertyInputsProps {
   onChange: (site: SiteAnalysis | ((prev: SiteAnalysis) => SiteAnalysis)) => void;
   trafficLevel: TrafficLevel;
   onTrafficLevelChange: (level: TrafficLevel) => void;
-  availableForChargers?: number;
   confirmedSpotCount?: number | null;
   aadtData?: AadtResult;
   parcelData?: ParcelResult;
-  onParkingEstimate?: (data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => void;
+  onParkingEstimate?: (data: { lotSqFt: number; totalSpots: number }) => void;
 }
 
-const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, availableForChargers = 0, confirmedSpotCount, aadtData, parcelData, onParkingEstimate }: PropertyInputsProps) => {
+const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, confirmedSpotCount, aadtData, parcelData, onParkingEstimate }: PropertyInputsProps) => {
   const [expanded, setExpanded] = useState(false);
   const [lotSqFt, setLotSqFt] = useState(50000);
   const [drawnLotSqFt, setDrawnLotSqFt] = useState<number | null>(null);
   const [manualSpotCount, setManualSpotCount] = useState<number | null>(null);
 
-  // Sync lot area from MapPLUTO parcel data
+  // Sync lot area from parcel data (MapPLUTO, Nassau County GIS, or NYS Tax Parcels)
   useEffect(() => {
     if (parcelData?.lotArea && parcelData.lotArea > 0) {
       setLotSqFt(parcelData.lotArea);
@@ -65,21 +63,24 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
 
   // Use manual count if set, otherwise use estimate
   const totalSpots = manualSpotCount ?? estimatedParking.total;
-  const chargerSpots = Math.floor(totalSpots * 0.33);
 
   useEffect(() => {
     onParkingEstimate?.({
       lotSqFt: effectiveLotSqFt,
       totalSpots,
-      availableForChargers: chargerSpots,
     });
-  }, [effectiveLotSqFt, totalSpots, chargerSpots, onParkingEstimate]);
+  }, [effectiveLotSqFt, totalSpots, onParkingEstimate]);
 
   const update = (partial: Partial<SiteAnalysis>) => {
     onChange({ ...site, ...partial });
   };
 
-  const isTesla = site.chargingModel === 'tesla';
+  // Parcel source label
+  const parcelSourceLabel = parcelData?.source === 'mappluto'
+    ? 'NYC MapPLUTO'
+    : parcelData?.source === 'nys_parcels'
+      ? 'County GIS'
+      : null;
 
   return (
     <div className="glass-card">
@@ -98,7 +99,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             <span>•</span>
             <span>{totalSpots} spots{manualSpotCount !== null ? ' (manual)' : ''}</span>
             <span>•</span>
-            <span>{isTesla ? `${site.teslaStalls} Tesla stalls` : `${site.l2Chargers} L2 + ${site.dcfcChargers} DCFC`}</span>
+            <span>{site.teslaStalls} Tesla stalls</span>
             <span>•</span>
             <span>${site.pricePerKwh}/kWh</span>
           </div>
@@ -125,8 +126,8 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">
                 Lot Size (sq ft)
-                {parcelData?.lotArea ? (
-                  <span className="text-primary text-[10px]"> — from NYC MapPLUTO</span>
+                {parcelData?.lotArea && parcelSourceLabel ? (
+                  <span className="text-primary text-[10px]"> — from {parcelSourceLabel}</span>
                 ) : drawnLotSqFt ? (
                   <span className="text-primary text-[10px]"> — measured from map</span>
                 ) : null}
@@ -149,97 +150,61 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             </div>
           </div>
 
-          {/* Parking Estimates with Manual Override */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg border border-border bg-muted/50 p-3">
-              <div className="flex items-center gap-1">
-                <p className="text-[10px] text-muted-foreground">Total Parking Spots</p>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-[280px] text-xs">
-                    Estimated at 1 spot per 340 sq ft. If this doesn't match your actual count, enter the real number below.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <Input
-                type="number"
-                className="mt-1 h-8 w-full font-mono text-lg font-bold border-dashed"
-                value={manualSpotCount ?? estimatedParking.total}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (!val || val === estimatedParking.total) {
-                    setManualSpotCount(null);
-                  } else {
-                    setManualSpotCount(val);
-                  }
-                }}
-              />
-              <p className="text-[9px] text-muted-foreground/60 mt-1">
-                {manualSpotCount !== null ? '✏️ Manual count' : `Est. from ${effectiveLotSqFt.toLocaleString()} sq ft`}
-              </p>
+          {/* Total Parking Spots — single box, no 33% cap */}
+          <div className="rounded-lg border border-border bg-muted/50 p-3">
+            <div className="flex items-center gap-1">
+              <p className="text-[10px] text-muted-foreground">Total Parking Spots</p>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[280px] text-xs">
+                  Estimated at 1 spot per 340 sq ft. Use the Count Spots tool on the satellite map or enter your actual count.
+                </TooltipContent>
+              </Tooltip>
             </div>
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-              <div className="flex items-center gap-1">
-                <p className="text-[10px] text-muted-foreground">Available for Chargers</p>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-[280px] text-xs">
-                    We recommend no more than 33% of spots for EV chargers to avoid impacting regular parking.
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <p className="font-mono text-xl font-bold text-primary mt-1">{chargerSpots}</p>
-              <p className="text-[9px] text-muted-foreground/60">33% of {totalSpots} spots</p>
-            </div>
+            <Input
+              type="number"
+              className="mt-1 h-8 w-full font-mono text-lg font-bold border-dashed"
+              value={manualSpotCount ?? estimatedParking.total}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                if (!val || val === estimatedParking.total) {
+                  setManualSpotCount(null);
+                } else {
+                  setManualSpotCount(val);
+                }
+              }}
+            />
+            <p className="text-[9px] text-muted-foreground/60 mt-1">
+              {manualSpotCount !== null ? '✏️ Manual count' : `Est. from ${effectiveLotSqFt.toLocaleString()} sq ft`}
+            </p>
           </div>
 
           <p className="text-[10px] text-muted-foreground/70">
             💡 Use the <strong>Count Spots</strong> tool on the satellite map above to tap each parking spot, or type your actual count.
           </p>
 
-          {/* Charging Model Toggle */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Charging Model</Label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => update({ chargingModel: 'tesla' })}
-                className={`flex-1 rounded-lg border px-3 py-2.5 text-xs font-semibold transition-all ${
-                  isTesla
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-muted/50 text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                ⚡ Tesla Supercharger
-                <span className="block text-[10px] font-normal opacity-70 mt-0.5">for Business</span>
-              </button>
-              <button
-                onClick={() => update({ chargingModel: 'generic' })}
-                className={`flex-1 rounded-lg border px-3 py-2.5 text-xs font-semibold transition-all ${
-                  !isTesla
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-muted/50 text-muted-foreground hover:bg-muted'
-                }`}
-              >
-                🔌 Generic / Other
-                <span className="block text-[10px] font-normal opacity-70 mt-0.5">L2 + DCFC</span>
-              </button>
-            </div>
-          </div>
-
           {/* Traffic Level */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">
-              Traffic Level <span className="text-[10px] text-muted-foreground/60">(nearest road)</span>
-              {aadtData?.aadt && (
-                <span className="text-primary text-[10px] ml-1">
-                  — {aadtData.aadt.toLocaleString()} VPD from HPMS{aadtData.year ? ` (${aadtData.year})` : ''}
-                </span>
-              )}
-            </Label>
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground">
+                Traffic Level <span className="text-[10px] text-muted-foreground/60">(nearest road)</span>
+                {aadtData?.aadt && (
+                  <span className="text-primary text-[10px] ml-1">
+                    — {aadtData.aadt.toLocaleString()} VPD from HPMS{aadtData.year ? ` (${aadtData.year})` : ''}
+                  </span>
+                )}
+              </Label>
+              <Tooltip>
+                <TooltipTrigger>
+                  <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[280px] text-xs">
+                  VPD = Vehicles Per Day. Measured by FHWA's Highway Performance Monitoring System (HPMS). Higher traffic increases charger utilization and revenue potential.
+                </TooltipContent>
+              </Tooltip>
+            </div>
             {aadtData?.aadt ? (
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5">
                 <div className="flex items-center justify-between">
@@ -264,7 +229,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             )}
           </div>
 
-          {/* Utilization + Electrical + State */}
+          {/* Peak Parking Utilization */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
@@ -274,7 +239,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
                     <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-[280px] text-xs">
-                    How full your parking lot gets at its busiest time. Higher utilization means less room for dedicated charger spots. Most retail lots peak at 60-80% on weekends.
+                    How full your parking lot gets at its busiest time. Higher utilization means less room for dedicated charger spots. Ask your property manager or estimate from peak-hour observations.
                   </TooltipContent>
                 </Tooltip>
               </div>
@@ -288,6 +253,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             />
           </div>
 
+          {/* Electrical Service + State */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Electrical Service</Label>
@@ -312,83 +278,76 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             </div>
           </div>
 
-          {/* Charger Config */}
-          {isTesla ? (
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
-                Supercharger Stalls <span className="text-[10px] text-muted-foreground/70">(min 4)</span>
-              </Label>
-              <div className="flex items-center gap-3">
-                <Slider
-                  value={[site.teslaStalls]}
-                  onValueChange={([v]) => update({ teslaStalls: v })}
-                  min={4} max={24} step={1}
-                  className="flex-1 py-2"
-                />
-                <span className="w-8 text-center font-mono text-sm font-bold text-primary">{site.teslaStalls}</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground/60">
-                Based on {totalSpots} parking spots, we recommend {Math.min(24, Math.max(4, Math.round(totalSpots * 0.04)))}–{Math.min(24, Math.max(4, Math.round(totalSpots * 0.08)))} stalls
-              </p>
-              {availableForChargers > 0 && site.teslaStalls > availableForChargers && (
-                <div className="flex items-center gap-1 rounded bg-accent/10 p-1.5 text-[10px] text-accent">
-                  ⚠ Exceeds estimated available spots ({availableForChargers})
-                </div>
-              )}
+          {/* Tesla Supercharger Stalls */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              Supercharger Stalls <span className="text-[10px] text-muted-foreground/70">(min 4)</span>
+            </Label>
+            <div className="flex items-center gap-3">
+              <Slider
+                value={[site.teslaStalls]}
+                onValueChange={([v]) => update({ teslaStalls: v })}
+                min={4} max={24} step={1}
+                className="flex-1 py-2"
+              />
+              <span className="w-8 text-center font-mono text-sm font-bold text-primary">{site.teslaStalls}</span>
             </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Level 2 Chargers</Label>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ l2Chargers: Math.max(0, site.l2Chargers - 1) })}>−</Button>
-                  <span className="w-10 text-center font-mono text-sm">{site.l2Chargers}</span>
-                  <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ l2Chargers: Math.min(50, site.l2Chargers + 1) })}>+</Button>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">DC Fast Chargers</Label>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ dcfcChargers: Math.max(0, site.dcfcChargers - 1) })}>−</Button>
-                  <span className="w-10 text-center font-mono text-sm">{site.dcfcChargers}</span>
-                  <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={() => update({ dcfcChargers: Math.min(20, site.dcfcChargers + 1) })}>+</Button>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Pricing */}
-          <div className={`grid gap-4 ${isTesla ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Price/kWh ($)</Label>
-              <Input type="number" step="0.01" className="amber-input h-9 font-mono text-sm"
-                value={site.pricePerKwh}
-                onChange={(e) => update({ pricePerKwh: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Electricity $/kWh</Label>
-              <Input type="number" step="0.01" className="amber-input h-9 font-mono text-sm"
-                value={site.electricityCostPerKwh}
-                onChange={(e) => update({ electricityCostPerKwh: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Demand $/kW</Label>
-              <Input type="number" step="1" className="amber-input h-9 font-mono text-sm"
-                value={site.demandChargePerKw}
-                onChange={(e) => update({ demandChargePerKw: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-            {isTesla && (
+          <div className="space-y-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Tesla Fee $/kWh</Label>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground">Your Retail Price/kWh ($)</Label>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[280px] text-xs">
+                      The price you charge EV drivers per kWh. You set this — it's your revenue per unit of energy dispensed.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <Input type="number" step="0.01" className="amber-input h-9 font-mono text-sm"
-                  value={site.teslaServiceFeePerKwh}
-                  onChange={(e) => update({ teslaServiceFeePerKwh: parseFloat(e.target.value) || 0 })}
+                  value={site.pricePerKwh}
+                  onChange={(e) => update({ pricePerKwh: parseFloat(e.target.value) || 0 })}
                 />
               </div>
-            )}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground">Your Levelized Electricity Cost/kWh ($)</Label>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[280px] text-xs">
+                      Your all-in electricity cost per kWh, including demand charges, TOU pricing, surcharges, and fees. Check your utility bill or ask your provider for a levelized commercial rate.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <Input type="number" step="0.01" className="amber-input h-9 font-mono text-sm"
+                  value={site.electricityCostPerKwh}
+                  onChange={(e) => update({ electricityCostPerKwh: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+
+            {/* Tesla Service Fee — read-only display */}
+            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-muted-foreground">Tesla Service Fee</span>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[280px] text-xs">
+                    Tesla charges $0.10/kWh for network management, payment processing, monitoring, and maintenance. This fee escalates 3% per year. Set by Tesla — not editable.
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <span className="font-mono text-sm font-semibold text-muted-foreground">${site.teslaServiceFeePerKwh}/kWh</span>
+            </div>
           </div>
         </div>
       )}

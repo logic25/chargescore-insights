@@ -209,18 +209,15 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
 export function calculateParkingImpact(site: SiteAnalysis): ParkingAnalysis {
   const peakUsed = Math.round(site.totalParkingSpaces * (site.peakUtilization / 100));
   const available = site.totalParkingSpaces - peakUsed;
-  const recommendedEv = Math.round(available * 0.75);
-  const requestedChargers = site.chargingModel === 'tesla'
-    ? site.teslaStalls
-    : site.l2Chargers + site.dcfcChargers;
+  const requestedChargers = site.teslaStalls;
 
   return {
     totalSpaces: site.totalParkingSpaces,
     peakUsed,
     available,
-    recommendedEv,
+    recommendedEv: available, // no arbitrary cap — show actual available
     requestedChargers,
-    exceedsAvailable: requestedChargers > recommendedEv,
+    exceedsAvailable: requestedChargers > available,
   };
 }
 
