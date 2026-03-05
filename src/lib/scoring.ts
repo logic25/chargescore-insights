@@ -288,10 +288,10 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   const totalScore = Math.round(factors.reduce((sum, f) => sum + f.weightedScore, 0));
 
   let grade = 'F';
-  if (totalScore >= 90) grade = 'A+';
-  else if (totalScore >= 80) grade = 'A';
-  else if (totalScore >= 70) grade = 'B+';
-  else if (totalScore >= 60) grade = 'B';
+  if (totalScore >= 90) grade = 'A';
+  else if (totalScore >= 80) grade = 'B+';
+  else if (totalScore >= 70) grade = 'B';
+  else if (totalScore >= 60) grade = 'C+';
   else if (totalScore >= 50) grade = 'C';
   else if (totalScore >= 40) grade = 'D';
 

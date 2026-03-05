@@ -202,7 +202,7 @@ export async function fetchStateIncentives(opts: FetchIncentivesOptions): Promis
           title: r.title,
           state: r.state,
           type: r.type,
-          description: r.plaintext?.slice(0, 240) || '',
+          description: r.plaintext || '',
           status: r.status || 'active',
           enacted_date: r.enacted_date,
           amended_date: r.amended_date,
