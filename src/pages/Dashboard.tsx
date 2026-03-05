@@ -109,14 +109,24 @@ const Dashboard = () => {
     fetchPlannedStations(site.lat, site.lng, 5).then(setPlannedData);
   }, [site.lat, site.lng]);
 
-  // Fetch census tract + DAC check
+  // Fetch census tract
   useEffect(() => {
-    fetchCensusTractFips(site.lat, site.lng).then((fips) => {
-      setCensusTractFips(fips);
-      // Simple DAC proxy: we don't bundle the full CEJST dataset for MVP
-      // Instead mark as DAC if in a high-poverty tract (will refine later)
-      setIsDisadvantagedCommunity(false);
-    });
+    fetchCensusTractFips(site.lat, site.lng).then(setCensusTractFips);
+  }, [site.lat, site.lng]);
+
+  // Fetch DAC status from CEJST
+  useEffect(() => {
+    fetchIsDisadvantagedCommunity(site.lat, site.lng).then(setIsDisadvantagedCommunity);
+  }, [site.lat, site.lng]);
+
+  // Fetch Alt Fuel Corridor status
+  useEffect(() => {
+    fetchIsOnAltFuelCorridor(site.lat, site.lng).then(setIsOnAltFuelCorridor);
+  }, [site.lat, site.lng]);
+
+  // Fetch utility info (name + commercial rate)
+  useEffect(() => {
+    fetchUtilityInfo(site.lat, site.lng).then(setUtilityInfo);
   }, [site.lat, site.lng]);
 
   // Fetch census housing + population data
@@ -136,10 +146,10 @@ const Dashboard = () => {
     fetchAadt(site.lat, site.lng).then(setAadtData);
   }, [site.lat, site.lng]);
 
-  // Fetch parcel data from NYC MapPLUTO
+  // Fetch parcel data (MapPLUTO → NYS Tax Parcels fallback)
   useEffect(() => {
-    fetchParcelInfo(site.lat, site.lng).then(setParcelData);
-  }, [site.lat, site.lng]);
+    fetchParcelInfo(site.lat, site.lng, site.state).then(setParcelData);
+  }, [site.lat, site.lng, site.state]);
 
   // Computed scoring data from stations
   const stationMetrics = useMemo(() => {
