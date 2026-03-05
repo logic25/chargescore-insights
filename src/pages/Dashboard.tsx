@@ -213,7 +213,8 @@ const Dashboard = () => {
   }), [chargeScore.totalScore, site.teslaStalls, site.pricePerKwh, site.electricityCostPerKwh, site.teslaServiceFeePerKwh, site.state]);
 
   // Legacy calculations (still used by other panels)
-  const incentives = useMemo(() => getIncentives(site), [site]);
+  const incentiveContext = useMemo(() => ({ isDAC: siteData.isDAC, isOnCorridor: siteData.isOnCorridor }), [siteData.isDAC, siteData.isOnCorridor]);
+  const incentives = useMemo(() => getIncentives(site, incentiveContext), [site, incentiveContext]);
   const financials = useMemo(() => calculateFinancials(site, incentives), [site, incentives]);
   const parking = useMemo(() => calculateParkingImpact(site), [site]);
   const demandCharge = useMemo(() => calculateDemandCharge(site), [site]);
