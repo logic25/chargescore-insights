@@ -108,13 +108,13 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
       )}
 
       {expanded && (
-        <div className="space-y-4 border-t border-border p-4">
-          {/* Property Details */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Property Type</Label>
+        <div className="space-y-2.5 border-t border-border p-4">
+          {/* Row 1: Property Type | Lot Size | Parking Spots */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">Property Type</Label>
               <Select value={site.propertyType} onValueChange={(v) => update({ propertyType: v as PropertyType })}>
-                <SelectTrigger className="h-9 text-sm">
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -124,18 +124,18 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">
                 Lot Size (sq ft)
                 {parcelData?.lotArea && parcelSourceLabel ? (
-                  <span className="text-primary text-[10px]"> — from {parcelSourceLabel}</span>
+                  <span className="text-primary text-[9px]"> — {parcelSourceLabel}</span>
                 ) : drawnLotSqFt ? (
-                  <span className="text-primary text-[10px]"> — measured from map</span>
+                  <span className="text-primary text-[9px]"> — measured</span>
                 ) : null}
               </Label>
               <Input
                 type="number"
-                className="h-9 font-mono text-sm"
+                className="h-8 font-mono text-xs"
                 value={effectiveLotSqFt}
                 onChange={(e) => {
                   const val = parseInt(e.target.value) || 0;
@@ -143,123 +143,87 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
                   setDrawnLotSqFt(null);
                 }}
               />
-              {parcelData?.ownerName && (
-                <p className="text-[9px] text-muted-foreground/60">
-                  Owner: {parcelData.ownerName}
-                </p>
-              )}
             </div>
-          </div>
-
-          {/* Total Parking Spots — single box, no 33% cap */}
-          <div className="rounded-lg border border-border bg-muted/50 p-3">
-            <div className="flex items-center gap-1">
-              <p className="text-[10px] text-muted-foreground">Total Parking Spots</p>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-[280px] text-xs">
-                  Estimated at 1 spot per 340 sq ft. Use the Count Spots tool on the satellite map or enter your actual count.
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <Input
-              type="number"
-              className="mt-1 h-8 w-full font-mono text-lg font-bold border-dashed"
-              value={manualSpotCount ?? estimatedParking.total}
-              onChange={(e) => {
-                const val = parseInt(e.target.value);
-                if (!val || val === estimatedParking.total) {
-                  setManualSpotCount(null);
-                } else {
-                  setManualSpotCount(val);
-                }
-              }}
-            />
-            <p className="text-[9px] text-muted-foreground/60 mt-1">
-              {manualSpotCount !== null ? '✏️ Manual count' : `Est. from ${effectiveLotSqFt.toLocaleString()} sq ft`}
-            </p>
-          </div>
-
-          <p className="text-[10px] text-muted-foreground/70">
-            💡 Use the <strong>Count Spots</strong> tool on the satellite map above to tap each parking spot, or type your actual count.
-          </p>
-
-          {/* Traffic Level */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1">
-              <Label className="text-xs text-muted-foreground">
-                Traffic Level <span className="text-[10px] text-muted-foreground/60">(nearest road)</span>
-                {aadtData?.aadt && (
-                  <span className="text-primary text-[10px] ml-1">
-                    — {aadtData.aadt.toLocaleString()} VPD from HPMS{aadtData.year ? ` (${aadtData.year})` : ''}
-                  </span>
-                )}
-              </Label>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-[280px] text-xs">
-                  VPD = Vehicles Per Day. Measured by FHWA's Highway Performance Monitoring System (HPMS). Higher traffic increases charger utilization and revenue potential.
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            {aadtData?.aadt ? (
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-sm font-bold text-primary">{aadtData.aadt.toLocaleString()} VPD</span>
-                  <span className="text-[10px] text-muted-foreground">FHWA HPMS Data</span>
-                </div>
-                {aadtData.routeId && (
-                  <p className="text-[9px] text-muted-foreground/60 mt-0.5">Route: {aadtData.routeId}</p>
-                )}
-              </div>
-            ) : (
-              <Select value={trafficLevel} onValueChange={(v) => onTrafficLevelChange(v as TrafficLevel)}>
-                <SelectTrigger className="amber-input h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(TRAFFIC_LEVEL_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          {/* Peak Parking Utilization */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <Label className="text-xs text-muted-foreground">Peak Parking Utilization</Label>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                Total Spots
                 <Tooltip>
                   <TooltipTrigger>
                     <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
                   </TooltipTrigger>
-                  <TooltipContent className="max-w-[280px] text-xs">
-                    How full your parking lot gets at its busiest time. Higher utilization means less room for dedicated charger spots. Ask your property manager or estimate from peak-hour observations.
+                  <TooltipContent className="max-w-[240px] text-xs">
+                    Estimated at 1 spot per 340 sq ft. Use the Count Spots tool or enter your actual count.
                   </TooltipContent>
                 </Tooltip>
-              </div>
-              <span className="font-mono text-xs text-accent">{site.peakUtilization}%</span>
+              </Label>
+              <Input
+                type="number"
+                className="h-8 font-mono text-xs border-dashed"
+                value={manualSpotCount ?? estimatedParking.total}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!val || val === estimatedParking.total) {
+                    setManualSpotCount(null);
+                  } else {
+                    setManualSpotCount(val);
+                  }
+                }}
+              />
+              <p className="text-[9px] text-muted-foreground/60">
+                {manualSpotCount !== null ? '✏️ Manual' : `Est. ${effectiveLotSqFt.toLocaleString()} sqft`}
+              </p>
             </div>
-            <Slider
-              value={[site.peakUtilization]}
-              onValueChange={([v]) => update({ peakUtilization: v })}
-              min={0} max={100} step={5}
-              className="py-2"
-            />
           </div>
 
-          {/* Electrical Service + State */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Electrical Service</Label>
+          {/* Row 2: Traffic Level + Peak Utilization */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                Traffic Level
+                {aadtData?.aadt && (
+                  <span className="text-primary text-[9px]">
+                    — {aadtData.aadt.toLocaleString()} VPD
+                  </span>
+                )}
+              </Label>
+              {aadtData?.aadt ? (
+                <div className="rounded border border-primary/20 bg-primary/5 px-2 py-1.5 flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold text-primary">{aadtData.aadt.toLocaleString()} VPD</span>
+                  <span className="text-[9px] text-muted-foreground">HPMS</span>
+                </div>
+              ) : (
+                <Select value={trafficLevel} onValueChange={(v) => onTrafficLevelChange(v as TrafficLevel)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(TRAFFIC_LEVEL_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label className="text-[10px] text-muted-foreground">Peak Parking Utilization</Label>
+                <span className="font-mono text-[10px] text-accent">{site.peakUtilization}%</span>
+              </div>
+              <Slider
+                value={[site.peakUtilization]}
+                onValueChange={([v]) => update({ peakUtilization: v })}
+                min={0} max={100} step={5}
+                className="py-1"
+              />
+            </div>
+          </div>
+
+          {/* Row 3: Electrical Service + State + Stalls */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">Electrical Service</Label>
               <Select value={site.electricalService} onValueChange={(v) => update({ electricalService: v as ElectricalService })}>
-                <SelectTrigger className="amber-input h-9 text-sm">
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,85 +233,67 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">State</Label>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">State</Label>
               <Input
-                className="amber-input h-9 font-mono text-sm"
+                className="h-8 font-mono text-xs"
                 value={site.state}
                 onChange={(e) => update({ state: e.target.value.toUpperCase().slice(0, 2) })}
               />
             </div>
-          </div>
-
-          {/* Tesla Supercharger Stalls */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">
-              Supercharger Stalls <span className="text-[10px] text-muted-foreground/70">(min 4)</span>
-            </Label>
-            <div className="flex items-center gap-3">
-              <Slider
-                value={[site.teslaStalls]}
-                onValueChange={([v]) => update({ teslaStalls: v })}
-                min={4} max={24} step={1}
-                className="flex-1 py-2"
-              />
-              <span className="w-8 text-center font-mono text-sm font-bold text-primary">{site.teslaStalls}</span>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground">Supercharger Stalls</Label>
+              <div className="flex items-center gap-2">
+                <Slider
+                  value={[site.teslaStalls]}
+                  onValueChange={([v]) => update({ teslaStalls: v })}
+                  min={4} max={24} step={1}
+                  className="flex-1 py-1"
+                />
+                <span className="w-6 text-center font-mono text-xs font-bold text-primary">{site.teslaStalls}</span>
+              </div>
             </div>
           </div>
 
-          {/* Pricing */}
-          <div className="space-y-3">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs text-muted-foreground">Your Retail Price/kWh ($)</Label>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[280px] text-xs">
-                      The price you charge EV drivers per kWh. You set this — it's your revenue per unit of energy dispensed.
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <Input type="number" step="0.01" className="amber-input h-9 font-mono text-sm"
-                  value={site.pricePerKwh}
-                  onChange={(e) => update({ pricePerKwh: parseFloat(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label className="text-xs text-muted-foreground">Your Levelized Electricity Cost/kWh ($)</Label>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[280px] text-xs">
-                      Your all-in electricity cost per kWh, including demand charges, TOU pricing, surcharges, and fees. Check your utility bill or ask your provider for a levelized commercial rate.
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <Input type="number" step="0.01" className="amber-input h-9 font-mono text-sm"
-                  value={site.electricityCostPerKwh}
-                  onChange={(e) => update({ electricityCostPerKwh: parseFloat(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
-
-            {/* Tesla Service Fee — read-only display */}
-            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground">Tesla Service Fee</span>
+          {/* Row 4: Retail Price + Electricity Cost + Tesla Fee */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                Retail $/kWh
                 <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-[280px] text-xs">
-                    Tesla charges $0.10/kWh for network management, payment processing, monitoring, and maintenance. This fee escalates 3% per year. Set by Tesla — not editable.
-                  </TooltipContent>
+                  <TooltipTrigger><Info className="h-2 w-2 text-muted-foreground/50" /></TooltipTrigger>
+                  <TooltipContent className="max-w-[240px] text-xs">Price you charge EV drivers per kWh.</TooltipContent>
                 </Tooltip>
+              </Label>
+              <Input type="number" step="0.01" className="h-8 font-mono text-xs"
+                value={site.pricePerKwh}
+                onChange={(e) => update({ pricePerKwh: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                Elec. Cost $/kWh
+                <Tooltip>
+                  <TooltipTrigger><Info className="h-2 w-2 text-muted-foreground/50" /></TooltipTrigger>
+                  <TooltipContent className="max-w-[240px] text-xs">All-in electricity cost including demand charges and fees.</TooltipContent>
+                </Tooltip>
+              </Label>
+              <Input type="number" step="0.01" className="h-8 font-mono text-xs"
+                value={site.electricityCostPerKwh}
+                onChange={(e) => update({ electricityCostPerKwh: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                Tesla Fee
+                <Tooltip>
+                  <TooltipTrigger><Info className="h-2 w-2 text-muted-foreground/50" /></TooltipTrigger>
+                  <TooltipContent className="max-w-[240px] text-xs">$0.10/kWh for network management. Set by Tesla — not editable.</TooltipContent>
+                </Tooltip>
+              </Label>
+              <div className="h-8 flex items-center rounded-md border border-border bg-muted/30 px-2">
+                <span className="font-mono text-xs text-muted-foreground">${site.teslaServiceFeePerKwh}/kWh</span>
               </div>
-              <span className="font-mono text-sm font-semibold text-muted-foreground">${site.teslaServiceFeePerKwh}/kWh</span>
             </div>
           </div>
         </div>

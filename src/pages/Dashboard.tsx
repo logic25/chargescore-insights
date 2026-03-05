@@ -219,18 +219,39 @@ const Dashboard = () => {
         <ReportGate chargeScore={chargeScore.totalScore} onUnlock={handleGateUnlock} />
       )}
 
-      {/* Compact Header */}
+      {/* Compact Header with ChargeScore */}
       <header className="border-b border-border bg-card/80 backdrop-blur-xl sticky top-0 z-30">
-        <div className="flex h-12 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
+        <div className="flex h-12 items-center justify-between px-6">
+          <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/')}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <Zap className="h-4 w-4 text-primary" />
             <span className="font-heading text-sm font-bold">ChargeScore</span>
+            {/* Inline score badge */}
+            <div className="flex items-center gap-1.5 ml-1">
+              <div className="relative flex-shrink-0">
+                <svg width="28" height="28" viewBox="0 0 160 160">
+                  <circle cx="80" cy="80" r="70" fill="none" stroke="currentColor" className="text-border" strokeWidth="16"
+                    strokeDasharray={`${2 * Math.PI * 70 * 0.75} ${2 * Math.PI * 70 * 0.25}`}
+                    strokeLinecap="round" transform="rotate(135 80 80)" />
+                  <circle cx="80" cy="80" r="70" fill="none"
+                    stroke={chargeScore.totalScore >= 70 ? 'hsl(var(--success))' : chargeScore.totalScore >= 45 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))'}
+                    strokeWidth="16"
+                    strokeDasharray={`${(chargeScore.totalScore / 100) * 2 * Math.PI * 70 * 0.75} ${2 * Math.PI * 70 - (chargeScore.totalScore / 100) * 2 * Math.PI * 70 * 0.75}`}
+                    strokeLinecap="round" transform="rotate(135 80 80)" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="font-mono text-[8px] font-bold text-foreground">{chargeScore.totalScore}</span>
+                </div>
+              </div>
+              {chargeScore.grade && (
+                <span className="font-mono text-sm font-bold text-primary">{chargeScore.grade}</span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="hidden text-xs text-muted-foreground sm:block truncate max-w-[300px]">{site.address}</span>
+            <span className="hidden text-xs text-muted-foreground sm:block truncate max-w-[400px]">{site.address}</span>
             {gateUnlocked && (
               <ReportGenerator
                 site={site} score={chargeScore} financials={financials}
@@ -241,9 +262,9 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1440px] p-4 space-y-3">
+      <main className="mx-auto max-w-[1600px] px-6 py-4 space-y-3">
         {/* ═══ ROW 1: Map (left) + Sidebar (right) ═══ */}
-        <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr]">
           {/* Left: Map with tabs */}
           <div className="min-h-0">
             <Tabs defaultValue="satellite" className="border border-border rounded-xl overflow-hidden bg-card">
@@ -262,37 +283,8 @@ const Dashboard = () => {
             </Tabs>
           </div>
 
-          {/* Right: Score + Property Inputs + Parking Impact */}
+          {/* Right: Property Inputs + Parking Impact (no ChargeScore card) */}
           <div className="space-y-3 min-h-0">
-            {/* ChargeScore compact */}
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-4">
-                <div className="relative flex-shrink-0">
-                  <svg width="72" height="72" viewBox="0 0 160 160">
-                    <circle cx="80" cy="80" r="70" fill="none" stroke="currentColor" className="text-border" strokeWidth="12"
-                      strokeDasharray={`${2 * Math.PI * 70 * 0.75} ${2 * Math.PI * 70 * 0.25}`}
-                      strokeLinecap="round" transform="rotate(135 80 80)" />
-                    <circle cx="80" cy="80" r="70" fill="none"
-                      stroke={chargeScore.totalScore >= 70 ? 'hsl(163, 100%, 42%)' : chargeScore.totalScore >= 45 ? 'hsl(45, 97%, 56%)' : 'hsl(0, 84%, 60%)'}
-                      strokeWidth="12"
-                      strokeDasharray={`${(chargeScore.totalScore / 100) * 2 * Math.PI * 70 * 0.75} ${2 * Math.PI * 70 - (chargeScore.totalScore / 100) * 2 * Math.PI * 70 * 0.75}`}
-                      strokeLinecap="round" transform="rotate(135 80 80)" />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-mono text-xl font-bold" style={{ color: chargeScore.totalScore >= 70 ? 'hsl(163, 100%, 42%)' : chargeScore.totalScore >= 45 ? 'hsl(45, 97%, 56%)' : 'hsl(0, 84%, 60%)' }}>
-                      {chargeScore.totalScore}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">ChargeScore™</p>
-                  {chargeScore.grade && (
-                    <span className="font-mono text-2xl font-bold text-primary">{chargeScore.grade}</span>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{site.address}</p>
-                </div>
-              </div>
-            </div>
 
             {/* Property Inputs — expanded by default */}
             <PropertyInputs
@@ -342,9 +334,6 @@ const Dashboard = () => {
             <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
           )}
           {activePanel === 'investment' && (
-            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
-          )}
-          {activePanel === 'payback' && (
             <ChargeScoreGauge score={chargeScore} siteInsights={{
               floodZone: siteData.floodZone,
               isHighRisk: siteData.isHighRisk,
@@ -354,6 +343,9 @@ const Dashboard = () => {
               isDAC: siteData.isDAC,
               isOnCorridor: siteData.isOnCorridor,
             }} />
+          )}
+          {activePanel === 'payback' && (
+            <FinancialProjection financials={financials} />
           )}
           {activePanel === 'npv' && (
             <FinancialProjection financials={financials} />
