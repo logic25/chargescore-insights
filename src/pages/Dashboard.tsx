@@ -346,7 +346,7 @@ const Dashboard = () => {
         {/* ═══ GATED CONTENT: Expandable Detail Panel ═══ */}
         <div className={blurClass}>
           {activePanel === 'revenue' && (
-            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
+            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} kwhPerStallPerDay={site.kwhPerStallPerDay} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} onUtilizationChange={(v) => setSite(prev => ({ ...prev, kwhPerStallPerDay: v }))} />
           )}
           {activePanel === 'investment' && (
             <ChargeScoreGauge score={chargeScore} siteInsights={{
