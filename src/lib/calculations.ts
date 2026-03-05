@@ -418,8 +418,16 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): I
 
   // --- State & Utility programs (pick best per mutually-exclusive group) ---
   const statePrograms = STATE_INCENTIVES[site.state] || [];
+  const detectedUtility = context?.utilityName?.toLowerCase() ?? '';
 
-  const programsWithAmounts = statePrograms.map((prog, i) => {
+  // Filter: utility programs with utilityMatch only show if the detected utility matches
+  const filteredPrograms = statePrograms.filter(prog => {
+    if (!prog.utilityMatch) return true; // no territory restriction — always show
+    if (!detectedUtility) return false;  // utility unknown — skip territory-specific programs
+    return prog.utilityMatch.some(kw => detectedUtility.includes(kw));
+  });
+
+  const programsWithAmounts = filteredPrograms.map((prog, i) => {
     let computedAmount = 0;
     if (prog.amountPerPort) computedAmount = prog.amountPerPort * totalPorts;
     else if (prog.amountFlat) computedAmount = prog.amountFlat;
