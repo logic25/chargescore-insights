@@ -10,6 +10,9 @@ export interface NrelIncentive {
   enacted_date: string;
   amended_date?: string;
   utilityId?: number | null;
+  category?: 'federal' | 'state' | 'utility' | 'other';
+  eligible?: boolean | null;
+  estimatedBenefit?: string | null;
 }
 
 // Keywords that indicate a program is relevant to commercial EV charging infrastructure
