@@ -116,7 +116,7 @@ const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
         {inc.details && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate cursor-help">
+              <p className="text-[10px] text-muted-foreground/70 mt-0.5 cursor-help leading-relaxed">
                 {inc.description}
               </p>
             </TooltipTrigger>
