@@ -72,7 +72,7 @@ const Dashboard = () => {
   const [amenitiesCount, setAmenitiesCount] = useState(5);
   const [isDisadvantagedCommunity, setIsDisadvantagedCommunity] = useState(false);
   const [aadtData, setAadtData] = useState<AadtResult>({ aadt: null, routeId: null, year: null });
-  const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null });
+  const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null, source: null });
 
   const handleParkingEstimate = useCallback((data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => {
     setSite(prev => ({ ...prev, totalParkingSpaces: data.totalSpots }));
