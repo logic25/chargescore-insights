@@ -199,7 +199,7 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     weight: 0.10,
     weightedScore: incentiveScore * 0.10,
     tooltip: 'Two major incentive boosters: (1) Disadvantaged Community (DAC) status — utilities cover up to 100% of infrastructure. (2) FHWA Alternative Fuel Corridor — qualifies for NEVI funding covering up to 80% of project cost.',
-    dataSource: 'FCC Census API + CEJST + FHWA Corridors',
+    dataSource: 'CEJST (DAC) + FHWA Alt Fuel Corridors (NEVI)',
     rawValue: incentiveReasons.join(' + '),
   });
 
