@@ -450,6 +450,9 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): I
   for (const [, members] of groups) {
     members.sort((a, b) => b.computedAmount - a.computedAmount);
     members.forEach((prog, idx) => {
+      // Skip expired programs
+      if (prog.programStatus === 'expired' || prog.programStatus === 'closed') return;
+
       incentives.push({
         id: `${prog.layer}-${prog.index}`,
         name: prog.name,
@@ -459,7 +462,10 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): I
         eligible: true,
         details: prog.details,
         category: prog.layer,
-        isAlternative: idx > 0, // only the best in each group counts toward total
+        isAlternative: idx > 0,
+        verified: prog.verified,
+        expiresAt: prog.expiresAt,
+        programStatus: prog.programStatus,
       });
     });
   }
