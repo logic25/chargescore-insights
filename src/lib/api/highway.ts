@@ -67,7 +67,9 @@ export async function fetchNearestHighway(lat: number, lng: number): Promise<Hig
     const distMiles = minDist * 69;
 
     const attrs = nearest.attributes;
-    const routeName = attrs.SIGN1 || attrs.LNAME || null;
+    const sign = attrs.SIGN1?.trim() || null;
+    const lname = attrs.LNAME?.trim() || null;
+    const routeName = sign || lname || null;
     // NHS values: 1=Interstate, 2=Other NHS, etc.
     const isInterstate = attrs.NHS === 1 || (routeName?.startsWith('I-') ?? false);
 

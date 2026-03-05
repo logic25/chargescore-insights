@@ -10,10 +10,8 @@ import { fetchCensusTractFips, fetchMultiFamilyPct, fetchPopDensity } from '@/li
 import { fetchNearbyAmenities } from '@/lib/api/amenities';
 import { fetchAadt, type AadtResult } from '@/lib/api/traffic';
 import { fetchParcelInfo, type ParcelResult } from '@/lib/api/parcel';
-import { fetchIsDisadvantagedCommunity } from '@/lib/api/dac';
-import { fetchIsOnAltFuelCorridor } from '@/lib/api/corridors';
+import { fetchSiteData, type SiteDataResult } from '@/lib/api/siteData';
 import { fetchUtilityInfo, type UtilityInfo } from '@/lib/api/utilityInfo';
-import { fetchFloodZone, type FloodZoneResult } from '@/lib/api/floodZone';
 import { fetchNearestHighway, type HighwayProximity } from '@/lib/api/highway';
 import { calculateFinancials, calculateParkingImpact, calculateDemandCharge, getIncentives } from '@/lib/calculations';
 import { calculateChargeScoreV2, projectRevenue, type ChargeScoreResult, type RevenueProjection } from '@/lib/scoring';
@@ -75,12 +73,10 @@ const Dashboard = () => {
   const [multiFamilyPct, setMultiFamilyPct] = useState<number | null>(null);
   const [popDensity, setPopDensity] = useState<number | null>(null);
   const [amenitiesCount, setAmenitiesCount] = useState(5);
-  const [isDisadvantagedCommunity, setIsDisadvantagedCommunity] = useState(false);
-  const [isOnAltFuelCorridor, setIsOnAltFuelCorridor] = useState(false);
+  const [siteData, setSiteData] = useState<SiteDataResult>({ isDAC: false, isOnCorridor: false, floodZone: null, floodZoneSubtype: null, isHighRisk: false });
   const [utilityInfo, setUtilityInfo] = useState<UtilityInfo>({ utilityName: null, commercialRate: null });
   const [aadtData, setAadtData] = useState<AadtResult>({ aadt: null, routeId: null, year: null });
   const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null, source: null });
-  const [floodZone, setFloodZone] = useState<FloodZoneResult>({ floodZone: null, floodZoneSubtype: null, isHighRisk: false });
   const [highwayProximity, setHighwayProximity] = useState<HighwayProximity>({ distanceMiles: null, routeName: null, isInterstate: false });
 
   const handleParkingEstimate = useCallback((data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => {
@@ -118,14 +114,9 @@ const Dashboard = () => {
     fetchCensusTractFips(site.lat, site.lng).then(setCensusTractFips);
   }, [site.lat, site.lng]);
 
-  // Fetch DAC status from CEJST
+  // Fetch DAC, Corridor, Flood Zone via edge function
   useEffect(() => {
-    fetchIsDisadvantagedCommunity(site.lat, site.lng).then(setIsDisadvantagedCommunity);
-  }, [site.lat, site.lng]);
-
-  // Fetch Alt Fuel Corridor status
-  useEffect(() => {
-    fetchIsOnAltFuelCorridor(site.lat, site.lng).then(setIsOnAltFuelCorridor);
+    fetchSiteData(site.lat, site.lng).then(setSiteData);
   }, [site.lat, site.lng]);
 
   // Fetch utility info (name + commercial rate)
@@ -155,10 +146,6 @@ const Dashboard = () => {
     fetchParcelInfo(site.lat, site.lng, site.state).then(setParcelData);
   }, [site.lat, site.lng, site.state]);
 
-  // Fetch FEMA flood zone
-  useEffect(() => {
-    fetchFloodZone(site.lat, site.lng).then(setFloodZone);
-  }, [site.lat, site.lng]);
 
   // Fetch nearest highway
   useEffect(() => {
@@ -203,16 +190,16 @@ const Dashboard = () => {
     multiFamilyPct,
     popDensity,
     nearestMajorAirportMiles: nearestAirport.distance,
-    isOnAltFuelCorridor,
+    isOnAltFuelCorridor: siteData.isOnCorridor,
     propertyType: site.propertyType,
     amenitiesNearby: amenitiesCount,
     totalParkingSpots: site.totalParkingSpaces,
-    isDisadvantagedCommunity,
+    isDisadvantagedCommunity: siteData.isDAC,
     hasThreePhasePower: hasThreePhasePower,
     state: site.state,
     zipCode: site.zipCode,
     utilityName: utilityInfo.utilityName,
-  }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, isDisadvantagedCommunity, isOnAltFuelCorridor, hasThreePhasePower, site.state, site.zipCode, utilityInfo]);
+  }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, siteData, hasThreePhasePower, site.state, site.zipCode, utilityInfo]);
 
   // Revenue projection from ChargeScore
   const revenueProjection: RevenueProjection = useMemo(() => projectRevenue({
@@ -308,13 +295,13 @@ const Dashboard = () => {
           </Tabs>
 
           <ChargeScoreGauge score={chargeScore} siteInsights={{
-            floodZone: floodZone.floodZone,
-            isHighRisk: floodZone.isHighRisk,
+            floodZone: siteData.floodZone,
+            isHighRisk: siteData.isHighRisk,
             highwayDistance: highwayProximity.distanceMiles,
             highwayName: highwayProximity.routeName,
             utilityName: utilityInfo.utilityName,
-            isDAC: isDisadvantagedCommunity,
-            isOnCorridor: isOnAltFuelCorridor,
+            isDAC: siteData.isDAC,
+            isOnCorridor: siteData.isOnCorridor,
           }} />
         </div>
 
