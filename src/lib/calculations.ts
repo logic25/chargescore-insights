@@ -842,6 +842,7 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext, nr
         verified: prog.verified,
         expiresAt: prog.expiresAt,
         programStatus: prog.programStatus,
+        sourceUrl: prog.sourceUrl,
       });
     });
   }
