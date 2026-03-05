@@ -136,6 +136,7 @@ export interface Incentive {
   isAlternative?: boolean; // true = not counted in total (mutually exclusive with a selected program)
   verified?: string;       // YYYY-MM when last verified
   programStatus?: 'active' | 'accepting' | 'waitlist' | 'closed' | 'expired';
+  sourceUrl?: string;      // link to official program page for verification
 }
 
 export interface ChargeScoreBreakdown {

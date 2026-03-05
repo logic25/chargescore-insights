@@ -300,7 +300,7 @@ interface StateIncentiveGroup {
   verified: string;
   expiresAt?: string;
   programStatus: 'active' | 'accepting' | 'waitlist' | 'closed' | 'expired';
-  // Eligibility check function — returns eligible status and reason
+  sourceUrl?: string;
   checkEligibility?: (input: EligibilityInput) => EligibilityResult;
 }
 
@@ -348,6 +348,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$65,000/port',
       details: 'Up to $65,000 per DCFC for commercial locations. Must be publicly accessible. Apply at nyserda.ny.gov.',
       layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      sourceUrl: 'https://www.nyserda.ny.gov/All-Programs/EV-Make-Ready/Charging-Station-Programs',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
     {
@@ -355,6 +356,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$50,000/port',
       details: 'Up to $50,000 per DCFC. Competitive — apply at evolveny.nypa.gov. Requires public access.',
       layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      sourceUrl: 'https://evolveny.nypa.gov/',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
     {
@@ -362,6 +364,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$4,000/port',
       details: '$3,000-$4,000 per port (L2 or DCFC). $28M program budget. Stackable with NYSBIP.',
       layer: 'state', verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.nyserda.ny.gov/All-Programs/ChargeReady-NY',
       checkEligibility: alwaysEligible(),
     },
     {
@@ -370,6 +373,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       details: 'Covers up to 85% of DCFC infrastructure in ConEd territory (NYC & Westchester). Max $1.2M.',
       layer: 'utility', utilityMatch: ['con ed', 'consolidated edison'],
       verified: '2025-06', programStatus: 'accepting',
+      sourceUrl: 'https://www.coned.com/en/our-energy-future/technology-innovation/electric-vehicles/powering-up-for-evs',
       checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
     },
     {
@@ -378,6 +382,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       details: 'PSEG Long Island covers up to 50% of make-ready for commercial DCFC in Nassau & Suffolk counties.',
       layer: 'utility', utilityMatch: ['long island', 'lipa', 'pseg li', 'pseg long'],
       verified: '2025-06', programStatus: 'accepting',
+      sourceUrl: 'https://www.psegliny.com/inthecommunity/electricvehicles/evchargingstationowners',
       checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
     },
     {
@@ -386,6 +391,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       details: 'Avangrid utilities cover up to 90% of make-ready for public DCFC in upstate NY.',
       layer: 'utility', utilityMatch: ['nyseg', 'rg&e', 'rochester gas', 'avangrid'],
       verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.nyseg.com/en/save-money/electric-vehicle-programs',
       checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
     },
     {
@@ -394,6 +400,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       details: 'National Grid covers up to 100% of make-ready for public DCFC in its NY service territory.',
       layer: 'utility', utilityMatch: ['national grid'],
       verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.nationalgridus.com/NY-Home/Energy-Saving-Programs/Electric-Vehicle-Charging-Station',
       checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
     },
     {
@@ -402,6 +409,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       details: 'Central Hudson covers up to 50% of make-ready in Hudson Valley territory.',
       layer: 'utility', utilityMatch: ['central hudson'],
       verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.cenhud.com/my-energy/electric-vehicles/',
       checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
     },
     {
@@ -410,6 +418,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       details: 'Orange & Rockland covers up to 50% of make-ready for public DCFC.',
       layer: 'utility', utilityMatch: ['orange', 'rockland', 'o&r'],
       verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.oru.com/en/our-energy-future/electric-vehicles',
       checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
     },
   ],
@@ -419,6 +428,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$100,000/port',
       details: 'Up to $100,000 per DCFC port. CEC-administered. Must be publicly accessible.',
       layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      sourceUrl: 'https://www.energy.ca.gov/programs-and-topics/programs/fast-charge-california',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
     {
@@ -426,6 +436,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$15,000/yr/port',
       details: 'Low Carbon Fuel Standard credits: $10-20K/yr per DCFC based on utilization. Ongoing revenue.',
       layer: 'state', verified: '2025-06', programStatus: 'active', expiresAt: 'ongoing',
+      sourceUrl: 'https://ww2.arb.ca.gov/our-work/programs/low-carbon-fuel-standard',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
     {
@@ -433,6 +444,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: 'Up to 100% of installation',
       details: 'Major utilities cover 100% of make-ready. Priority for disadvantaged communities.',
       layer: 'utility', verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.sce.com/business/electric-cars/charge-ready',
       checkEligibility: alwaysEligible(),
     },
   ],
@@ -442,6 +454,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$50,000/port',
       details: 'Up to $50,000 per DCFC through MassDEP. $14M pool. Must be publicly accessible.',
       layer: 'state', verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.mass.gov/how-to/apply-for-massevip-public-access-charging',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
     {
@@ -449,6 +462,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: 'Up to 100% of installation',
       details: 'Eversource covers up to 100% of make-ready for public DCFC.',
       layer: 'utility', utilityMatch: ['eversource'], verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.eversource.com/content/residential/save-money-energy/explore-alternatives/electric-vehicles/ev-charging-stations',
       checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
     },
     {
@@ -456,6 +470,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$80,000/port',
       details: 'Up to $80,000 per DCFC port in National Grid MA territory.',
       layer: 'utility', utilityMatch: ['national grid'], verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.nationalgridus.com/MA-Home/Energy-Saving-Programs/Electric-Vehicle-Charging-Station',
       checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
     },
   ],
@@ -465,6 +480,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: 'Up to 80% of project',
       details: 'Up to 80% of total DCFC project cost with NO CAP for public stations.',
       layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      sourceUrl: 'https://energyoffice.colorado.gov/charge-ahead-colorado',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
     {
@@ -472,6 +488,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: 'Up to 50% of installation',
       details: 'Make-ready support and reduced commercial EV rates in Xcel territory.',
       layer: 'utility', utilityMatch: ['xcel'], verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://co.my.xcelenergy.com/s/business/ev',
       checkEligibility: combineChecks(requiresUtilityTerritory()),
     },
   ],
@@ -481,6 +498,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$100,000/port',
       details: 'Up to $100,000 per DCFC port. Priority near transit and multifamily housing.',
       layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      sourceUrl: 'https://www.njcleanenergy.com/ev',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
     {
@@ -488,6 +506,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: 'Up to 70% of installation',
       details: 'PSE&G covers make-ready infrastructure costs in its territory.',
       layer: 'utility', utilityMatch: ['pseg', 'pse&g', 'public service'], verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://nj.pseg.com/saveenergyandmoney/solutionsforbusiness/electricvehicles',
       checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
     },
   ],
@@ -497,6 +516,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$50,000/port',
       details: 'Up to $50,000 per DCFC through DEEP.',
       layer: 'state', verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://portal.ct.gov/deep/air/mobile-sources/ev-charging',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
     {
@@ -504,6 +524,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: 'Up to 50% of installation',
       details: 'Make-ready support in Eversource CT territory.',
       layer: 'utility', utilityMatch: ['eversource'], verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.eversource.com/content/ct-c/residential/save-money-energy/explore-alternatives/electric-vehicles',
       checkEligibility: combineChecks(requiresUtilityTerritory()),
     },
   ],
@@ -513,6 +534,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$50,000/port',
       details: 'Up to $50K per DCFC. $85M+ program.',
       layer: 'state', verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.commerce.wa.gov/growing-the-economy/energy/clean-energy-fund/electrification-of-transportation/',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
   ],
@@ -522,6 +544,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$12,000/yr/port',
       details: 'CFP credits generate ongoing revenue per DCFC based on utilization.',
       layer: 'state', verified: '2025-06', programStatus: 'active', expiresAt: 'ongoing',
+      sourceUrl: 'https://www.oregon.gov/deq/ghgp/cfp/Pages/default.aspx',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
   ],
@@ -531,6 +554,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$55,000/port',
       details: 'DTE offers up to $55,000 per DCFC station in its territory.',
       layer: 'utility', utilityMatch: ['dte'], verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://newlook.dteenergy.com/wps/wcm/connect/dte-web/home/service-request/business/electric/electric-vehicles',
       checkEligibility: combineChecks(requiresUtilityTerritory(), requiresDCFC(1)),
     },
   ],
@@ -540,6 +564,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$45,000/port',
       details: 'Up to $45,000 per DCFC through IL EPA.',
       layer: 'state', verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://epa.illinois.gov/topics/ceja/ev-charging-grants.html',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
     {
@@ -547,6 +572,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$10,000/port',
       details: 'ComEd offers up to $10,000 for commercial EV charging in its territory.',
       layer: 'utility', utilityMatch: ['comed', 'commonwealth edison'], verified: '2025-03', programStatus: 'accepting',
+      sourceUrl: 'https://www.comed.com/SmartEnergy/InnovativeTechnologies/Pages/ElectricVehicles.aspx',
       checkEligibility: combineChecks(requiresUtilityTerritory()),
     },
   ],
@@ -556,6 +582,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$60,000/port',
       details: 'VW settlement funds — up to $60K per DCFC. Limited remaining funds.',
       layer: 'state', verified: '2025-03', programStatus: 'waitlist', expiresAt: '2026-09',
+      sourceUrl: 'https://www.tceq.texas.gov/airquality/terp/dctf.html',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
   ],
@@ -565,6 +592,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: 'Up to 80% of project',
       details: 'Florida $198M NEVI allocation. Covers up to 80% for highway corridor DCFC. Requires corridor location.',
       layer: 'state', verified: '2025-06', programStatus: 'accepting',
+      sourceUrl: 'https://www.fdot.gov/planning/nevi',
       checkEligibility: (input) => {
         if (!input.context) return { eligible: null, reason: 'Corridor status unknown' };
         if (!input.context.isOnCorridor) return { eligible: false, reason: 'Site is not on a designated highway corridor' };
@@ -579,6 +607,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
       displayAmount: '$40,000/port',
       details: 'Up to $40,000 per DCFC through VW settlement. Limited remaining funds.',
       layer: 'state', verified: '2025-03', programStatus: 'waitlist', expiresAt: '2026-06',
+      sourceUrl: 'https://www.dep.pa.gov/Citizens/GrantsLoansRebates/DrivingPAForward/Pages/default.aspx',
       checkEligibility: combineChecks(requiresDCFC(1)),
     },
   ],
