@@ -116,15 +116,59 @@ async function fetchNysParcels(lat: number, lng: number): Promise<ParcelResult> 
 }
 
 /**
- * Try MapPLUTO first (NYC), then fall back to NYS Tax Parcels for other NY locations.
+ * Query Nassau County GIS parcels by point.
+ * Public MapServer at gis.nassaucountyny.gov, Layer 1 (Parcels).
+ */
+async function fetchNassauParcels(lat: number, lng: number): Promise<ParcelResult> {
+  try {
+    const url = new URL(
+      'https://gis.nassaucountyny.gov/server/rest/services/Layers/MapServer/1/query'
+    );
+    url.searchParams.set('geometry', `${lng},${lat}`);
+    url.searchParams.set('geometryType', 'esriGeometryPoint');
+    url.searchParams.set('inSR', '4326');
+    url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
+    url.searchParams.set('outFields', 'PARCEL_ADDRESS,SHAPE_Area,PARCELKEY,OWNER');
+    url.searchParams.set('returnGeometry', 'false');
+    url.searchParams.set('f', 'json');
+
+    const res = await fetch(url.toString());
+    if (!res.ok) return empty;
+
+    const data = await res.json();
+    const features = data?.features;
+    if (!features?.length) return empty;
+
+    const attrs = features[0].attributes;
+    return {
+      lotArea: attrs.SHAPE_Area ? Math.round(Number(attrs.SHAPE_Area)) : null,
+      bldgArea: null,
+      address: attrs.PARCEL_ADDRESS ?? null,
+      ownerName: attrs.OWNER ?? null,
+      landUse: null,
+      bbl: null,
+      source: 'nys_parcels',
+    };
+  } catch (err) {
+    console.error('Nassau County parcel query failed', err);
+    return empty;
+  }
+}
+
+/**
+ * Try MapPLUTO first (NYC), then Nassau County GIS, then NYS Tax Parcels.
  */
 export async function fetchParcelInfo(lat: number, lng: number, state?: string): Promise<ParcelResult> {
-  // Try MapPLUTO first
+  // Try MapPLUTO first (NYC 5 boroughs)
   const plutoResult = await fetchMapPluto(lat, lng);
   if (plutoResult.lotArea) return plutoResult;
 
-  // Fall back to NYS Tax Parcels if in NY state
+  // Try Nassau County GIS
   if (state === 'NY') {
+    const nassauResult = await fetchNassauParcels(lat, lng);
+    if (nassauResult.lotArea) return nassauResult;
+
+    // Fall back to NYS Tax Parcels for rest of NY
     return fetchNysParcels(lat, lng);
   }
 

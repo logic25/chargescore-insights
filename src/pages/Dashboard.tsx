@@ -58,7 +58,7 @@ const Dashboard = () => {
   const [stations, setStations] = useState<NearbyStation[]>([]);
   const [stationsLoading, setStationsLoading] = useState(true);
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
-  const [availableForChargers, setAvailableForChargers] = useState(0);
+  
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
   const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
 
@@ -79,9 +79,8 @@ const Dashboard = () => {
   const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null, source: null });
   const [highwayProximity, setHighwayProximity] = useState<HighwayProximity>({ distanceMiles: null, routeName: null, isInterstate: false });
 
-  const handleParkingEstimate = useCallback((data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => {
+  const handleParkingEstimate = useCallback((data: { lotSqFt: number; totalSpots: number }) => {
     setSite(prev => ({ ...prev, totalParkingSpaces: data.totalSpots }));
-    setAvailableForChargers(data.availableForChargers);
   }, []);
 
   const handleSpotsCounted = useCallback((count: number) => {
@@ -91,7 +90,6 @@ const Dashboard = () => {
   const handleSpotsConfirmed = useCallback((count: number) => {
     if (count > 0) {
       setSite(prev => ({ ...prev, totalParkingSpaces: count }));
-      setAvailableForChargers(Math.floor(count * 0.33));
       setConfirmedSpotCount(count);
     }
   }, []);
@@ -317,23 +315,22 @@ const Dashboard = () => {
         {/* GATED: Everything below is blurred until email entry */}
         <div className={blurClass}>
           <div className="space-y-3">
-            {/* Row 2: Property Inputs + Investment Summary */}
+            {/* Row 2: Investment Summary + 15-Year Cash Flow */}
+            <div className="grid items-start gap-3 lg:grid-cols-2">
+              <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
+              <FinancialProjection financials={financials} />
+            </div>
+
+            {/* Row 3: Property Inputs + Parking Impact */}
             <div className="grid items-start gap-3 lg:grid-cols-2">
               <PropertyInputs
                 site={site} onChange={setSite}
                 trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
-                availableForChargers={availableForChargers}
                 confirmedSpotCount={confirmedSpotCount}
                 aadtData={aadtData}
                 parcelData={parcelData}
                 onParkingEstimate={handleParkingEstimate}
               />
-              <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} />
-            </div>
-
-            {/* Row 3: 15-Year Cash Flow + Parking Impact */}
-            <div className="grid items-start gap-3 lg:grid-cols-2">
-              <FinancialProjection financials={financials} />
               <ParkingImpact analysis={parking} />
             </div>
           </div>
