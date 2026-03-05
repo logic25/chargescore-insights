@@ -102,4 +102,3 @@ export async function fetchStateIncentives(opts: FetchIncentivesOptions): Promis
     return [];
   }
 }
-}
