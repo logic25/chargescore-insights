@@ -10,6 +10,9 @@ import { fetchCensusTractFips, fetchMultiFamilyPct, fetchPopDensity } from '@/li
 import { fetchNearbyAmenities } from '@/lib/api/amenities';
 import { fetchAadt, type AadtResult } from '@/lib/api/traffic';
 import { fetchParcelInfo, type ParcelResult } from '@/lib/api/parcel';
+import { fetchIsDisadvantagedCommunity } from '@/lib/api/dac';
+import { fetchIsOnAltFuelCorridor } from '@/lib/api/corridors';
+import { fetchUtilityInfo, type UtilityInfo } from '@/lib/api/utilityInfo';
 import { calculateFinancials, calculateParkingImpact, calculateDemandCharge, getIncentives } from '@/lib/calculations';
 import { calculateChargeScoreV2, projectRevenue, type ChargeScoreResult, type RevenueProjection } from '@/lib/scoring';
 import { findNearestAirport } from '@/data/airports';
