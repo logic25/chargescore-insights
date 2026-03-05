@@ -10,6 +10,9 @@ export interface NrelIncentive {
   enacted_date: string;
   amended_date?: string;
   utilityId?: number | null;
+  category?: 'federal' | 'state' | 'utility' | 'other';
+  eligible?: boolean | null;
+  estimatedBenefit?: string | null;
 }
 
 // Keywords that indicate a program is relevant to commercial EV charging infrastructure
@@ -116,6 +119,43 @@ export interface FetchIncentivesOptions {
   stateCode: string;
   utilityCompanyId?: string | null;
   utilityName?: string | null;
+  siteAddress?: string | null;
+}
+
+function normalizeText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function extractMunicipalityName(title: string): string | null {
+  const match = title.match(/\b(?:village|city|town|county|borough)\s+of\s+([a-z\s'.&-]+)/i);
+  if (!match?.[1]) return null;
+  return normalizeText(match[1]);
+}
+
+function municipalityMatchesSite(programTitle: string, siteAddress?: string | null): boolean {
+  if (!siteAddress) return false;
+  const municipality = extractMunicipalityName(programTitle);
+  if (!municipality) return true;
+  const normalizedAddress = normalizeText(siteAddress);
+  return normalizedAddress.includes(municipality);
+}
+
+function parseEstimatedBenefit(text: string): string | null {
+  const money = text.match(/\$\s?\d[\d,]*(?:\s*(?:-|to)\s*\$\s?\d[\d,]*)?(?:\s*(?:per|\/)\s*(?:port|charger|station|project|year|kw|kwh))?/i);
+  if (money?.[0]) return money[0].replace(/\s+/g, ' ').trim();
+
+  const percent = text.match(/\b\d{1,3}\s?%\b/);
+  if (percent?.[0]) return percent[0].replace(/\s+/g, ' ').trim();
+
+  return null;
+}
+
+function inferProgramCategory(type: string): 'federal' | 'state' | 'utility' | 'other' {
+  const t = type.toLowerCase();
+  if (t.includes('utility')) return 'utility';
+  if (t.includes('state')) return 'state';
+  if (t.includes('federal')) return 'federal';
+  return 'other';
 }
 
 export async function fetchStateIncentives(opts: FetchIncentivesOptions): Promise<NrelIncentive[]> {
@@ -136,35 +176,40 @@ export async function fetchStateIncentives(opts: FetchIncentivesOptions): Promis
         if (!isIncentiveType && !isRelevantLaw) return false;
 
         if (!isRelevantToEVCharging(r)) return false;
-
         if (r.status === 'repealed' || r.status === 'expired') return false;
 
-        // --- Utility territory filtering ---
-        // If program has an explicit utility_id, check against site's utility
         if (r.utility_id != null && opts.utilityCompanyId) {
           if (String(r.utility_id) !== String(opts.utilityCompanyId)) return false;
         }
 
-        // If program title mentions a specific utility, only show if it matches the site's utility
         const title = r.title || '';
         if (isUtilitySpecificProgram(title)) {
-          if (!opts.utilityName) return false; // can't verify — skip
+          if (!opts.utilityName) return false;
           if (!utilityMatchesSite(title, opts.utilityName)) return false;
         }
 
+        // Municipal incentives (e.g. "Village of Greenport") must match site address
+        if (!municipalityMatchesSite(title, opts.siteAddress)) return false;
+
         return true;
       })
-      .map((r: any) => ({
-        id: r.id,
-        title: r.title,
-        state: r.state,
-        type: r.type,
-        description: r.plaintext?.slice(0, 200) || '',
-        status: r.status || 'active',
-        enacted_date: r.enacted_date,
-        amended_date: r.amended_date,
-        utilityId: r.utility_id,
-      }));
+      .map((r: any) => {
+        const programText = `${r.title ?? ''} ${r.plaintext ?? ''}`;
+        return {
+          id: r.id,
+          title: r.title,
+          state: r.state,
+          type: r.type,
+          description: r.plaintext?.slice(0, 240) || '',
+          status: r.status || 'active',
+          enacted_date: r.enacted_date,
+          amended_date: r.amended_date,
+          utilityId: r.utility_id,
+          category: inferProgramCategory(r.type || ''),
+          eligible: true,
+          estimatedBenefit: parseEstimatedBenefit(programText),
+        };
+      });
   } catch (err) {
     console.error('Failed to fetch NREL incentives:', err);
     return [];

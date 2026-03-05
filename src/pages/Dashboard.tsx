@@ -221,8 +221,15 @@ const Dashboard = () => {
 
   const [nrelIncentives, setNrelIncentives] = useState<NrelIncentive[]>([]);
   useEffect(() => {
-    if (site.state) fetchStateIncentives({ stateCode: site.state, utilityCompanyId: utilityInfo.companyId, utilityName: utilityInfo.utilityName }).then(setNrelIncentives);
-  }, [site.state, utilityInfo.companyId, utilityInfo.utilityName]);
+    if (site.state) {
+      fetchStateIncentives({
+        stateCode: site.state,
+        utilityCompanyId: utilityInfo.companyId,
+        utilityName: utilityInfo.utilityName,
+        siteAddress: site.address,
+      }).then(setNrelIncentives);
+    }
+  }, [site.state, site.address, utilityInfo.companyId, utilityInfo.utilityName]);
 
   // Log analysis for ML
   useEffect(() => {
