@@ -744,6 +744,7 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext, nr
     category: 'federal',
     expiresAt: 'Jun 2026',
     isAlternative: false,
+    sourceUrl: 'https://afdc.energy.gov/laws/10513',
   });
 
   // --- NEVI: requires alt fuel corridor + minimum 4 DCFC ports at 150kW+ ---
@@ -772,7 +773,8 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext, nr
       ? `This site does not qualify for NEVI: ${neviIneligibleReasons.join('; ')}. NEVI requires the location to be on a designated Alternative Fuel Corridor with at least 4 DCFC ports rated 150kW+.`
       : `National Electric Vehicle Infrastructure program covers up to 80% of costs for qualifying Alternative Fuel Corridor locations. Requires minimum 4 DCFC ports at 150kW+.${site.chargingModel === 'tesla' ? ' Tesla Superchargers meet the 150kW+ requirement.' : ''}`,
     category: 'federal',
-    isAlternative: true, // shown as "OR" alternative — not summed
+    isAlternative: true,
+    sourceUrl: 'https://www.fhwa.dot.gov/environment/alternative_fuel_corridors/nominations/90d_nevi_formula_program_guidance.pdf',
   });
 
   // --- State & Utility programs (pick best per mutually-exclusive group) ---
