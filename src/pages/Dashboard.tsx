@@ -243,7 +243,7 @@ const Dashboard = () => {
               </TabsList>
             </div>
             <TabsContent value="satellite" className="mt-0">
-              <SiteAerial lat={site.lat} lng={site.lng} />
+              <SiteAerial lat={site.lat} lng={site.lng} onMeasured={handleParkingEstimate} />
             </TabsContent>
             <TabsContent value="competition" className="mt-0">
               <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
