@@ -24,6 +24,7 @@ export interface SiteAnalysis {
   chargingModel: ChargingModel;
   // Tesla model: number of Supercharger stalls (min 4)
   teslaStalls: number;
+  kwhPerStallPerDay: number;
   // Generic model
   l2Chargers: number;
   dcfcChargers: number;

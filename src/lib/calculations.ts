@@ -40,7 +40,7 @@ export function calculateFinancials(site: SiteAnalysis, incentives: Incentive[])
 
 function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): FinancialProjection {
   const stalls = Math.max(4, site.teslaStalls);
-  const baseDailyKwh = stalls * TESLA_KWH_PER_STALL_PER_DAY;
+  const baseDailyKwh = stalls * (site.kwhPerStallPerDay || TESLA_KWH_PER_STALL_PER_DAY);
 
   // Year 1 values
   // CRITICAL: electricityCostPerKwh is a LEVELIZED rate that ALREADY INCLUDES demand charges.
