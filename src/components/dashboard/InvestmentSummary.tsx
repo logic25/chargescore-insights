@@ -93,6 +93,8 @@ const StatusBadge = ({ status, verified, expiresAt }: { status?: string; verifie
 
 const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
   const ineligible = inc.eligible === false;
+  const isNrel = inc.id.startsWith('nrel-');
+  const nrelId = isNrel ? inc.id.replace('nrel-', '') : null;
   return (
     <div className={`flex items-start justify-between gap-2 rounded-md px-2 py-1.5 ${
       ineligible ? 'bg-muted/30 opacity-60' : isAlt ? 'bg-muted/20' : 'bg-success/5'
@@ -103,6 +105,11 @@ const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
             {isAlt && !ineligible ? `or: ${inc.name}` : inc.name}
           </span>
           <EligibilityBadge eligible={inc.eligible} />
+          {isNrel && nrelId && (
+            <a href={`https://afdc.energy.gov/laws/${nrelId}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
+              <ExternalLink className="h-2.5 w-2.5" />
+            </a>
+          )}
         </div>
         <StatusBadge status={inc.programStatus} verified={inc.verified} expiresAt={inc.expiresAt} />
         {inc.details && (
