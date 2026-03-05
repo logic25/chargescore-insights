@@ -189,7 +189,7 @@ const Dashboard = () => {
     multiFamilyPct,
     popDensity,
     nearestMajorAirportMiles: nearestAirport.distance,
-    isOnAltFuelCorridor: false,
+    isOnAltFuelCorridor,
     propertyType: site.propertyType,
     amenitiesNearby: amenitiesCount,
     totalParkingSpots: site.totalParkingSpaces,
@@ -197,7 +197,8 @@ const Dashboard = () => {
     hasThreePhasePower: hasThreePhasePower,
     state: site.state,
     zipCode: site.zipCode,
-  }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, isDisadvantagedCommunity, hasThreePhasePower, site.state, site.zipCode]);
+    utilityName: utilityInfo.utilityName,
+  }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, isDisadvantagedCommunity, isOnAltFuelCorridor, hasThreePhasePower, site.state, site.zipCode, utilityInfo]);
 
   // Revenue projection from ChargeScore
   const revenueProjection: RevenueProjection = useMemo(() => projectRevenue({
