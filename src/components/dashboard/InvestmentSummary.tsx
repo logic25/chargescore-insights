@@ -146,16 +146,17 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: P
   const netProfit = financials.annualNetRevenue;
   const monthlyProfit = netProfit / 12;
 
-  // Split incentives: eligible selected, ineligible, and alternatives
-  const eligibleSelected = incentives.filter(i => !i.isAlternative && i.eligible !== false);
-  const ineligible = incentives.filter(i => !i.isAlternative && i.eligible === false);
-  const alternatives = incentives.filter(i => i.isAlternative);
+  // Split incentives: eligible (primary + alternatives), ineligible
+  const eligiblePrimary = incentives.filter(i => !i.isAlternative && i.eligible !== false);
+  const eligibleAlternatives = incentives.filter(i => i.isAlternative && i.eligible !== false);
+  const ineligible = incentives.filter(i => i.eligible === false);
 
-  // Group eligible by layer for display
+  // Group ALL eligible (primary + alternatives) by layer for display
+  const allEligible = [...eligiblePrimary, ...eligibleAlternatives];
   const eligibleByLayer = LAYER_ORDER.map(layer => ({
     layer,
     label: LAYER_LABELS[layer],
-    items: eligibleSelected.filter(i => i.category === layer),
+    items: allEligible.filter(i => i.category === layer),
   })).filter(g => g.items.length > 0);
 
   return (
@@ -234,7 +235,7 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: P
                 <div key={layer} className="space-y-1">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 ml-1">{label}</p>
                   {items.map(inc => (
-                    <IncentiveRow key={inc.id} inc={inc} isAlt={false} />
+                    <IncentiveRow key={inc.id} inc={inc} isAlt={!!inc.isAlternative} />
                   ))}
                 </div>
               ))}
@@ -253,17 +254,6 @@ const InvestmentSummary = ({ financials, incentives, stalls, onStallsChange }: P
             </div>
           )}
 
-          {/* Alternative programs — not summed */}
-          {alternatives.length > 0 && (
-            <div className="space-y-1 border-t border-border/50 pt-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-semibold">
-                Alternatives (pick one — not stacked)
-              </p>
-              {alternatives.map(inc => (
-                <IncentiveRow key={inc.id} inc={inc} isAlt={true} />
-              ))}
-            </div>
-          )}
         </div>
 
 
