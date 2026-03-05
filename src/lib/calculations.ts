@@ -281,6 +281,7 @@ interface StateIncentiveGroup {
   displayAmount: string;
   details: string;
   layer: 'federal' | 'state' | 'utility';
+  utilityMatch?: string[];     // if set, only show when detected utility contains one of these (case-insensitive)
 }
 
 const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
@@ -288,8 +289,13 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
     { groupId: 'ny-state-dcfc', name: 'NYSERDA NYSBIP', amountPerPort: 65000, displayAmount: '$65,000/port', details: 'Up to $65,000 per DCFC for commercial locations. Apply at nyserda.ny.gov', layer: 'state' },
     { groupId: 'ny-state-dcfc', name: 'EVolve NY', amountPerPort: 50000, displayAmount: '$50,000/port', details: 'Up to $50,000 per DCFC. Competitive — apply at evolveny.nypa.gov', layer: 'state' },
     { groupId: 'ny-state-small', name: 'Charge Ready NY 2.0', amountPerPort: 4000, displayAmount: '$4,000/port', details: '$3,000-$4,000 per port. $28M program budget. Stackable with NYSBIP.', layer: 'state' },
-    { groupId: 'ny-utility', name: 'Joint Utilities Make-Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'NY utilities cover up to 100% of electrical infrastructure. $1.24B program. Contact your utility.', layer: 'utility' },
-    { groupId: 'ny-utility', name: 'Con Edison PowerReady', amountPctOfInstall: 0.85, displayAmount: 'Up to 85% of installation', details: 'Covers up to 85% of DCFC infrastructure in ConEd territory. Max $1.2M.', layer: 'utility' },
+    // Utility programs — territory-filtered by detected utility name
+    { groupId: 'ny-utility-coned', name: 'Con Edison PowerReady', amountPctOfInstall: 0.85, displayAmount: 'Up to 85% of installation', details: 'Covers up to 85% of DCFC infrastructure in ConEd territory (NYC & Westchester). Max $1.2M.', layer: 'utility', utilityMatch: ['con ed', 'consolidated edison'] },
+    { groupId: 'ny-utility-pseg', name: 'PSEG Long Island Make-Ready', amountPctOfInstall: 0.50, displayAmount: 'Up to 50% of installation', details: 'PSEG Long Island covers up to 50% of make-ready infrastructure for commercial DCFC in Nassau & Suffolk counties.', layer: 'utility', utilityMatch: ['long island', 'lipa', 'pseg li', 'pseg long'] },
+    { groupId: 'ny-utility-nyseg', name: 'NYSEG/RG&E Make-Ready', amountPctOfInstall: 0.90, displayAmount: 'Up to 90% of installation', details: 'Avangrid utilities cover up to 90% of make-ready for public DCFC in upstate NY (NYSEG & RG&E territories).', layer: 'utility', utilityMatch: ['nyseg', 'rg&e', 'rochester gas', 'avangrid'] },
+    { groupId: 'ny-utility-ngrid', name: 'National Grid NY Make-Ready', amountPctOfInstall: 1.0, displayAmount: 'Up to 100% of installation', details: 'National Grid covers up to 100% of make-ready for public DCFC in its NY service territory (Brooklyn, Queens, Staten Island, upstate).', layer: 'utility', utilityMatch: ['national grid'] },
+    { groupId: 'ny-utility-chge', name: 'Central Hudson Make-Ready', amountPctOfInstall: 0.50, displayAmount: 'Up to 50% of installation', details: 'Central Hudson covers up to 50% of make-ready infrastructure in Hudson Valley territory.', layer: 'utility', utilityMatch: ['central hudson'] },
+    { groupId: 'ny-utility-oru', name: 'O&R Make-Ready', amountPctOfInstall: 0.50, displayAmount: 'Up to 50% of installation', details: 'Orange & Rockland covers up to 50% of make-ready for public DCFC in its service territory.', layer: 'utility', utilityMatch: ['orange', 'rockland', 'o&r'] },
   ],
   CA: [
     { groupId: 'ca-state', name: 'Fast Charge California', amountPerPort: 100000, displayAmount: '$100,000/port', details: 'Up to $100,000 per DCFC port. Successor to CALeVIP.', layer: 'state' },
@@ -340,6 +346,7 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
 export interface IncentiveContext {
   isDAC: boolean;            // Disadvantaged community — required for 30C
   isOnCorridor: boolean;     // Alt fuel corridor — required for NEVI
+  utilityName?: string | null; // Detected utility — filters utility-specific programs
 }
 
 export function getIncentives(site: SiteAnalysis, context?: IncentiveContext): Incentive[] {
