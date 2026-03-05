@@ -158,6 +158,7 @@ const Dashboard = () => {
     propertyType: site.propertyType,
     amenitiesNearby: amenitiesCount,
     totalParkingSpots: site.totalParkingSpaces,
+    peakUtilization: site.peakUtilization,
     isDisadvantagedCommunity: siteData.isDAC,
     hasThreePhasePower: hasThreePhasePower,
     state: site.state,
@@ -325,8 +326,9 @@ const Dashboard = () => {
                       <TooltipTrigger asChild>
                         <Info className="h-3 w-3 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[240px] text-xs">
-                        Net Present Value discounts future cash flows at 8% to show what your total 15-year profit is worth in today's dollars.
+                      <TooltipContent side="top" className="max-w-[300px] text-xs leading-relaxed">
+                        <p className="font-semibold mb-1">Net Present Value (NPV)</p>
+                        <p>Your total 15-year profit expressed in today's dollars. We discount future cash flows at 8% — the typical opportunity cost of capital (what you'd earn investing that money elsewhere, e.g. S&P 500 average). A positive NPV means this investment outperforms the alternative.</p>
                       </TooltipContent>
                     </Tooltip>
                   )}

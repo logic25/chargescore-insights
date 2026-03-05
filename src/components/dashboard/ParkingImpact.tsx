@@ -81,7 +81,7 @@ const ParkingImpact = ({ analysis }: Props) => {
 
         {/* Tesla requirement note */}
         <div className="rounded-lg border border-border bg-muted/30 p-2.5 text-[10px] text-muted-foreground leading-relaxed">
-          <strong>Tesla requirement:</strong> Each Supercharger stall requires a dedicated, signed parking space. Minimum 8 stalls per site recommended. ADA-compliant spaces required per local code.
+          <strong>Tesla requirement:</strong> Each Supercharger stall requires a dedicated, signed parking space. Minimum 4 stalls per site. ADA-compliant spaces required per local code.
         </div>
 
         {/* Warning only if stalls exceed available-after-peak — straightforward math */}
