@@ -891,6 +891,7 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext, nr
         category,
         isAlternative: false,
         programStatus: 'active',
+        sourceUrl: `https://afdc.energy.gov/laws/${nrel.id}`,
       });
     }
   }
