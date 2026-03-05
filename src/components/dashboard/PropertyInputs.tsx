@@ -9,7 +9,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { SiteAnalysis, PropertyType, ElectricalService } from '@/types/chargeScore';
 import { PROPERTY_TYPE_LABELS, ELECTRICAL_SERVICE_LABELS } from '@/types/chargeScore';
 import { estimateParkingSpots } from '@/lib/api/googleMaps';
-import ParkingLotMeasure from './ParkingLotMeasure';
 
 export type TrafficLevel = 'highway' | 'main' | 'side' | 'residential';
 
@@ -40,18 +39,22 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
   const [expanded, setExpanded] = useState(false);
   const [lotSqFt, setLotSqFt] = useState(50000);
   const [drawnLotSqFt, setDrawnLotSqFt] = useState<number | null>(null);
-  const [showDrawTool, setShowDrawTool] = useState(false);
+  const [manualSpotCount, setManualSpotCount] = useState<number | null>(null);
 
   const effectiveLotSqFt = drawnLotSqFt ?? lotSqFt;
-  const parking = useMemo(() => estimateParkingSpots(effectiveLotSqFt), [effectiveLotSqFt]);
+  const estimatedParking = useMemo(() => estimateParkingSpots(effectiveLotSqFt), [effectiveLotSqFt]);
+
+  // Use manual count if set, otherwise use estimate
+  const totalSpots = manualSpotCount ?? estimatedParking.total;
+  const chargerSpots = Math.floor(totalSpots * 0.33);
 
   useEffect(() => {
     onParkingEstimate?.({
       lotSqFt: effectiveLotSqFt,
-      totalSpots: parking.total,
-      availableForChargers: parking.availableForChargers,
+      totalSpots,
+      availableForChargers: chargerSpots,
     });
-  }, [effectiveLotSqFt, parking.total, parking.availableForChargers, onParkingEstimate]);
+  }, [effectiveLotSqFt, totalSpots, chargerSpots, onParkingEstimate]);
 
   const update = (partial: Partial<SiteAnalysis>) => {
     onChange({ ...site, ...partial });
@@ -74,9 +77,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span>{PROPERTY_TYPE_LABELS[site.propertyType]}</span>
             <span>•</span>
-            <span>{effectiveLotSqFt.toLocaleString()} sq ft</span>
-            <span>•</span>
-            <span>{parking.total} spots</span>
+            <span>{totalSpots} spots{manualSpotCount !== null ? ' (manual)' : ''}</span>
             <span>•</span>
             <span>{isTesla ? `${site.teslaStalls} Tesla stalls` : `${site.l2Chargers} L2 + ${site.dcfcChargers} DCFC`}</span>
             <span>•</span>
@@ -104,7 +105,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">
-                Lot Size (sq ft) {drawnLotSqFt && <span className="text-primary text-[10px]">— measured</span>}
+                Lot Size (sq ft) {drawnLotSqFt && <span className="text-primary text-[10px]">— measured from map</span>}
               </Label>
               <Input
                 type="number"
@@ -119,28 +120,36 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowDrawTool(!showDrawTool)}
-            className="text-xs text-primary hover:text-primary/80 underline transition-colors"
-          >
-            {showDrawTool ? 'Hide drawing tool' : '📐 Draw on map to measure lot'}
-          </button>
-
-          {showDrawTool && (
-            <ParkingLotMeasure lat={site.lat} lng={site.lng} onMeasured={(data) => {
-              setDrawnLotSqFt(data.lotSqFt);
-              setLotSqFt(data.lotSqFt);
-              onParkingEstimate?.(data);
-            }} />
-          )}
-
-          {/* Parking Estimates */}
+          {/* Parking Estimates with Manual Override */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border border-border bg-muted/50 p-3">
-              <p className="text-[10px] text-muted-foreground">Estimated Total Spots</p>
-              <p className="font-mono text-xl font-bold text-foreground">{parking.total}</p>
-              <p className="text-[9px] text-muted-foreground/60">1 spot per 340 sq ft</p>
+              <div className="flex items-center gap-1">
+                <p className="text-[10px] text-muted-foreground">Total Parking Spots</p>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[280px] text-xs">
+                    Estimated at 1 spot per 340 sq ft. If this doesn't match your actual count, enter the real number below.
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <Input
+                type="number"
+                className="mt-1 h-8 w-full font-mono text-lg font-bold border-dashed"
+                value={manualSpotCount ?? estimatedParking.total}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!val || val === estimatedParking.total) {
+                    setManualSpotCount(null);
+                  } else {
+                    setManualSpotCount(val);
+                  }
+                }}
+              />
+              <p className="text-[9px] text-muted-foreground/60 mt-1">
+                {manualSpotCount !== null ? '✏️ Manual count' : `Est. from ${effectiveLotSqFt.toLocaleString()} sq ft`}
+              </p>
             </div>
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
               <div className="flex items-center gap-1">
@@ -150,14 +159,18 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
                     <Info className="h-2.5 w-2.5 text-muted-foreground/50" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-[280px] text-xs">
-                    Industry standard: 1 parking spot per 340 sq ft. We recommend no more than 33% for EV chargers.
+                    We recommend no more than 33% of spots for EV chargers to avoid impacting regular parking.
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="font-mono text-xl font-bold text-primary">{parking.availableForChargers}</p>
-              <p className="text-[9px] text-muted-foreground/60">33% of total spots</p>
+              <p className="font-mono text-xl font-bold text-primary mt-1">{chargerSpots}</p>
+              <p className="text-[9px] text-muted-foreground/60">33% of {totalSpots} spots</p>
             </div>
           </div>
+
+          <p className="text-[10px] text-muted-foreground/70">
+            💡 Use the <strong>Measure Lot</strong> button on the satellite map above to draw your lot outline, or type your actual spot count.
+          </p>
 
           {/* Charging Model Toggle */}
           <div className="space-y-1.5">
@@ -259,7 +272,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, av
                 <span className="w-8 text-center font-mono text-sm font-bold text-primary">{site.teslaStalls}</span>
               </div>
               <p className="text-[10px] text-muted-foreground/60">
-                Based on {site.totalParkingSpaces} parking spots, we recommend {Math.min(24, Math.max(4, Math.round(site.totalParkingSpaces * 0.04)))}–{Math.min(24, Math.max(4, Math.round(site.totalParkingSpaces * 0.08)))} stalls
+                Based on {totalSpots} parking spots, we recommend {Math.min(24, Math.max(4, Math.round(totalSpots * 0.04)))}–{Math.min(24, Math.max(4, Math.round(totalSpots * 0.08)))} stalls
               </p>
               {availableForChargers > 0 && site.teslaStalls > availableForChargers && (
                 <div className="flex items-center gap-1 rounded bg-accent/10 p-1.5 text-[10px] text-accent">
