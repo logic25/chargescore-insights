@@ -37,6 +37,7 @@ export interface ScoringInputs {
   hasThreePhasePower: boolean | null;
   state?: string;
   zipCode?: string;
+  utilityName?: string | null;
 }
 
 export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult {
@@ -57,7 +58,7 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     weight: 0.22,
     weightedScore: trafficScore * 0.22,
     tooltip: 'How many vehicles drive past this location daily (AADT). Higher traffic = more potential EV charging customers. Sites above 20,000 VPD are considered excellent.',
-    dataSource: 'User estimate (State DOT AADT coming soon)',
+    dataSource: 'FHWA HPMS (Highway Performance Monitoring System)',
     rawValue: inputs.aadtVpd ? `${inputs.aadtVpd.toLocaleString()} VPD` : 'Not available — using estimate',
   });
 
@@ -161,14 +162,24 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   let gridScore = 60;
   if (inputs.hasThreePhasePower === true) gridScore = 90;
   else if (inputs.hasThreePhasePower === false) gridScore = 30;
+  
+  // Boost score if we know the utility (commercial service likely available)
+  const utilityName = inputs.utilityName ?? null;
+  if (utilityName && inputs.hasThreePhasePower === null) {
+    // Known utility = at least basic commercial service exists
+    gridScore = 65;
+  }
+
   factors.push({
     name: 'Grid Capacity',
     score: gridScore,
     weight: 0.05,
     weightedScore: gridScore * 0.05,
     tooltip: 'Can the electrical grid handle high-power DCFC? V4 Superchargers need 480V three-phase power. Properties with existing high-power service score higher.',
-    dataSource: 'User input / utility data',
-    rawValue: inputs.hasThreePhasePower === null ? 'Unknown' : (inputs.hasThreePhasePower ? 'Three-phase available' : 'May need upgrade'),
+    dataSource: utilityName ? `NREL Utility Rates API — ${utilityName}` : 'User input / utility data',
+    rawValue: inputs.hasThreePhasePower === null
+      ? (utilityName ? `Utility: ${utilityName} (service type unknown)` : 'Unknown')
+      : (inputs.hasThreePhasePower ? 'Three-phase available' : 'May need upgrade'),
   });
 
   // FACTOR 8: Incentive Eligibility (10%)
@@ -188,7 +199,7 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     weight: 0.10,
     weightedScore: incentiveScore * 0.10,
     tooltip: 'Two major incentive boosters: (1) Disadvantaged Community (DAC) status — utilities cover up to 100% of infrastructure. (2) FHWA Alternative Fuel Corridor — qualifies for NEVI funding covering up to 80% of project cost.',
-    dataSource: 'FCC Census API + CEJST + FHWA Corridors',
+    dataSource: 'CEJST (DAC) + FHWA Alt Fuel Corridors (NEVI)',
     rawValue: incentiveReasons.join(' + '),
   });
 

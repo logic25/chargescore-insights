@@ -10,6 +10,9 @@ import { fetchCensusTractFips, fetchMultiFamilyPct, fetchPopDensity } from '@/li
 import { fetchNearbyAmenities } from '@/lib/api/amenities';
 import { fetchAadt, type AadtResult } from '@/lib/api/traffic';
 import { fetchParcelInfo, type ParcelResult } from '@/lib/api/parcel';
+import { fetchIsDisadvantagedCommunity } from '@/lib/api/dac';
+import { fetchIsOnAltFuelCorridor } from '@/lib/api/corridors';
+import { fetchUtilityInfo, type UtilityInfo } from '@/lib/api/utilityInfo';
 import { calculateFinancials, calculateParkingImpact, calculateDemandCharge, getIncentives } from '@/lib/calculations';
 import { calculateChargeScoreV2, projectRevenue, type ChargeScoreResult, type RevenueProjection } from '@/lib/scoring';
 import { findNearestAirport } from '@/data/airports';
@@ -71,8 +74,10 @@ const Dashboard = () => {
   const [popDensity, setPopDensity] = useState<number | null>(null);
   const [amenitiesCount, setAmenitiesCount] = useState(5);
   const [isDisadvantagedCommunity, setIsDisadvantagedCommunity] = useState(false);
+  const [isOnAltFuelCorridor, setIsOnAltFuelCorridor] = useState(false);
+  const [utilityInfo, setUtilityInfo] = useState<UtilityInfo>({ utilityName: null, commercialRate: null });
   const [aadtData, setAadtData] = useState<AadtResult>({ aadt: null, routeId: null, year: null });
-  const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null });
+  const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null, source: null });
 
   const handleParkingEstimate = useCallback((data: { lotSqFt: number; totalSpots: number; availableForChargers: number }) => {
     setSite(prev => ({ ...prev, totalParkingSpaces: data.totalSpots }));
@@ -104,14 +109,24 @@ const Dashboard = () => {
     fetchPlannedStations(site.lat, site.lng, 5).then(setPlannedData);
   }, [site.lat, site.lng]);
 
-  // Fetch census tract + DAC check
+  // Fetch census tract
   useEffect(() => {
-    fetchCensusTractFips(site.lat, site.lng).then((fips) => {
-      setCensusTractFips(fips);
-      // Simple DAC proxy: we don't bundle the full CEJST dataset for MVP
-      // Instead mark as DAC if in a high-poverty tract (will refine later)
-      setIsDisadvantagedCommunity(false);
-    });
+    fetchCensusTractFips(site.lat, site.lng).then(setCensusTractFips);
+  }, [site.lat, site.lng]);
+
+  // Fetch DAC status from CEJST
+  useEffect(() => {
+    fetchIsDisadvantagedCommunity(site.lat, site.lng).then(setIsDisadvantagedCommunity);
+  }, [site.lat, site.lng]);
+
+  // Fetch Alt Fuel Corridor status
+  useEffect(() => {
+    fetchIsOnAltFuelCorridor(site.lat, site.lng).then(setIsOnAltFuelCorridor);
+  }, [site.lat, site.lng]);
+
+  // Fetch utility info (name + commercial rate)
+  useEffect(() => {
+    fetchUtilityInfo(site.lat, site.lng).then(setUtilityInfo);
   }, [site.lat, site.lng]);
 
   // Fetch census housing + population data
@@ -131,10 +146,10 @@ const Dashboard = () => {
     fetchAadt(site.lat, site.lng).then(setAadtData);
   }, [site.lat, site.lng]);
 
-  // Fetch parcel data from NYC MapPLUTO
+  // Fetch parcel data (MapPLUTO → NYS Tax Parcels fallback)
   useEffect(() => {
-    fetchParcelInfo(site.lat, site.lng).then(setParcelData);
-  }, [site.lat, site.lng]);
+    fetchParcelInfo(site.lat, site.lng, site.state).then(setParcelData);
+  }, [site.lat, site.lng, site.state]);
 
   // Computed scoring data from stations
   const stationMetrics = useMemo(() => {
@@ -174,7 +189,7 @@ const Dashboard = () => {
     multiFamilyPct,
     popDensity,
     nearestMajorAirportMiles: nearestAirport.distance,
-    isOnAltFuelCorridor: false,
+    isOnAltFuelCorridor,
     propertyType: site.propertyType,
     amenitiesNearby: amenitiesCount,
     totalParkingSpots: site.totalParkingSpaces,
@@ -182,7 +197,8 @@ const Dashboard = () => {
     hasThreePhasePower: hasThreePhasePower,
     state: site.state,
     zipCode: site.zipCode,
-  }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, isDisadvantagedCommunity, hasThreePhasePower, site.state, site.zipCode]);
+    utilityName: utilityInfo.utilityName,
+  }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, isDisadvantagedCommunity, isOnAltFuelCorridor, hasThreePhasePower, site.state, site.zipCode, utilityInfo]);
 
   // Revenue projection from ChargeScore
   const revenueProjection: RevenueProjection = useMemo(() => projectRevenue({
