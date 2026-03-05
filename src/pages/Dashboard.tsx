@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, DollarSign, Clock, BarChart3, ChevronDown } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, DollarSign, BarChart3, ChevronDown, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
 import { fetchNearbyStations } from '@/lib/api/stations';
@@ -28,6 +28,7 @@ import FinancialProjection from '@/components/dashboard/FinancialProjection';
 import ParkingImpact from '@/components/dashboard/ParkingImpact';
 import ReportGenerator from '@/components/dashboard/ReportGenerator';
 import ReportGate from '@/components/ReportGate';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 const GATE_UNLOCKED_KEY = 'chargescore_gate_unlocked';
 
@@ -65,7 +66,7 @@ const Dashboard = () => {
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
   const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
-  const [activePanel, setActivePanel] = useState<'revenue' | 'investment' | 'payback' | 'npv' | null>('revenue');
+  const [activePanel, setActivePanel] = useState<'revenue' | 'investment' | 'npv' | null>('revenue');
 
   const handleGateUnlock = useCallback(() => {
     localStorage.setItem(GATE_UNLOCKED_KEY, 'true');
@@ -231,22 +232,22 @@ const Dashboard = () => {
             {/* Inline score badge */}
             <div className="flex items-center gap-1.5 ml-1">
               <div className="relative flex-shrink-0">
-                <svg width="28" height="28" viewBox="0 0 160 160">
-                  <circle cx="80" cy="80" r="70" fill="none" stroke="currentColor" className="text-border" strokeWidth="16"
+                <svg width="40" height="40" viewBox="0 0 160 160">
+                  <circle cx="80" cy="80" r="70" fill="none" stroke="currentColor" className="text-border" strokeWidth="14"
                     strokeDasharray={`${2 * Math.PI * 70 * 0.75} ${2 * Math.PI * 70 * 0.25}`}
                     strokeLinecap="round" transform="rotate(135 80 80)" />
                   <circle cx="80" cy="80" r="70" fill="none"
                     stroke={chargeScore.totalScore >= 70 ? 'hsl(var(--success))' : chargeScore.totalScore >= 45 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))'}
-                    strokeWidth="16"
+                    strokeWidth="14"
                     strokeDasharray={`${(chargeScore.totalScore / 100) * 2 * Math.PI * 70 * 0.75} ${2 * Math.PI * 70 - (chargeScore.totalScore / 100) * 2 * Math.PI * 70 * 0.75}`}
                     strokeLinecap="round" transform="rotate(135 80 80)" />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="font-mono text-[8px] font-bold text-foreground">{chargeScore.totalScore}</span>
+                  <span className="font-mono text-xs font-bold text-foreground">{chargeScore.totalScore}</span>
                 </div>
               </div>
               {chargeScore.grade && (
-                <span className="font-mono text-sm font-bold text-primary">{chargeScore.grade}</span>
+                <span className="font-mono text-base font-bold text-primary">{chargeScore.grade}</span>
               )}
             </div>
           </div>
@@ -304,12 +305,12 @@ const Dashboard = () => {
 
         {/* ═══ ROW 2: Clickable Metrics Strip ═══ */}
         <div className="rounded-xl border border-border bg-card">
-          <div className="grid grid-cols-2 lg:grid-cols-4">
+          <TooltipProvider>
+          <div className="grid grid-cols-3">
             {([
               { key: 'revenue' as const, icon: TrendingUp, iconClass: 'text-success', label: 'Monthly Revenue', value: fmt(monthlyProfit), valueClass: monthlyProfit >= 0 ? 'text-success' : 'text-destructive', sub: '/mo net profit' },
               { key: 'investment' as const, icon: DollarSign, iconClass: 'text-primary', label: 'Out-of-Pocket', value: fmt(financials.netInvestment), valueClass: financials.netInvestment <= 0 ? 'text-success' : 'text-foreground', sub: 'after incentives' },
-              { key: 'payback' as const, icon: Clock, iconClass: 'text-accent', label: 'Payback', value: isFinite(financials.paybackYears) && financials.paybackYears < 100 ? `${financials.paybackYears}yr` : 'N/A', valueClass: 'text-foreground', sub: 'to breakeven' },
-              { key: 'npv' as const, icon: BarChart3, iconClass: 'text-primary', label: '15-Year NPV', value: fmt(financials.npv15Year), valueClass: financials.npv15Year > 0 ? 'text-success' : 'text-destructive', sub: 'at 8% discount' },
+              { key: 'npv' as const, icon: BarChart3, iconClass: 'text-primary', label: '15-Year NPV', value: fmt(financials.npv15Year), valueClass: financials.npv15Year > 0 ? 'text-success' : 'text-destructive', sub: 'Total profit in today\'s dollars' },
             ] as const).map((card, i) => (
               <button
                 key={card.key}
@@ -319,6 +320,16 @@ const Dashboard = () => {
                 <div className="flex items-center justify-center gap-1.5 mb-1">
                   <card.icon className={`h-3.5 w-3.5 ${card.iconClass}`} />
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{card.label}</span>
+                  {card.key === 'npv' && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[240px] text-xs">
+                        Net Present Value discounts future cash flows at 8% to show what your total 15-year profit is worth in today's dollars.
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
                 <p className={`font-mono text-xl font-bold ${card.valueClass}`}>{card.value}</p>
                 <p className="text-[10px] text-muted-foreground">{card.sub}</p>
@@ -326,6 +337,7 @@ const Dashboard = () => {
               </button>
             ))}
           </div>
+          </TooltipProvider>
         </div>
 
         {/* ═══ GATED CONTENT: Expandable Detail Panel ═══ */}
@@ -343,9 +355,6 @@ const Dashboard = () => {
               isDAC: siteData.isDAC,
               isOnCorridor: siteData.isOnCorridor,
             }} />
-          )}
-          {activePanel === 'payback' && (
-            <FinancialProjection financials={financials} />
           )}
           {activePanel === 'npv' && (
             <FinancialProjection financials={financials} />
