@@ -60,6 +60,39 @@ const EligibilityBadge = ({ eligible }: { eligible: boolean | null }) => {
   );
 };
 
+const StatusBadge = ({ status, verified, expiresAt }: { status?: string; verified?: string; expiresAt?: string }) => {
+  if (!status && !verified) return null;
+  const colors: Record<string, string> = {
+    accepting: 'bg-success/10 text-success',
+    active: 'bg-success/10 text-success',
+    waitlist: 'bg-amber-500/10 text-amber-600',
+    closed: 'bg-destructive/10 text-destructive',
+    expired: 'bg-destructive/10 text-destructive',
+  };
+  const labels: Record<string, string> = {
+    accepting: 'Accepting',
+    active: 'Active',
+    waitlist: 'Waitlist',
+    closed: 'Closed',
+    expired: 'Expired',
+  };
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {status && (
+        <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide ${colors[status] || 'bg-muted text-muted-foreground'}`}>
+          {labels[status] || status}
+        </span>
+      )}
+      {expiresAt && expiresAt !== 'ongoing' && (
+        <span className="text-[8px] text-muted-foreground/60">exp {expiresAt}</span>
+      )}
+      {verified && (
+        <span className="text-[8px] text-muted-foreground/40">✓ {verified}</span>
+      )}
+    </div>
+  );
+};
+
 const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
   const ineligible = inc.eligible === false;
   return (
@@ -73,6 +106,7 @@ const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
           </span>
           <EligibilityBadge eligible={inc.eligible} />
         </div>
+        <StatusBadge status={inc.programStatus} verified={inc.verified} expiresAt={inc.expiresAt} />
         {inc.details && (
           <Tooltip>
             <TooltipTrigger asChild>
