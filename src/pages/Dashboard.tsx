@@ -295,13 +295,13 @@ const Dashboard = () => {
           </Tabs>
 
           <ChargeScoreGauge score={chargeScore} siteInsights={{
-            floodZone: floodZone.floodZone,
-            isHighRisk: floodZone.isHighRisk,
+            floodZone: siteData.floodZone,
+            isHighRisk: siteData.isHighRisk,
             highwayDistance: highwayProximity.distanceMiles,
             highwayName: highwayProximity.routeName,
             utilityName: utilityInfo.utilityName,
-            isDAC: isDisadvantagedCommunity,
-            isOnCorridor: isOnAltFuelCorridor,
+            isDAC: siteData.isDAC,
+            isOnCorridor: siteData.isOnCorridor,
           }} />
         </div>
 
