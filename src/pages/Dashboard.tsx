@@ -74,6 +74,13 @@ const Dashboard = () => {
     setAvailableForChargers(data.availableForChargers);
   }, []);
 
+  const handleSpotsCounted = useCallback((count: number) => {
+    if (count > 0) {
+      setSite(prev => ({ ...prev, totalParkingSpaces: count }));
+      setAvailableForChargers(Math.floor(count * 0.33));
+    }
+  }, []);
+
   // Fetch existing stations
   useEffect(() => {
     setStationsLoading(true);
@@ -243,7 +250,7 @@ const Dashboard = () => {
               </TabsList>
             </div>
             <TabsContent value="satellite" className="mt-0">
-              <SiteAerial lat={site.lat} lng={site.lng} onMeasured={handleParkingEstimate} />
+              <SiteAerial lat={site.lat} lng={site.lng} onSpotsCounted={handleSpotsCounted} />
             </TabsContent>
             <TabsContent value="competition" className="mt-0">
               <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
