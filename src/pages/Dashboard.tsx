@@ -52,7 +52,7 @@ const Dashboard = () => {
     peakUtilization: 65,
     electricalService: 'unknown',
     chargingModel: 'tesla',
-    teslaStalls: 6,
+    teslaStalls: 8,
     kwhPerStallPerDay: 250,
     l2Chargers: 4,
     dcfcChargers: 2,
