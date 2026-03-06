@@ -43,6 +43,8 @@ const fmt = (n: number) => {
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [saving, setSaving] = useState(false);
 
   const [site, setSite] = useState<SiteAnalysis>({
     address: searchParams.get('address') || '123 Main St, New York, NY',
