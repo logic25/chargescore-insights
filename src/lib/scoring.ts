@@ -107,23 +107,23 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   let competitionScore = 50;
   if (inputs.nearestDcfcMiles !== null) {
     if (isDenseUrban) {
-      // Dense urban: 1+ mi to nearest DCFC is excellent spacing
+      // Dense urban: In cities like Brooklyn, 1+ mile to nearest is a genuine gap.
+      // Use continuous interpolation for smoother scoring.
+      if (inputs.nearestDcfcMiles >= 3) competitionScore = 100;
+      else if (inputs.nearestDcfcMiles >= 2) competitionScore = 95;
+      else if (inputs.nearestDcfcMiles >= 1) competitionScore = 85;
+      else if (inputs.nearestDcfcMiles >= 0.5) competitionScore = 70;
+      else if (inputs.nearestDcfcMiles >= 0.25) competitionScore = 50;
+      else competitionScore = 30;
+    } else if (isUrban) {
       if (inputs.nearestDcfcMiles >= 5) competitionScore = 100;
       else if (inputs.nearestDcfcMiles >= 3) competitionScore = 90;
-      else if (inputs.nearestDcfcMiles >= 1.5) competitionScore = 80;
-      else if (inputs.nearestDcfcMiles >= 0.75) competitionScore = 65;
-      else if (inputs.nearestDcfcMiles >= 0.3) competitionScore = 45;
-      else competitionScore = 25;
-    } else if (isUrban) {
-      // Urban: slightly wider thresholds
-      if (inputs.nearestDcfcMiles >= 7) competitionScore = 100;
-      else if (inputs.nearestDcfcMiles >= 4) competitionScore = 90;
-      else if (inputs.nearestDcfcMiles >= 2) competitionScore = 75;
-      else if (inputs.nearestDcfcMiles >= 1) competitionScore = 55;
-      else if (inputs.nearestDcfcMiles >= 0.5) competitionScore = 35;
+      else if (inputs.nearestDcfcMiles >= 1.5) competitionScore = 75;
+      else if (inputs.nearestDcfcMiles >= 0.75) competitionScore = 55;
+      else if (inputs.nearestDcfcMiles >= 0.3) competitionScore = 35;
       else competitionScore = 20;
     } else {
-      // Suburban/rural: original wider thresholds
+      // Suburban/rural
       if (inputs.nearestDcfcMiles >= 10) competitionScore = 100;
       else if (inputs.nearestDcfcMiles >= 5) competitionScore = 85;
       else if (inputs.nearestDcfcMiles >= 2) competitionScore = 65;
@@ -132,11 +132,13 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     }
   }
 
-  // Density-adjusted saturation penalty: urban areas naturally have more stations
-  const saturationThreshold = isDenseUrban ? 15 : isUrban ? 10 : 5;
+  // Density-adjusted saturation penalty: urban areas naturally have many stations within 5mi
+  // In dense urban, only penalize extreme saturation — 5mi covers a LOT of city
+  const saturationThreshold = isDenseUrban ? 30 : isUrban ? 15 : 5;
   if (inputs.dcfcWithin5Miles > saturationThreshold) {
     const excess = inputs.dcfcWithin5Miles - saturationThreshold;
-    const penalty = Math.min(20, Math.round(excess * (isDenseUrban ? 1 : 2)));
+    const penaltyPerStation = isDenseUrban ? 0.5 : isUrban ? 1 : 2;
+    const penalty = Math.min(15, Math.round(excess * penaltyPerStation));
     competitionScore = Math.max(competitionScore - penalty, 0);
   }
 
