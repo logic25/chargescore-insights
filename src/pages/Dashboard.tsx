@@ -19,7 +19,7 @@ import { fetchNearestHighway, type HighwayProximity } from '@/lib/api/highway';
 import { calculateFinancials, calculateParkingImpact, calculateDemandCharge, getIncentives } from '@/lib/calculations';
 import { calculateChargeScoreV2, projectRevenue, type ChargeScoreResult, type RevenueProjection } from '@/lib/scoring';
 import { findNearestAirport } from '@/data/airports';
-import { getEstimatedEvRegistrations } from '@/data/evRegistrations';
+import { getEstimatedEvRegistrations, extractCountyFromAddress } from '@/data/evRegistrations';
 import { logAnalysis } from '@/lib/analytics';
 import SiteAerial from '@/components/dashboard/SiteAerial';
 import MapView from '@/components/dashboard/MapView';
@@ -143,7 +143,8 @@ const Dashboard = () => {
   }, [stations]);
 
   const nearestAirport = useMemo(() => findNearestAirport(site.lat, site.lng), [site.lat, site.lng]);
-  const evRegistrations = useMemo(() => getEstimatedEvRegistrations(site.state), [site.state]);
+  const county = useMemo(() => extractCountyFromAddress(site.address), [site.address]);
+  const evRegistrations = useMemo(() => getEstimatedEvRegistrations(site.state, county), [site.state, county]);
   const hasThreePhasePower = useMemo(() => {
     if (site.electricalService === 'unknown') return null;
     return site.electricalService.includes('480v');
