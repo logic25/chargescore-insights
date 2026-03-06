@@ -107,6 +107,8 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -121,6 +123,7 @@
 @layer components {
   .glass-card {
     @apply rounded-xl border border-border bg-card shadow-sm;
+    font-size: 14px;
   }
 
   .glass-card-dark {

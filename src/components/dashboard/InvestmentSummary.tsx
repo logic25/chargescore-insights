@@ -32,9 +32,9 @@ const LAYER_LABELS: Record<string, string> = { federal: 'Federal', state: 'State
 const LAYER_ORDER: string[] = ['federal', 'state', 'utility'];
 
 const EligibilityBadge = ({ eligible }: { eligible: boolean | null }) => {
-  if (eligible === false) return <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase text-destructive"><X className="h-2 w-2" />No</span>;
-  if (eligible === null) return <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase text-amber-600"><AlertTriangle className="h-2 w-2" />Verify</span>;
-  return <span className="inline-flex items-center gap-0.5 rounded-full bg-success/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase text-success"><Check className="h-2 w-2" />Yes</span>;
+  if (eligible === false) return <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-destructive"><X className="h-2.5 w-2.5" />No</span>;
+  if (eligible === null) return <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-600"><AlertTriangle className="h-2.5 w-2.5" />Verify</span>;
+  return <span className="inline-flex items-center gap-0.5 rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-success"><Check className="h-2.5 w-2.5" />Yes</span>;
 };
 
 const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
@@ -43,10 +43,10 @@ const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
   const nrelId = isNrel ? inc.id.replace('nrel-', '') : null;
   const linkUrl = inc.sourceUrl || (isNrel && nrelId ? `https://afdc.energy.gov/laws/${nrelId}` : null);
   return (
-    <div className={`flex items-center justify-between gap-2 rounded px-2 py-1 ${ineligible ? 'opacity-50' : isAlt ? 'bg-muted/20' : 'bg-success/5'}`}>
+    <div className={`flex items-center justify-between gap-2 rounded px-2 py-1.5 ${ineligible ? 'opacity-50' : isAlt ? 'bg-muted/20' : 'bg-success/5'}`}>
       <div className="flex items-center gap-1.5 min-w-0 flex-1">
         <EligibilityBadge eligible={inc.eligible} />
-        <span className={`text-[11px] truncate ${ineligible ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+        <span className={`text-xs truncate ${ineligible ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
           {isAlt && !ineligible ? `or: ${inc.name}` : inc.name}
         </span>
         {linkUrl && (
@@ -63,7 +63,7 @@ const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
           </Tooltip>
         )}
       </div>
-      <span className={`font-mono text-[11px] font-semibold whitespace-nowrap ${ineligible ? 'text-muted-foreground line-through' : isAlt ? 'text-muted-foreground' : 'text-success'}`}>
+      <span className={`font-mono text-xs font-semibold whitespace-nowrap ${ineligible ? 'text-muted-foreground line-through' : isAlt ? 'text-muted-foreground' : 'text-success'}`}>
         {ineligible ? '$0' : inc.amount}
       </span>
     </div>
@@ -72,7 +72,8 @@ const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
 
 const Row = ({ label, value, valueClass = 'text-foreground', tip, indent = false }: { label: string; value: string; valueClass?: string; tip?: string; indent?: boolean }) => (
   <div className={`flex items-center justify-between ${indent ? 'ml-3' : ''}`}>
-    <span className={`${indent ? 'text-[11px]' : 'text-xs'} text-muted-foreground flex items-center`}>
+    <span className={`text-xs text-muted-foreground flex items-center`}>
+      {indent && <span className="mr-1 text-muted-foreground/40">└</span>}
       {label}
       {tip && <InfoTip text={tip} />}
     </span>
@@ -107,11 +108,11 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
 
       <div className="px-4 py-3 space-y-2.5">
         {/* Hero: Monthly Profit */}
-        <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2.5">
+        <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-4 py-3">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Monthly Profit</p>
-            <p className={`font-mono text-2xl font-bold ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {fmt(monthlyProfit)}<span className="text-sm font-semibold text-muted-foreground">/mo</span>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Monthly Profit</p>
+            <p className={`font-mono text-3xl font-bold ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {fmt(monthlyProfit)}<span className="text-base font-semibold text-muted-foreground">/mo</span>
             </p>
           </div>
           <div className="text-right">
@@ -124,23 +125,23 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
 
         {/* Key Metrics Row */}
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-lg border border-border p-2">
-            <p className="text-[9px] uppercase text-muted-foreground">Out-of-Pocket</p>
-            <p className={`font-mono text-sm font-bold ${outOfPocket <= 0 ? 'text-success' : 'text-foreground'}`}>
+          <div className="rounded-lg border border-border p-2.5">
+            <p className="text-[11px] uppercase text-muted-foreground">Out-of-Pocket</p>
+            <p className={`font-mono text-base font-bold ${outOfPocket <= 0 ? 'text-success' : 'text-foreground'}`}>
               {fmt(outOfPocket)}
             </p>
           </div>
-          <div className="rounded-lg border border-border p-2">
-            <p className="text-[9px] uppercase text-muted-foreground">Payback</p>
-            <p className="font-mono text-sm font-bold text-foreground">
+          <div className="rounded-lg border border-border p-2.5">
+            <p className="text-[11px] uppercase text-muted-foreground">Payback</p>
+            <p className="font-mono text-base font-bold text-foreground">
               {isFinite(financials.paybackYears) && financials.paybackYears < 100
                 ? `${financials.paybackYears}yr`
                 : 'N/A'}
             </p>
           </div>
-          <div className="rounded-lg border border-border p-2">
-            <p className="text-[9px] uppercase text-muted-foreground">15yr NPV</p>
-            <p className={`font-mono text-sm font-bold ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
+          <div className="rounded-lg border border-border p-2.5">
+            <p className="text-[11px] uppercase text-muted-foreground">15yr NPV</p>
+            <p className={`font-mono text-base font-bold ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
               {fmt(financials.npv15Year)}
             </p>
           </div>
@@ -151,6 +152,10 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
           <Row label="Total Project Cost" value={fmt(financials.totalProjectCost)} tip="Cost to buy and install all charging equipment before any incentives." />
           <Row label={`Hardware (${stalls} stalls)`} value={fmt(financials.totalHardwareCost)} indent tip="Tesla V4 Supercharger posts at $50,000 each." />
           <Row label="Installation" value={fmt(financials.totalInstallationCost)} indent tip="Site prep, trenching, electrical work. Tesla High Cost estimate." />
+          {financials.electricalUpgradeNeeded && (
+            <Row label="Electrical Upgrade" value={fmt(financials.electricalUpgradeCost[0])} indent
+              tip={`Your electrical service may need upgrading for ${stalls} stalls. Estimate: ${fmt(financials.electricalUpgradeCost[0])}–${fmt(financials.electricalUpgradeCost[1])}. Set your electrical service in Property Inputs to refine this.`} />
+          )}
         </div>
 
         {/* Incentives — collapsible */}
