@@ -317,7 +317,7 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1600px] px-6 py-4 space-y-3">
+      <main className="mx-auto max-w-[1920px] px-6 py-4 space-y-3">
         {/* ═══ ROW 1: Map (left) + Sidebar (right) ═══ */}
         <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr]">
           {/* Left: Map with tabs */}
