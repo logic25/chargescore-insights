@@ -100,8 +100,8 @@ const ChargeScoreGauge = ({ score, siteInsights }: ChargeScoreGaugeProps) => {
         <div className="flex-1 space-y-1.5">
           {score.factors.map((factor: ScoreFactor) => (
             <div key={factor.name} className="group flex items-center gap-2">
-              <div className="flex w-[140px] items-center gap-1 flex-shrink-0">
-                <span className="truncate text-sm text-muted-foreground">{factor.name}</span>
+              <div className="flex w-[180px] items-center gap-1 flex-shrink-0">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">{factor.name}</span>
                 <span className="text-xs text-muted-foreground/60">({Math.round(factor.weight * 100)}%)</span>
                 <Tooltip>
                   <TooltipTrigger>
@@ -115,7 +115,7 @@ const ChargeScoreGauge = ({ score, siteInsights }: ChargeScoreGaugeProps) => {
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="h-2 flex-1 rounded-full bg-muted">
+              <div className="h-2 w-[120px] flex-shrink-0 rounded-full bg-muted">
                 <div
                   className={`h-full rounded-full transition-all duration-700 ${barColor(factor.score)}`}
                   style={{ width: `${factor.score}%` }}
