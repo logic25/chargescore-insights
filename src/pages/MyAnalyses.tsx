@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, MapPin, Trash2, ExternalLink } from 'lucide-react';
+import { Zap, ArrowLeft, MapPin, Trash2, ExternalLink, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 
 type Analysis = Tables<'analyses'>;
 
