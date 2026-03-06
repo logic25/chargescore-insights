@@ -55,23 +55,40 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   const isUrban = estimatedPopDensity >= 10000;
   const isDenseUrban = estimatedPopDensity >= 20000;
 
-  // FACTOR 1: Traffic Volume (22%)
+  // FACTOR 1: Traffic Volume (18%)
   let trafficScore = 50;
   if (inputs.aadtVpd !== null) {
-    if (inputs.aadtVpd >= 30000) trafficScore = 100;
-    else if (inputs.aadtVpd >= 20000) trafficScore = 85;
-    else if (inputs.aadtVpd >= 10000) trafficScore = 70;
-    else if (inputs.aadtVpd >= 5000) trafficScore = 50;
-    else trafficScore = 25;
+    if (isDenseUrban) {
+      // Urban streets naturally have lower AADT than highways — adjust thresholds
+      if (inputs.aadtVpd >= 20000) trafficScore = 100;
+      else if (inputs.aadtVpd >= 12000) trafficScore = 90;
+      else if (inputs.aadtVpd >= 7000) trafficScore = 75;
+      else if (inputs.aadtVpd >= 3000) trafficScore = 60;
+      else if (inputs.aadtVpd >= 1500) trafficScore = 45;
+      else trafficScore = 30;
+    } else if (isUrban) {
+      if (inputs.aadtVpd >= 25000) trafficScore = 100;
+      else if (inputs.aadtVpd >= 15000) trafficScore = 85;
+      else if (inputs.aadtVpd >= 8000) trafficScore = 70;
+      else if (inputs.aadtVpd >= 4000) trafficScore = 55;
+      else trafficScore = 30;
+    } else {
+      // Suburban/rural — original thresholds
+      if (inputs.aadtVpd >= 30000) trafficScore = 100;
+      else if (inputs.aadtVpd >= 20000) trafficScore = 85;
+      else if (inputs.aadtVpd >= 10000) trafficScore = 70;
+      else if (inputs.aadtVpd >= 5000) trafficScore = 50;
+      else trafficScore = 25;
+    }
   }
   factors.push({
     name: 'Traffic Volume',
     score: trafficScore,
-    weight: 0.22,
-    weightedScore: trafficScore * 0.22,
-    tooltip: 'How many vehicles drive past this location daily (AADT). Higher traffic = more potential EV charging customers. Sites above 20,000 VPD are considered excellent.',
+    weight: 0.18,
+    weightedScore: trafficScore * 0.18,
+    tooltip: `How many vehicles drive past this location daily (AADT). Thresholds adjust for ${isDenseUrban ? 'dense urban' : isUrban ? 'urban' : 'suburban'} context — neighborhood streets naturally have lower counts than highways.`,
     dataSource: 'FHWA HPMS (Highway Performance Monitoring System)',
-    rawValue: inputs.aadtVpd ? `${inputs.aadtVpd.toLocaleString()} VPD` : 'Not available — using estimate',
+    rawValue: inputs.aadtVpd ? `${inputs.aadtVpd.toLocaleString()} VPD${isDenseUrban ? ' (urban-adjusted)' : ''}` : 'Not available — using estimate',
   });
 
   // FACTOR 2: EV Density (13%)
@@ -95,8 +112,8 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   factors.push({
     name: 'EV Density',
     score: evScore,
-    weight: 0.13,
-    weightedScore: evScore * 0.13,
+    weight: 0.15,
+    weightedScore: evScore * 0.15,
     tooltip: 'How many electric vehicles are registered in surrounding zip codes. More EVs nearby means more immediate charging demand without waiting for adoption to grow.',
     dataSource: 'State-level estimate (zip-level data coming soon)',
     rawValue: effectiveEvRegistrations ? `~${effectiveEvRegistrations.toLocaleString()} EVs nearby${isUrban ? ' (urban-adjusted)' : ''}` : 'Using state estimate',
@@ -158,8 +175,8 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   factors.push({
     name: 'Competition Gap',
     score: competitionScore,
-    weight: 0.18,
-    weightedScore: competitionScore * 0.18,
+    weight: 0.15,
+    weightedScore: competitionScore * 0.15,
     tooltip: `How much charging competition exists AND is coming. Thresholds adjust for ${isDenseUrban ? 'dense urban' : isUrban ? 'urban' : 'suburban'} context — in cities, stations are naturally closer together, so we measure relative to what's normal for the area.`,
     dataSource: 'NLR Alternative Fuel Stations API (existing + planned)',
     rawValue: existingText + plannedText + contextText,
@@ -363,8 +380,8 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   factors.push({
     name: 'Demand Overflow',
     score: overflowScore,
-    weight: 0.07,
-    weightedScore: overflowScore * 0.07,
+    weight: 0.12,
+    weightedScore: overflowScore * 0.12,
     tooltip: 'How underserved is this area for fast charging? We weight demand by multi-family housing (apartment residents can\'t charge at home), population density (more rideshare/fleet EVs), and airport proximity (TLC drivers need constant DCFC).',
     dataSource: 'NLR Stations + Census ACS + airport proximity',
     rawValue: `${inputs.totalDcfcPortsWithin5Miles} DCFC ports · ${demandMultiplier.toFixed(1)}x demand (${multiplierLabel})`,
