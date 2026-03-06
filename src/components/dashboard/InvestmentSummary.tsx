@@ -191,14 +191,6 @@ const InvestmentSummary = ({ financials, incentives, stalls, kwhPerStallPerDay, 
           </div>
         )}
 
-        {/* Utilization (read-only — editable in Property Inputs) */}
-        <div className="flex items-center justify-between">
-          <Label className="text-xs text-muted-foreground flex items-center">
-            Est. Charging Utilization
-            <InfoTip text="Average kWh dispensed per stall per day. Adjust this in Property & Charging Inputs above." />
-          </Label>
-          <span className="font-mono text-sm font-semibold text-foreground">{kwhPerStallPerDay} kWh/stall/day</span>
-        </div>
 
         {/* Total Project Cost */}
         <div>
