@@ -191,29 +191,14 @@ const InvestmentSummary = ({ financials, incentives, stalls, kwhPerStallPerDay, 
           </div>
         )}
 
-        {/* Utilization Slider */}
-        {onUtilizationChange && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-muted-foreground flex items-center">
-                Charging Utilization
-                <InfoTip text="Average kWh dispensed per stall per day. 150 = low traffic, 250 = medium (Tesla default), 400 = high-traffic corridor. This directly scales your revenue projection." />
-              </Label>
-              <span className="font-mono text-sm font-bold text-primary">{kwhPerStallPerDay} kWh/stall/day</span>
-            </div>
-            <Slider
-              value={[kwhPerStallPerDay]}
-              onValueChange={([v]) => onUtilizationChange(v)}
-              min={50} max={500} step={25}
-              className="py-2"
-            />
-            <div className="flex justify-between text-[10px] text-muted-foreground/60">
-              <span>Low (50)</span>
-              <span>Medium (250)</span>
-              <span>High (500)</span>
-            </div>
-          </div>
-        )}
+        {/* Utilization (read-only — editable in Property Inputs) */}
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-muted-foreground flex items-center">
+            Est. Charging Utilization
+            <InfoTip text="Average kWh dispensed per stall per day. Adjust this in Property & Charging Inputs above." />
+          </Label>
+          <span className="font-mono text-sm font-semibold text-foreground">{kwhPerStallPerDay} kWh/stall/day</span>
+        </div>
 
         {/* Total Project Cost */}
         <div>
