@@ -151,6 +151,10 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
           <Row label="Total Project Cost" value={fmt(financials.totalProjectCost)} tip="Cost to buy and install all charging equipment before any incentives." />
           <Row label={`Hardware (${stalls} stalls)`} value={fmt(financials.totalHardwareCost)} indent tip="Tesla V4 Supercharger posts at $50,000 each." />
           <Row label="Installation" value={fmt(financials.totalInstallationCost)} indent tip="Site prep, trenching, electrical work. Tesla High Cost estimate." />
+          {financials.electricalUpgradeNeeded && (
+            <Row label="Electrical Upgrade" value={fmt(financials.electricalUpgradeCost[0])} indent
+              tip={`Your electrical service may need upgrading for ${stalls} stalls. Estimate: ${fmt(financials.electricalUpgradeCost[0])}–${fmt(financials.electricalUpgradeCost[1])}. Set your electrical service in Property Inputs to refine this.`} />
+          )}
         </div>
 
         {/* Incentives — collapsible */}
