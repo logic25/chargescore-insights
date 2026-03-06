@@ -53,18 +53,18 @@ const ChargeScoreGauge = ({ score, siteInsights }: ChargeScoreGaugeProps) => {
       animate={{ opacity: 1, scale: 1 }}
       className="glass-card p-6"
     >
-      <div className="mb-4 flex items-center gap-2">
-        <h2 className="font-heading text-sm font-semibold text-foreground">ChargeScore™</h2>
+      <div className="mb-5 flex items-center gap-2">
+        <h2 className="font-heading text-base font-bold text-foreground">ChargeScore™</h2>
         <Tooltip>
           <TooltipTrigger>
-            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+            <Info className="h-4 w-4 text-muted-foreground" />
           </TooltipTrigger>
-          <TooltipContent className="max-w-xs text-xs">
+          <TooltipContent className="max-w-xs text-sm">
             ChargeScore rates this location from 0-100 based on 9 factors: traffic, EV density, competition, dwell time, amenities, parking, grid capacity, incentive eligibility, and demand overflow. Higher is better.
           </TooltipContent>
         </Tooltip>
         {score.grade && (
-          <span className="ml-auto rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-sm font-bold text-primary">
+          <span className="ml-auto rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 font-mono text-base font-bold text-primary">
             {score.grade}
           </span>
         )}
@@ -73,7 +73,7 @@ const ChargeScoreGauge = ({ score, siteInsights }: ChargeScoreGaugeProps) => {
       <div className="flex items-start gap-6">
         {/* Gauge */}
         <div className="relative flex-shrink-0">
-          <svg width="140" height="140" viewBox="0 0 160 160">
+          <svg width="150" height="150" viewBox="0 0 160 160">
             <circle
               cx="80" cy="80" r="70" fill="none" stroke="currentColor"
               className="text-border" strokeWidth="10"
@@ -89,39 +89,39 @@ const ChargeScoreGauge = ({ score, siteInsights }: ChargeScoreGaugeProps) => {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-mono text-3xl font-bold" style={{ color: scoreColor }}>
+            <span className="font-mono text-4xl font-bold" style={{ color: scoreColor }}>
               {displayScore}
             </span>
-            <span className="text-[10px] text-muted-foreground">out of 100</span>
+            <span className="text-xs text-muted-foreground">out of 100</span>
           </div>
         </div>
 
         {/* Factor Breakdown */}
-        <div className="flex-1 space-y-1">
+        <div className="flex-1 space-y-1.5">
           {score.factors.map((factor: ScoreFactor) => (
-            <div key={factor.name} className="group flex items-center gap-1.5">
-              <div className="flex w-[120px] items-center gap-1 flex-shrink-0">
-                <span className="truncate text-[11px] text-muted-foreground">{factor.name}</span>
-                <span className="text-[9px] text-muted-foreground/60">({Math.round(factor.weight * 100)}%)</span>
+            <div key={factor.name} className="group flex items-center gap-2">
+              <div className="flex w-[140px] items-center gap-1 flex-shrink-0">
+                <span className="truncate text-sm text-muted-foreground">{factor.name}</span>
+                <span className="text-xs text-muted-foreground/60">({Math.round(factor.weight * 100)}%)</span>
                 <Tooltip>
                   <TooltipTrigger>
-                    <Info className="h-2.5 w-2.5 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
+                    <Info className="h-3 w-3 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
                   </TooltipTrigger>
-                  <TooltipContent side="left" className="max-w-[280px] text-xs">
+                  <TooltipContent side="left" className="max-w-[300px] text-sm">
                     <p className="font-medium mb-1">{factor.name}</p>
                     <p className="text-muted-foreground">{factor.tooltip}</p>
-                    <p className="mt-1 text-[10px] text-muted-foreground/70">Data: {factor.dataSource}</p>
-                    <p className="text-[10px] text-primary">{factor.rawValue}</p>
+                    <p className="mt-1 text-xs text-muted-foreground/70">Data: {factor.dataSource}</p>
+                    <p className="text-xs text-primary">{factor.rawValue}</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <div className="h-1.5 flex-1 rounded-full bg-muted">
+              <div className="h-2 flex-1 rounded-full bg-muted">
                 <div
                   className={`h-full rounded-full transition-all duration-700 ${barColor(factor.score)}`}
                   style={{ width: `${factor.score}%` }}
                 />
               </div>
-              <span className="w-6 text-right font-mono text-[10px] text-muted-foreground">{factor.score}</span>
+              <span className="w-7 text-right font-mono text-xs font-semibold text-muted-foreground">{factor.score}</span>
             </div>
           ))}
         </div>
@@ -129,45 +129,45 @@ const ChargeScoreGauge = ({ score, siteInsights }: ChargeScoreGaugeProps) => {
 
       {/* Site Insights badges */}
       {siteInsights && (
-        <div className="mt-4 flex flex-wrap gap-1.5">
+        <div className="mt-5 flex flex-wrap gap-2">
           {siteInsights.floodZone && (
-            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+            <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ${
               siteInsights.isHighRisk 
                 ? 'bg-destructive/10 text-destructive border border-destructive/20' 
                 : 'bg-primary/10 text-primary border border-primary/20'
             }`}>
-              {siteInsights.isHighRisk ? <AlertTriangle className="h-2.5 w-2.5" /> : <CheckCircle2 className="h-2.5 w-2.5" />}
+              {siteInsights.isHighRisk ? <AlertTriangle className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
               Flood Zone {siteInsights.floodZone}
             </span>
           )}
           {siteInsights.highwayDistance !== null && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground border border-border">
-              <MapPin className="h-2.5 w-2.5" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground border border-border">
+              <MapPin className="h-3 w-3" />
               {siteInsights.highwayDistance} mi to {siteInsights.highwayName || 'highway'}
             </span>
           )}
           {siteInsights.utilityName && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground border border-border">
-              <Zap className="h-2.5 w-2.5" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground border border-border">
+              <Zap className="h-3 w-3" />
               {siteInsights.utilityName}
             </span>
           )}
           {siteInsights.isDAC && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 text-accent-foreground px-2 py-0.5 text-[10px] font-medium border border-accent/30">
-              <CheckCircle2 className="h-2.5 w-2.5" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 text-accent-foreground px-3 py-1 text-xs font-medium border border-accent/30">
+              <CheckCircle2 className="h-3 w-3" />
               Disadvantaged Community
             </span>
           )}
           {siteInsights.isOnCorridor && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-medium border border-primary/20">
-              <CheckCircle2 className="h-2.5 w-2.5" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium border border-primary/20">
+              <CheckCircle2 className="h-3 w-3" />
               NEVI Corridor
             </span>
           )}
         </div>
       )}
 
-      <p className="mt-4 text-xs text-muted-foreground leading-relaxed">{score.recommendation}</p>
+      <p className="mt-5 text-sm text-muted-foreground leading-relaxed">{score.recommendation}</p>
     </motion.div>
   );
 };
