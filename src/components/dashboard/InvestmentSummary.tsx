@@ -106,133 +106,143 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
         </h2>
       </div>
 
-      <div className="px-5 py-4 space-y-4">
-        {/* Hero: Monthly Profit */}
-        <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-5 py-4">
-          <div>
-            <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Monthly Profit</p>
-            <p className={`font-mono text-4xl font-bold tracking-tight ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {fmt(monthlyProfit)}<span className="text-lg font-semibold text-muted-foreground">/mo</span>
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Annual</p>
-            <p className={`font-mono text-lg font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {fmt(netProfit)}/yr
-            </p>
-          </div>
-        </div>
-
-        {/* Key Metrics Row */}
-        <div className="grid grid-cols-3 gap-3 text-center">
-          <div className="rounded-xl border border-border px-3 py-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Out-of-Pocket</p>
-            <p className={`font-mono text-xl font-bold mt-1 ${outOfPocket <= 0 ? 'text-success' : 'text-foreground'}`}>
-              {fmt(outOfPocket)}
-            </p>
-          </div>
-          <div className="rounded-xl border border-border px-3 py-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Payback</p>
-            <p className="font-mono text-xl font-bold text-foreground mt-1">
-              {isFinite(financials.paybackYears) && financials.paybackYears < 100
-                ? `${financials.paybackYears}yr`
-                : 'N/A'}
-            </p>
-          </div>
-          <div className="rounded-xl border border-border px-3 py-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">15yr NPV</p>
-            <p className={`font-mono text-xl font-bold mt-1 ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
-              {fmt(financials.npv15Year)}
-            </p>
-          </div>
-        </div>
-
-        {/* Project Cost Breakdown */}
-        <div className="space-y-1">
-          <Row label="Total Project Cost" value={fmt(financials.totalProjectCost)} tip="Cost to buy and install all charging equipment before any incentives." />
-          <Row label={`Hardware (${Math.ceil(stalls / 4)} set${Math.ceil(stalls / 4) > 1 ? 's' : ''} × 4 stalls)`} value={fmt(financials.totalHardwareCost)} indent tip="$250,000 per set of 4 (includes V4 posts, V3.5 cabinet, Starlink/LTE, site controller, and commissioning by Tesla)." />
-          <Row label="Installation" value={fmt(financials.totalInstallationCost)} indent tip="Site prep, trenching, electrical work. Installation is a separate expense — Tesla provides a construction manager to support your team. Estimated at $15,000/stall." />
-          {financials.electricalUpgradeNeeded && (
-            <Row label="Electrical Upgrade" value={fmt(financials.electricalUpgradeCost[0])} indent
-              tip={`Your electrical service may need upgrading for ${stalls} stalls. Estimate: ${fmt(financials.electricalUpgradeCost[0])}–${fmt(financials.electricalUpgradeCost[1])}. Set your electrical service in Property Inputs to refine this.`} />
-          )}
-        </div>
-
-        {/* Incentives — collapsible */}
-        <button
-          className="flex w-full items-center justify-between rounded-xl border border-success/20 bg-success/5 px-4 py-3 text-sm transition-colors hover:bg-success/10"
-          onClick={() => setShowIncentives(!showIncentives)}
-        >
-          <span className="flex items-center gap-1.5 font-semibold text-success">
-            {showIncentives ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            Incentives & Credits
-          </span>
-          <span className="font-mono text-sm font-bold text-success">−{fmt(financials.estimatedIncentives)}</span>
-        </button>
-
-        {showIncentives && (
-          <div className="space-y-2 pl-1">
-            {eligibleByLayer.map(({ layer, label, items }) => (
-              <div key={layer} className="space-y-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground/50 ml-2 font-medium">{label}</p>
-                {items.map(inc => (
-                  <IncentiveRow key={inc.id} inc={inc} isAlt={!!inc.isAlternative} />
-                ))}
+      <div className="px-5 py-4">
+        {/* Two-column layout */}
+        <div className="grid gap-5 lg:grid-cols-2">
+          {/* LEFT COLUMN: Profit + Key Metrics */}
+          <div className="space-y-4">
+            {/* Hero: Monthly Profit */}
+            <div className="rounded-xl border border-border bg-muted/20 px-5 py-4">
+              <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Monthly Profit</p>
+              <p className={`font-mono text-4xl font-bold tracking-tight ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {fmt(monthlyProfit)}<span className="text-lg font-semibold text-muted-foreground">/mo</span>
+              </p>
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">Annual</span>
+                  <span className={`font-mono text-lg font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {fmt(netProfit)}/yr
+                  </span>
+                </div>
               </div>
-            ))}
-            {ineligible.length > 0 && (
-              <div className="space-y-1 border-t border-border/50 pt-2">
-                <p className="text-xs uppercase tracking-wider text-destructive/60 ml-2 font-medium">Not eligible</p>
-                {ineligible.map(inc => (
-                  <IncentiveRow key={inc.id} inc={inc} isAlt={false} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Year 1 P&L — collapsible */}
-        <button
-          className="flex w-full items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm transition-colors hover:bg-muted/50"
-          onClick={() => setShowYear1(!showYear1)}
-        >
-          <span className="flex items-center gap-1.5 font-semibold text-muted-foreground">
-            {showYear1 ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            Year 1 P&L Breakdown
-          </span>
-          <span className={`font-mono text-sm font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {fmt(netProfit)}/yr
-          </span>
-        </button>
-
-        {showYear1 && (
-          <div className="space-y-1 pl-1">
-            <Row label="Charging Revenue" value={`${fmt(financials.annualRevenue)}/yr`} valueClass="text-success"
-              tip={`Based on ${Math.round(financials.dailyKwhDcfc)} kWh/day at your retail price.`} />
-            <Row label="Less: Electricity" value={`(${fmt(financials.monthlyElectricityCost * 12)})/yr`} valueClass="text-destructive"
-              tip="Levelized rate — includes demand charges, TOU pricing, and surcharges." />
-            {financials.chargingModel === 'tesla' && financials.teslaServiceFeeAnnual > 0 && (
-              <Row label="Less: Tesla Fee" value={`(${fmt(financials.teslaServiceFeeAnnual)})/yr`} valueClass="text-destructive"
-                tip="$0.10/kWh for network management. Increases 3% per year." />
-            )}
-            {financials.chargingModel !== 'tesla' && (
-              <>
-                {financials.monthlyDemandCharge > 0 && (
-                  <Row label="Less: Demand" value={`(${fmt(financials.monthlyDemandCharge * 12)})/yr`} valueClass="text-destructive" />
-                )}
-                {financials.monthlyNetworkingCost > 0 && (
-                  <Row label="Less: Network" value={`(${fmt(financials.monthlyNetworkingCost * 12)})/yr`} valueClass="text-destructive" />
-                )}
-                {financials.annualMaintenance > 0 && (
-                  <Row label="Less: Maintenance" value={`(${fmt(financials.annualMaintenance)})/yr`} valueClass="text-destructive" />
-                )}
-              </>
-            )}
-            <div className="border-t border-border pt-1.5">
-              <Row label="Net Profit" value={`${fmt(netProfit)}/yr`} valueClass={netProfit >= 0 ? 'text-success' : 'text-destructive'} />
             </div>
+
+            {/* Key Metrics */}
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="rounded-xl border border-border px-3 py-3">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Out-of-Pocket</p>
+                <p className={`font-mono text-xl font-bold mt-1 ${outOfPocket <= 0 ? 'text-success' : 'text-foreground'}`}>
+                  {fmt(outOfPocket)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border px-3 py-3">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Payback</p>
+                <p className="font-mono text-xl font-bold text-foreground mt-1">
+                  {isFinite(financials.paybackYears) && financials.paybackYears < 100
+                    ? `${financials.paybackYears}yr`
+                    : 'N/A'}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border px-3 py-3">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">15yr NPV</p>
+                <p className={`font-mono text-xl font-bold mt-1 ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
+                  {fmt(financials.npv15Year)}
+                </p>
+              </div>
+            </div>
+
+            {/* Incentives — collapsible */}
+            <button
+              className="flex w-full items-center justify-between rounded-xl border border-success/20 bg-success/5 px-4 py-3 text-sm transition-colors hover:bg-success/10"
+              onClick={() => setShowIncentives(!showIncentives)}
+            >
+              <span className="flex items-center gap-1.5 font-semibold text-success">
+                {showIncentives ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                Incentives & Credits
+              </span>
+              <span className="font-mono text-sm font-bold text-success">−{fmt(financials.estimatedIncentives)}</span>
+            </button>
+
+            {showIncentives && (
+              <div className="space-y-2 pl-1">
+                {eligibleByLayer.map(({ layer, label, items }) => (
+                  <div key={layer} className="space-y-1">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground/50 ml-2 font-medium">{label}</p>
+                    {items.map(inc => (
+                      <IncentiveRow key={inc.id} inc={inc} isAlt={!!inc.isAlternative} />
+                    ))}
+                  </div>
+                ))}
+                {ineligible.length > 0 && (
+                  <div className="space-y-1 border-t border-border/50 pt-2">
+                    <p className="text-xs uppercase tracking-wider text-destructive/60 ml-2 font-medium">Not eligible</p>
+                    {ineligible.map(inc => (
+                      <IncentiveRow key={inc.id} inc={inc} isAlt={false} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* RIGHT COLUMN: Costs + Year 1 P&L */}
+          <div className="space-y-4">
+            {/* Project Cost Breakdown */}
+            <div className="rounded-xl border border-border bg-muted/10 px-5 py-4 space-y-1">
+              <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-2">Project Costs</h3>
+              <Row label="Total Project Cost" value={fmt(financials.totalProjectCost)} tip="Cost to buy and install all charging equipment before any incentives." />
+              <Row label={`Hardware (${Math.ceil(stalls / 4)} set${Math.ceil(stalls / 4) > 1 ? 's' : ''} × 4 stalls)`} value={fmt(financials.totalHardwareCost)} indent tip="$250,000 per set of 4 (includes V4 posts, V3.5 cabinet, Starlink/LTE, site controller, and commissioning by Tesla)." />
+              <Row label="Installation" value={fmt(financials.totalInstallationCost)} indent tip="Site prep, trenching, electrical work. Installation is a separate expense — Tesla provides a construction manager to support your team. Estimated at $15,000/stall." />
+              {financials.electricalUpgradeNeeded && (
+                <Row label="Electrical Upgrade" value={fmt(financials.electricalUpgradeCost[0])} indent
+                  tip={`Your electrical service may need upgrading for ${stalls} stalls. Estimate: ${fmt(financials.electricalUpgradeCost[0])}–${fmt(financials.electricalUpgradeCost[1])}. Set your electrical service in Property Inputs to refine this.`} />
+              )}
+            </div>
+
+            {/* Year 1 P&L — collapsible */}
+            <button
+              className="flex w-full items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm transition-colors hover:bg-muted/50"
+              onClick={() => setShowYear1(!showYear1)}
+            >
+              <span className="flex items-center gap-1.5 font-semibold text-muted-foreground">
+                {showYear1 ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                Year 1 P&L Breakdown
+              </span>
+              <span className={`font-mono text-sm font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {fmt(netProfit)}/yr
+              </span>
+            </button>
+
+            {showYear1 && (
+              <div className="rounded-xl border border-border bg-muted/10 px-5 py-4 space-y-1">
+                <Row label="Charging Revenue" value={`${fmt(financials.annualRevenue)}/yr`} valueClass="text-success"
+                  tip={`Based on ${Math.round(financials.dailyKwhDcfc)} kWh/day at your retail price.`} />
+                <Row label="Less: Electricity" value={`(${fmt(financials.monthlyElectricityCost * 12)})/yr`} valueClass="text-destructive"
+                  tip="Levelized rate — includes demand charges, TOU pricing, and surcharges." />
+                {financials.chargingModel === 'tesla' && financials.teslaServiceFeeAnnual > 0 && (
+                  <Row label="Less: Tesla Fee" value={`(${fmt(financials.teslaServiceFeeAnnual)})/yr`} valueClass="text-destructive"
+                    tip="$0.10/kWh for network management. Increases 3% per year." />
+                )}
+                {financials.chargingModel !== 'tesla' && (
+                  <>
+                    {financials.monthlyDemandCharge > 0 && (
+                      <Row label="Less: Demand" value={`(${fmt(financials.monthlyDemandCharge * 12)})/yr`} valueClass="text-destructive" />
+                    )}
+                    {financials.monthlyNetworkingCost > 0 && (
+                      <Row label="Less: Network" value={`(${fmt(financials.monthlyNetworkingCost * 12)})/yr`} valueClass="text-destructive" />
+                    )}
+                    {financials.annualMaintenance > 0 && (
+                      <Row label="Less: Maintenance" value={`(${fmt(financials.annualMaintenance)})/yr`} valueClass="text-destructive" />
+                    )}
+                  </>
+                )}
+                <div className="border-t border-border pt-1.5">
+                  <Row label="Net Profit" value={`${fmt(netProfit)}/yr`} valueClass={netProfit >= 0 ? 'text-success' : 'text-destructive'} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
