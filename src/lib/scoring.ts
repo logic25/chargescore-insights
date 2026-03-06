@@ -67,10 +67,10 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   // Apply urban multiplier — dense urban areas have higher EV concentrations
   // (rideshare/TLC fleets, higher adoption) than state averages reflect
   let effectiveEvRegistrations = inputs.evRegistrations;
-  if (effectiveEvRegistrations !== null && estimatedPopDensity >= 20000) {
-    effectiveEvRegistrations = Math.round(effectiveEvRegistrations * 1.8); // dense urban multiplier
-  } else if (effectiveEvRegistrations !== null && estimatedPopDensity >= 10000) {
-    effectiveEvRegistrations = Math.round(effectiveEvRegistrations * 1.3); // urban multiplier
+  if (effectiveEvRegistrations !== null && isDenseUrban) {
+    effectiveEvRegistrations = Math.round(effectiveEvRegistrations * 1.8);
+  } else if (effectiveEvRegistrations !== null && isUrban) {
+    effectiveEvRegistrations = Math.round(effectiveEvRegistrations * 1.3);
   }
 
   let evScore = 50;
@@ -88,7 +88,7 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     weightedScore: evScore * 0.13,
     tooltip: 'How many electric vehicles are registered in surrounding zip codes. More EVs nearby means more immediate charging demand without waiting for adoption to grow.',
     dataSource: 'State-level estimate (zip-level data coming soon)',
-    rawValue: effectiveEvRegistrations ? `~${effectiveEvRegistrations.toLocaleString()} EVs nearby${estimatedPopDensity >= 10000 ? ' (urban-adjusted)' : ''}` : 'Using state estimate',
+    rawValue: effectiveEvRegistrations ? `~${effectiveEvRegistrations.toLocaleString()} EVs nearby${isUrban ? ' (urban-adjusted)' : ''}` : 'Using state estimate',
   });
 
   // FACTOR 3: Competition Gap (18%)
