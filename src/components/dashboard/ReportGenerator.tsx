@@ -99,6 +99,7 @@ async function generateReport(props: Props): Promise<jsPDF> {
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const totalPages = 6;
   const stalls = site.chargingModel === 'tesla' ? site.teslaStalls : site.l2Chargers + site.dcfcChargers;
+  const sets = Math.ceil(stalls / 4);
 
   // ===== PAGE 1: COVER =====
   pdf.setFillColor(NAVY);
@@ -211,8 +212,13 @@ async function generateReport(props: Props): Promise<jsPDF> {
 
   // Cost breakdown
   y = tableRow(pdf, y, 'Total Project Cost', fmt(financials.totalProjectCost), { bold: true });
-  y = tableRow(pdf, y, `Hardware (${stalls} stalls × $50,000)`, fmt(financials.totalHardwareCost), { indent: 15 });
-  y = tableRow(pdf, y, 'Installation', fmt(financials.totalInstallationCost), { indent: 15 });
+  if (site.chargingModel === 'tesla') {
+    y = tableRow(pdf, y, `Hardware (${sets} set${sets > 1 ? 's' : ''} of 4 × $250,000)`, fmt(financials.totalHardwareCost), { indent: 15 });
+    y = tableRow(pdf, y, `Installation (${stalls} stalls × $15,000)`, fmt(financials.totalInstallationCost), { indent: 15 });
+  } else {
+    y = tableRow(pdf, y, 'Hardware', fmt(financials.totalHardwareCost), { indent: 15 });
+    y = tableRow(pdf, y, 'Installation', fmt(financials.totalInstallationCost), { indent: 15 });
+  }
   y += 8;
 
   // Incentives by layer
@@ -427,8 +433,8 @@ async function generateReport(props: Props): Promise<jsPDF> {
   y += 15;
 
   const compRows = [
-    ['Hardware/Stall', '$50,000', '$85,000–$100,000', '$0 (operator)'],
-    ['Install/Stall', '$50,000', '$40,000–$150,000', '$0 (operator)'],
+    ['Hardware/Stall', '$62,500 (sets of 4)', '$85,000–$100,000', '$0 (operator)'],
+    ['Install/Stall', '$15,000', '$40,000–$150,000', '$0 (operator)'],
     ['Who Owns It', 'You', 'You', 'Operator'],
     ['Revenue', 'You keep minus $0.10/kWh', '100% yours', 'Fixed lease $500–1K/mo'],
     ['Maintenance', 'Tesla ($0 to you)', 'You (~$1,500/yr)', 'Operator'],
