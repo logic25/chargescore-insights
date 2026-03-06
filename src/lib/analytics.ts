@@ -24,25 +24,8 @@ export async function logAnalysis(data: {
     // ignore
   }
 
-  // If user is logged in, persist to database
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from('analyses').insert({
-        user_id: user.id,
-        address: data.address,
-        lat: data.lat,
-        lng: data.lng,
-        state: data.state,
-        charge_score: data.chargeScore,
-        factors: data.factors as any,
-        num_stalls: data.numStalls,
-        predicted_utilization: data.predictedUtilization,
-      });
-    }
-  } catch {
-    // Fail silently — local storage is the fallback
-  }
+  // Database persistence is handled by the explicit "Save Project" action
+  // to avoid creating duplicate entries on every dashboard view.
 }
 
 export function getAnalysisCount(): number {
