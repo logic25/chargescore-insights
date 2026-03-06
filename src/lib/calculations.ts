@@ -716,7 +716,7 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext, nr
     : site.l2Chargers + site.dcfcChargers;
 
   const totalProjectCost = site.chargingModel === 'tesla'
-    ? site.teslaStalls * (TESLA_COST_PER_STALL + TESLA_INSTALL_PER_STALL)
+    ? Math.ceil(site.teslaStalls / TESLA_STALLS_PER_SET) * TESLA_SET_PRICE + site.teslaStalls * TESLA_INSTALL_PER_STALL
     : site.l2Chargers * (L2_HARDWARE_COST + L2_INSTALL_COST) + site.dcfcChargers * (DCFC_HARDWARE_COST + DCFC_INSTALL_COST);
 
   const installCost = site.chargingModel === 'tesla'
