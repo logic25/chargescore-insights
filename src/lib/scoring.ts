@@ -114,12 +114,14 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     score: evScore,
     weight: 0.15,
     weightedScore: evScore * 0.15,
-    tooltip: 'How many electric vehicles are registered in surrounding zip codes. More EVs nearby means more immediate charging demand without waiting for adoption to grow.',
-    dataSource: 'State-level estimate (zip-level data coming soon)',
+    tooltip: 'How many electric vehicles are registered nearby. More EVs = more immediate charging demand.',
+    dataSource: 'County-level estimate (Atlas EV Hub / DOE AFDC)',
     rawValue: effectiveEvRegistrations ? `~${effectiveEvRegistrations.toLocaleString()} EVs nearby${isUrban ? ' (urban-adjusted)' : ''}` : 'Using state estimate',
   });
 
-  // FACTOR 3: Competition Gap (18%)
+  // FACTOR 3: Competition Gap → Market Opportunity (15%)
+  // Blended approach: penalize direct competition, but reward when high station density
+  // coincides with high EV demand (market validation).
 
   let competitionScore = 50;
   if (inputs.nearestDcfcMiles !== null) {
@@ -166,6 +168,19 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     competitionScore = Math.max(competitionScore - 10, 0);
   }
 
+  // Market Validation Bonus: when EV density is high and stations exist nearby,
+  // existing infrastructure validates demand rather than just competing.
+  // The more EVs per existing port, the more underserved the market is.
+  if (effectiveEvRegistrations !== null && effectiveEvRegistrations >= 1500 && inputs.dcfcWithin5Miles > 0) {
+    const evsPerPort = effectiveEvRegistrations / Math.max(1, inputs.totalDcfcPortsWithin5Miles);
+    let validationBonus = 0;
+    if (evsPerPort >= 200) validationBonus = 20;       // Severely underserved despite stations
+    else if (evsPerPort >= 100) validationBonus = 15;   // Clearly underserved
+    else if (evsPerPort >= 50) validationBonus = 10;    // Moderate demand gap
+    else if (evsPerPort >= 25) validationBonus = 5;     // Some demand gap
+    competitionScore = Math.min(competitionScore + validationBonus, 100);
+  }
+
   const existingText = inputs.nearestDcfcMiles ? `${inputs.nearestDcfcMiles.toFixed(1)} mi to nearest` : 'No existing nearby';
   const plannedText = inputs.plannedDcfcWithin5Miles > 0
     ? ` · ${inputs.plannedDcfcWithin5Miles} planned within 5 mi`
@@ -173,12 +188,12 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   const contextText = isDenseUrban ? ' (dense urban)' : isUrban ? ' (urban)' : '';
 
   factors.push({
-    name: 'Competition Gap',
+    name: 'Market Opportunity',
     score: competitionScore,
     weight: 0.15,
     weightedScore: competitionScore * 0.15,
-    tooltip: `How much charging competition exists AND is coming. Thresholds adjust for ${isDenseUrban ? 'dense urban' : isUrban ? 'urban' : 'suburban'} context — in cities, stations are naturally closer together, so we measure relative to what's normal for the area.`,
-    dataSource: 'NLR Alternative Fuel Stations API (existing + planned)',
+    tooltip: `Blended view of competition and demand validation. When EV density is high, existing stations prove the market — we give a bonus instead of a pure penalty. Thresholds adjust for ${isDenseUrban ? 'dense urban' : isUrban ? 'urban' : 'suburban'} context.`,
+    dataSource: 'NREL Alt Fuel Stations + EV registrations',
     rawValue: existingText + plannedText + contextText,
   });
 
