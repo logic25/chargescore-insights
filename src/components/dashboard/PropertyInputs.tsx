@@ -247,7 +247,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
                 <Slider
                   value={[site.teslaStalls]}
                   onValueChange={([v]) => update({ teslaStalls: v })}
-                  min={4} max={24} step={1}
+                  min={4} max={24} step={4}
                   className="flex-1 py-1"
                 />
                 <span className="w-6 text-center font-mono text-sm font-bold text-primary">{site.teslaStalls}</span>
