@@ -123,6 +123,7 @@
 @layer components {
   .glass-card {
     @apply rounded-xl border border-border bg-card shadow-sm;
+    font-size: 14px;
   }
 
   .glass-card-dark {
