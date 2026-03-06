@@ -7,6 +7,8 @@ interface MapViewProps {
   lng: number;
   stations: NearbyStation[];
   loading?: boolean;
+  radius: number;
+  onRadiusChange: (r: number) => void;
 }
 
 const NETWORK_PATTERNS: { pattern: RegExp; color: string }[] = [
@@ -24,7 +26,9 @@ function getStationColor(station: NearbyStation): string {
   return '#888888';
 }
 
-const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
+const RADIUS_OPTIONS = [5, 10, 15];
+
+const MapView = ({ lat, lng, stations, loading, radius, onRadiusChange }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -36,7 +40,7 @@ const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
       mapRef.current = null;
     }
 
-    const map = L.map(containerRef.current).setView([lat, lng], 13);
+    const map = L.map(containerRef.current).setView([lat, lng], radius <= 5 ? 13 : radius <= 10 ? 11 : 10);
     mapRef.current = map;
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -76,7 +80,7 @@ const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
         );
     });
 
-    // Fix tiles when tab becomes visible (container goes from 0 to real size)
+    // Fix tiles when tab becomes visible
     const observer = new ResizeObserver(() => {
       map.invalidateSize();
     });
@@ -87,17 +91,41 @@ const MapView = ({ lat, lng, stations, loading }: MapViewProps) => {
       map.remove();
       mapRef.current = null;
     };
-  }, [lat, lng, stations]);
+  }, [lat, lng, stations, radius]);
 
   return (
     <div className="overflow-hidden h-full flex flex-col">
       <div className="flex items-center justify-between border-b border-border p-4">
-        <h2 className="font-heading text-sm font-semibold text-foreground">Competition Map</h2>
-        <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#ef4444' }} /> Tesla</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#3b82f6' }} /> ChargePoint/Blink</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#22c55e' }} /> EVgo/EA</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#888' }} /> Other</span>
+        <h2 className="font-heading text-sm font-semibold text-foreground">
+          Competition Map
+          <span className="ml-1.5 font-mono text-xs font-normal text-muted-foreground">
+            ({stations.length} stations)
+          </span>
+        </h2>
+        <div className="flex items-center gap-3">
+          {/* Radius selector */}
+          <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+            {RADIUS_OPTIONS.map((r) => (
+              <button
+                key={r}
+                onClick={() => onRadiusChange(r)}
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  radius === r
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {r} mi
+              </button>
+            ))}
+          </div>
+          {/* Legend */}
+          <div className="hidden sm:flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#ef4444' }} /> Tesla</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#3b82f6' }} /> ChargePoint/Blink</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#22c55e' }} /> EVgo/EA</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: '#888' }} /> Other</span>
+          </div>
         </div>
       </div>
       <div className="relative flex-1 min-h-0">
