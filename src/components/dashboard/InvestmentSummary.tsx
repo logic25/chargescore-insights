@@ -150,8 +150,8 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
         {/* Project Cost Breakdown */}
         <div className="space-y-1">
           <Row label="Total Project Cost" value={fmt(financials.totalProjectCost)} tip="Cost to buy and install all charging equipment before any incentives." />
-          <Row label={`Hardware (${stalls} stalls)`} value={fmt(financials.totalHardwareCost)} indent tip="Tesla V4 Supercharger posts at $50,000 each." />
-          <Row label="Installation" value={fmt(financials.totalInstallationCost)} indent tip="Site prep, trenching, electrical work. Tesla High Cost estimate." />
+          <Row label={`Hardware (${Math.ceil(stalls / 4)} set${Math.ceil(stalls / 4) > 1 ? 's' : ''} × 4 stalls)`} value={fmt(financials.totalHardwareCost)} indent tip="$250,000 per set of 4 (includes V4 posts, V3.5 cabinet, Starlink/LTE, site controller, and commissioning by Tesla)." />
+          <Row label="Installation" value={fmt(financials.totalInstallationCost)} indent tip="Site prep, trenching, electrical work. Installation is a separate expense — Tesla provides a construction manager to support your team. Estimated at $15,000/stall." />
           {financials.electricalUpgradeNeeded && (
             <Row label="Electrical Upgrade" value={fmt(financials.electricalUpgradeCost[0])} indent
               tip={`Your electrical service may need upgrading for ${stalls} stalls. Estimate: ${fmt(financials.electricalUpgradeCost[0])}–${fmt(financials.electricalUpgradeCost[1])}. Set your electrical service in Property Inputs to refine this.`} />

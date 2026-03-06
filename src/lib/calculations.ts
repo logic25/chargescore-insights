@@ -19,9 +19,10 @@ const MAINTENANCE_RATE = 0.03;
 const L2_PEAK_KW = 7.7;
 const DCFC_PEAK_KW = 150;
 
-// Tesla Supercharger for Business constants — aligned with Tesla ROI Calculator
-const TESLA_COST_PER_STALL = 50000;      // BOM per V4 Post (Source: Tesla V4 Canvas 2025)
-const TESLA_INSTALL_PER_STALL = 50000;    // Installation per charger (Tesla High Cost estimate)
+// Tesla Supercharger for Business constants — Tesla V4 Canvas Program 2025
+const TESLA_SET_PRICE = 250_000;          // Per set of 4: 4x V4 posts + V3.5 cabinet + Starlink/LTE + site controller + commissioning
+const TESLA_STALLS_PER_SET = 4;
+const TESLA_INSTALL_PER_STALL = 15_000;   // Site prep, trenching, electrical (separate from hardware — Tesla provides construction manager)
 const TESLA_KWH_PER_STALL_PER_DAY = 250;  // Medium utilization (Source: Tesla ROI Calculator)
 const TESLA_PEAK_KW_PER_STALL = 325;      // V4 max output kW (kept for reference only)
 const TESLA_UTILIZATION_GROWTH = 1.07;     // 7% YoY utilization growth
@@ -63,8 +64,9 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
 
   const totalAnnualOperatingCost = (monthlyElectricityCost * 12) + teslaServiceFeeAnnual;
 
-  // Capital costs
-  const totalHardwareCost = stalls * TESLA_COST_PER_STALL;
+  // Capital costs — Tesla sells in sets of 4
+  const sets = Math.ceil(stalls / TESLA_STALLS_PER_SET);
+  const totalHardwareCost = sets * TESLA_SET_PRICE;
   const totalInstallationCost = stalls * TESLA_INSTALL_PER_STALL;
 
   // Only flag upgrade for KNOWN insufficient service — "Unknown" means we don't know, so don't assume a cost
