@@ -255,6 +255,33 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
             </div>
           </div>
 
+          {/* Row 3b: Charging Utilization */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                Charging Utilization
+                <Tooltip>
+                  <TooltipTrigger><Info className="h-2.5 w-2.5 text-muted-foreground/50" /></TooltipTrigger>
+                  <TooltipContent className="max-w-[240px] text-xs">
+                    Average kWh dispensed per stall per day. 150 = low traffic, 250 = medium (Tesla default), 400+ = high-traffic corridor. Directly scales revenue.
+                  </TooltipContent>
+                </Tooltip>
+              </Label>
+              <span className="font-mono text-[10px] text-primary font-bold">{site.kwhPerStallPerDay} kWh/stall/day</span>
+            </div>
+            <Slider
+              value={[site.kwhPerStallPerDay]}
+              onValueChange={([v]) => update({ kwhPerStallPerDay: v })}
+              min={50} max={500} step={25}
+              className="py-1"
+            />
+            <div className="flex justify-between text-[9px] text-muted-foreground/60">
+              <span>Low (50)</span>
+              <span>Medium (250)</span>
+              <span>High (500)</span>
+            </div>
+          </div>
+
           {/* Row 4: Retail Price + Electricity Cost + Tesla Fee */}
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1">

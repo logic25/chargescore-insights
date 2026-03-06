@@ -64,6 +64,7 @@ const Dashboard = () => {
 
   const [stations, setStations] = useState<NearbyStation[]>([]);
   const [stationsLoading, setStationsLoading] = useState(true);
+  const [stationRadius, setStationRadius] = useState(10);
   const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('main');
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
   const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
@@ -102,10 +103,10 @@ const Dashboard = () => {
   // Fetch existing stations
   useEffect(() => {
     setStationsLoading(true);
-    fetchNearbyStations(site.lat, site.lng, 5)
+    fetchNearbyStations(site.lat, site.lng, stationRadius)
       .then(setStations)
       .finally(() => setStationsLoading(false));
-  }, [site.lat, site.lng]);
+  }, [site.lat, site.lng, stationRadius]);
 
   useEffect(() => { fetchPlannedStations(site.lat, site.lng, 5).then(setPlannedData); }, [site.lat, site.lng]);
   useEffect(() => { fetchCensusTractFips(site.lat, site.lng).then(setCensusTractFips); }, [site.lat, site.lng]);
@@ -281,7 +282,7 @@ const Dashboard = () => {
                 <SiteAerial lat={site.lat} lng={site.lng} onSpotsCounted={handleSpotsCounted} onSpotsConfirmed={handleSpotsConfirmed} />
               </TabsContent>
               <TabsContent value="competition" className="mt-0 flex-1 min-h-0">
-                <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} />
+                <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} radius={stationRadius} onRadiusChange={setStationRadius} />
               </TabsContent>
             </Tabs>
           </div>
@@ -301,7 +302,13 @@ const Dashboard = () => {
             />
 
             {/* Parking Impact */}
-            <ParkingImpact analysis={parking} />
+            <ParkingImpact
+              totalSpaces={site.totalParkingSpaces}
+              stalls={site.teslaStalls}
+              propertyType={site.propertyType}
+              peakUtilization={site.peakUtilization}
+              onPeakUtilizationChange={(v) => setSite(prev => ({ ...prev, peakUtilization: v }))}
+            />
           </div>
         </div>
 

@@ -4,7 +4,7 @@ import { haversineDistance } from '@/lib/geo';
 const NREL_API_KEY = 'ttwrfmgTXzqUEZctNUcKtCbN2gnJhnST68fj6Oe9';
 const NREL_BASE = 'https://developer.nrel.gov/api/alt-fuel-stations/v1/nearest.json';
 
-export async function fetchNearbyStations(lat: number, lng: number, radiusMiles: number = 5): Promise<NearbyStation[]> {
+export async function fetchNearbyStations(lat: number, lng: number, radiusMiles: number = 10): Promise<NearbyStation[]> {
   const params = new URLSearchParams({
     api_key: NREL_API_KEY,
     fuel_type: 'ELEC',
