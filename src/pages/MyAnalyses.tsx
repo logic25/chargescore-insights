@@ -82,9 +82,9 @@ const MyAnalyses = () => {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <Zap className="h-5 w-5 text-primary" />
-            <span className="font-heading text-lg font-bold">My Analyses</span>
+            <span className="font-heading text-lg font-bold">My Projects</span>
           </div>
-          <span className="text-sm text-muted-foreground">{analyses.length} saved</span>
+          <span className="text-sm text-muted-foreground">{analyses.length} projects</span>
         </div>
       </header>
 
@@ -92,7 +92,7 @@ const MyAnalyses = () => {
         {analyses.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <MapPin className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <h2 className="font-heading text-xl font-bold text-foreground">No analyses yet</h2>
+            <h2 className="font-heading text-xl font-bold text-foreground">No projects yet</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Search for an address on the home page to run your first site analysis.
             </p>

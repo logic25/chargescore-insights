@@ -67,7 +67,8 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
   const totalHardwareCost = stalls * TESLA_COST_PER_STALL;
   const totalInstallationCost = stalls * TESLA_INSTALL_PER_STALL;
 
-  const needsUpgrade = (site.electricalService === 'unknown' || site.electricalService === '200a-208v' || site.electricalService === '400a-208v') && stalls > 4;
+  // Only flag upgrade for KNOWN insufficient service — "Unknown" means we don't know, so don't assume a cost
+  const needsUpgrade = (site.electricalService === '200a-208v' || site.electricalService === '400a-208v') && stalls > 4;
   const electricalUpgradeCost: [number, number] = needsUpgrade ? [75000, 150000] : [0, 0];
 
   const totalProjectCost = totalHardwareCost + totalInstallationCost + (needsUpgrade ? electricalUpgradeCost[0] : 0);
@@ -146,7 +147,7 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
   const installationCostDcfc = site.dcfcChargers * DCFC_INSTALL_COST;
   const totalInstallationCost = installationCostL2 + installationCostDcfc;
 
-  const needsUpgrade = (site.electricalService === 'unknown' || site.electricalService === '200a-208v' || site.electricalService === '400a-208v') && site.dcfcChargers > 2;
+  const needsUpgrade = (site.electricalService === '200a-208v' || site.electricalService === '400a-208v') && site.dcfcChargers > 2;
   const electricalUpgradeCost: [number, number] = needsUpgrade ? [75000, 150000] : [0, 0];
 
   const monthlyElectricityCost = totalDailyKwh * 30 * site.electricityCostPerKwh;
