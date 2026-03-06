@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, DollarSign, BarChart3, ChevronDown, Info } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, DollarSign, BarChart3, ChevronDown, Info, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
 import { fetchNearbyStations } from '@/lib/api/stations';
 import { fetchStateIncentives, type NrelIncentive } from '@/lib/api/incentives';
@@ -40,6 +43,8 @@ const fmt = (n: number) => {
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [saving, setSaving] = useState(false);
 
   const [site, setSite] = useState<SiteAnalysis>({
     address: searchParams.get('address') || '123 Main St, New York, NY',
@@ -196,6 +201,46 @@ const Dashboard = () => {
   const parking = useMemo(() => calculateParkingImpact(site), [site]);
   const demandCharge = useMemo(() => calculateDemandCharge(site), [site]);
 
+  const handleSaveProject = async () => {
+    if (!user) {
+      toast.error('Sign in to save projects');
+      navigate('/auth');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data: existing } = await supabase
+        .from('analyses')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('address', site.address)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        toast.info('This site is already saved in your projects.');
+      } else {
+        const { error } = await supabase.from('analyses').insert({
+          user_id: user.id,
+          address: site.address,
+          lat: site.lat,
+          lng: site.lng,
+          state: site.state,
+          charge_score: chargeScore.totalScore,
+          factors: Object.fromEntries(chargeScore.factors.map(f => [f.name, f.score])) as any,
+          num_stalls: site.teslaStalls,
+          predicted_utilization: revenueProjection.utilization,
+        });
+        if (error) throw error;
+        toast.success('Project saved!');
+      }
+      navigate('/my-analyses');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (chargeScore.totalScore > 0) {
       void logAnalysis({
@@ -256,6 +301,12 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:block truncate max-w-[400px]">{site.address}</span>
+            {gateUnlocked && user && (
+              <Button size="sm" variant="default" onClick={handleSaveProject} disabled={saving}>
+                <Save className="mr-1 h-4 w-4" />
+                {saving ? 'Saving…' : 'Save Project'}
+              </Button>
+            )}
             {gateUnlocked && (
               <ReportGenerator
                 site={site} score={chargeScore} financials={financials}
