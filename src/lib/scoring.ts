@@ -64,12 +64,21 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   });
 
   // FACTOR 2: EV Density (13%)
+  // Apply urban multiplier — dense urban areas have higher EV concentrations
+  // (rideshare/TLC fleets, higher adoption) than state averages reflect
+  let effectiveEvRegistrations = inputs.evRegistrations;
+  if (effectiveEvRegistrations !== null && estimatedPopDensity >= 20000) {
+    effectiveEvRegistrations = Math.round(effectiveEvRegistrations * 1.8); // dense urban multiplier
+  } else if (effectiveEvRegistrations !== null && estimatedPopDensity >= 10000) {
+    effectiveEvRegistrations = Math.round(effectiveEvRegistrations * 1.3); // urban multiplier
+  }
+
   let evScore = 50;
-  if (inputs.evRegistrations !== null) {
-    if (inputs.evRegistrations >= 3000) evScore = 100;
-    else if (inputs.evRegistrations >= 1500) evScore = 80;
-    else if (inputs.evRegistrations >= 500) evScore = 60;
-    else if (inputs.evRegistrations >= 100) evScore = 40;
+  if (effectiveEvRegistrations !== null) {
+    if (effectiveEvRegistrations >= 3000) evScore = 100;
+    else if (effectiveEvRegistrations >= 1500) evScore = 80;
+    else if (effectiveEvRegistrations >= 500) evScore = 60;
+    else if (effectiveEvRegistrations >= 100) evScore = 40;
     else evScore = 20;
   }
   factors.push({
@@ -79,7 +88,7 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     weightedScore: evScore * 0.13,
     tooltip: 'How many electric vehicles are registered in surrounding zip codes. More EVs nearby means more immediate charging demand without waiting for adoption to grow.',
     dataSource: 'State-level estimate (zip-level data coming soon)',
-    rawValue: inputs.evRegistrations ? `${inputs.evRegistrations.toLocaleString()} EVs nearby` : 'Using state estimate',
+    rawValue: effectiveEvRegistrations ? `~${effectiveEvRegistrations.toLocaleString()} EVs nearby${estimatedPopDensity >= 10000 ? ' (urban-adjusted)' : ''}` : 'Using state estimate',
   });
 
   // FACTOR 3: Competition Gap (18%)
