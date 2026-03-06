@@ -15,6 +15,13 @@ const MyAnalyses = () => {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<{ formatted: string; lat: number; lng: number; stateCode: string } | null>(null);
+
+  const handleAnalyze = () => {
+    if (selectedAddress) {
+      navigate(`/dashboard?address=${encodeURIComponent(selectedAddress.formatted)}&lat=${selectedAddress.lat}&lng=${selectedAddress.lng}&state=${selectedAddress.stateCode}`);
+    }
+  };
 
   useEffect(() => {
     if (authLoading) return;
