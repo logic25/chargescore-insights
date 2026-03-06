@@ -83,10 +83,16 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   });
 
   // FACTOR 3: Competition Gap (18%)
-  // Use population density to determine urban context for thresholds
-  const effectivePop = inputs.popDensity ?? 3000;
-  const isUrban = effectivePop >= 10000;
-  const isDenseUrban = effectivePop >= 20000;
+  // Determine urban context using population density (with fallbacks)
+  const estimatedPopDensity = inputs.popDensity ?? (() => {
+    const zip = inputs.zipCode || '';
+    const state = inputs.state || '';
+    if (state === 'NY' && (zip.startsWith('10') || zip.startsWith('11'))) return 25000;
+    if (['NY', 'CA', 'MA', 'NJ', 'IL'].includes(state)) return 8000;
+    return 3000;
+  })();
+  const isUrban = estimatedPopDensity >= 10000;
+  const isDenseUrban = estimatedPopDensity >= 20000;
 
   let competitionScore = 50;
   if (inputs.nearestDcfcMiles !== null) {
