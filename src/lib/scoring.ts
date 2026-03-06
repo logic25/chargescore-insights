@@ -312,9 +312,16 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     overflowScore = 75;
   }
 
-  const multiplierLabel = demandMultiplier >= 3.0 ? 'Very High (dense urban + airport + apartments)'
-    : demandMultiplier >= 2.0 ? 'High (urban + apartments or airport)'
-    : demandMultiplier >= 1.5 ? 'Moderate (some urban factors)'
+  // Build dynamic label based on actual contributing factors
+  const demandFactors: string[] = [];
+  if (effectivePopDensity >= 20000) demandFactors.push('dense urban');
+  else if (effectivePopDensity >= 10000) demandFactors.push('urban');
+  if (effectiveMultiFamilyPct >= 40) demandFactors.push('apartments');
+  if (inputs.nearestMajorAirportMiles !== null && inputs.nearestMajorAirportMiles <= 15) {
+    demandFactors.push(`airport ${inputs.nearestMajorAirportMiles.toFixed(0)} mi`);
+  }
+  const multiplierLabel = demandFactors.length > 0
+    ? `${demandMultiplier >= 3.0 ? 'Very High' : demandMultiplier >= 2.0 ? 'High' : 'Moderate'} (${demandFactors.join(' + ')})`
     : 'Low (suburban — most EVs charge at home)';
 
   factors.push({
