@@ -80,6 +80,47 @@ const Dashboard = () => {
     setGateUnlocked(true);
   }, []);
 
+  const handleSaveProject = useCallback(async () => {
+    if (!user) {
+      toast.error('Sign in to save projects');
+      navigate('/auth');
+      return;
+    }
+    setSaving(true);
+    try {
+      // Check if already saved (same address + user)
+      const { data: existing } = await supabase
+        .from('analyses')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('address', site.address)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        toast.info('This site is already saved in your projects.');
+      } else {
+        const { error } = await supabase.from('analyses').insert({
+          user_id: user.id,
+          address: site.address,
+          lat: site.lat,
+          lng: site.lng,
+          state: site.state,
+          charge_score: chargeScore.totalScore,
+          factors: Object.fromEntries(chargeScore.factors.map(f => [f.name, f.score])) as any,
+          num_stalls: site.teslaStalls,
+          predicted_utilization: revenueProjection.utilization,
+        });
+        if (error) throw error;
+        toast.success('Project saved!');
+      }
+      navigate('/my-analyses');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  }, [user, site, chargeScore, revenueProjection, navigate]);
+
   // Scoring data state
   const [plannedData, setPlannedData] = useState<PlannedStationData>({ plannedCount: 0, totalPlannedPorts: 0, nearestPlannedMiles: null });
   const [censusTractFips, setCensusTractFips] = useState<string | null>(null);
