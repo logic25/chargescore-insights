@@ -20,11 +20,11 @@ const fmt = (n: number) => {
 const InfoTip = ({ text }: { text: string }) => (
   <Tooltip>
     <TooltipTrigger asChild>
-      <button type="button" className="ml-1 inline-flex text-muted-foreground hover:text-primary transition-colors">
-        <Info className="h-3 w-3" />
+      <button type="button" className="ml-1.5 inline-flex text-muted-foreground hover:text-primary transition-colors">
+        <Info className="h-3.5 w-3.5" />
       </button>
     </TooltipTrigger>
-    <TooltipContent className="max-w-xs text-xs leading-relaxed">{text}</TooltipContent>
+    <TooltipContent className="max-w-xs text-sm leading-relaxed">{text}</TooltipContent>
   </Tooltip>
 );
 
@@ -32,9 +32,9 @@ const LAYER_LABELS: Record<string, string> = { federal: 'Federal', state: 'State
 const LAYER_ORDER: string[] = ['federal', 'state', 'utility'];
 
 const EligibilityBadge = ({ eligible }: { eligible: boolean | null }) => {
-  if (eligible === false) return <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-destructive"><X className="h-2.5 w-2.5" />No</span>;
-  if (eligible === null) return <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-600"><AlertTriangle className="h-2.5 w-2.5" />Verify</span>;
-  return <span className="inline-flex items-center gap-0.5 rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-success"><Check className="h-2.5 w-2.5" />Yes</span>;
+  if (eligible === false) return <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold uppercase text-destructive"><X className="h-3 w-3" />No</span>;
+  if (eligible === null) return <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold uppercase text-amber-600"><AlertTriangle className="h-3 w-3" />Verify</span>;
+  return <span className="inline-flex items-center gap-0.5 rounded-full bg-success/10 px-2 py-0.5 text-xs font-semibold uppercase text-success"><Check className="h-3 w-3" />Yes</span>;
 };
 
 const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
@@ -43,27 +43,27 @@ const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
   const nrelId = isNrel ? inc.id.replace('nrel-', '') : null;
   const linkUrl = inc.sourceUrl || (isNrel && nrelId ? `https://afdc.energy.gov/laws/${nrelId}` : null);
   return (
-    <div className={`flex items-center justify-between gap-2 rounded px-2 py-1.5 ${ineligible ? 'opacity-50' : isAlt ? 'bg-muted/20' : 'bg-success/5'}`}>
-      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+    <div className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 ${ineligible ? 'opacity-50' : isAlt ? 'bg-muted/20' : 'bg-success/5'}`}>
+      <div className="flex items-center gap-2 min-w-0 flex-1">
         <EligibilityBadge eligible={inc.eligible} />
-        <span className={`text-xs truncate ${ineligible ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+        <span className={`text-sm truncate ${ineligible ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
           {isAlt && !ineligible ? `or: ${inc.name}` : inc.name}
         </span>
         {linkUrl && (
           <a href={linkUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 flex-shrink-0">
-            <ExternalLink className="h-2.5 w-2.5" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </a>
         )}
         {inc.details && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Info className="h-2.5 w-2.5 text-muted-foreground/40 cursor-help flex-shrink-0" />
+              <Info className="h-3 w-3 text-muted-foreground/40 cursor-help flex-shrink-0" />
             </TooltipTrigger>
-            <TooltipContent className="max-w-sm text-xs leading-relaxed">{inc.details}</TooltipContent>
+            <TooltipContent className="max-w-sm text-sm leading-relaxed">{inc.details}</TooltipContent>
           </Tooltip>
         )}
       </div>
-      <span className={`font-mono text-xs font-semibold whitespace-nowrap ${ineligible ? 'text-muted-foreground line-through' : isAlt ? 'text-muted-foreground' : 'text-success'}`}>
+      <span className={`font-mono text-sm font-bold whitespace-nowrap ${ineligible ? 'text-muted-foreground line-through' : isAlt ? 'text-muted-foreground' : 'text-success'}`}>
         {ineligible ? '$0' : inc.amount}
       </span>
     </div>
@@ -71,13 +71,13 @@ const IncentiveRow = ({ inc, isAlt }: { inc: Incentive; isAlt: boolean }) => {
 };
 
 const Row = ({ label, value, valueClass = 'text-foreground', tip, indent = false }: { label: string; value: string; valueClass?: string; tip?: string; indent?: boolean }) => (
-  <div className={`flex items-center justify-between ${indent ? 'ml-3' : ''}`}>
-    <span className={`text-xs text-muted-foreground flex items-center`}>
-      {indent && <span className="mr-1 text-muted-foreground/40">└</span>}
+  <div className={`flex items-center justify-between py-1 ${indent ? 'ml-4' : ''}`}>
+    <span className={`text-sm text-muted-foreground flex items-center`}>
+      {indent && <span className="mr-1.5 text-muted-foreground/40">└</span>}
       {label}
       {tip && <InfoTip text={tip} />}
     </span>
-    <span className={`font-mono text-xs font-semibold ${valueClass}`}>{value}</span>
+    <span className={`font-mono text-sm font-bold ${valueClass}`}>{value}</span>
   </div>
 );
 
@@ -100,48 +100,48 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
 
   return (
     <div className="glass-card">
-      <div className="border-b border-border px-4 py-3">
-        <h2 className="font-heading text-sm font-semibold uppercase tracking-wider text-foreground">
+      <div className="border-b border-border px-5 py-4">
+        <h2 className="font-heading text-base font-bold uppercase tracking-wider text-foreground">
           Investment Summary
         </h2>
       </div>
 
-      <div className="px-4 py-3 space-y-2.5">
+      <div className="px-5 py-4 space-y-4">
         {/* Hero: Monthly Profit */}
-        <div className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-4 py-3">
+        <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-5 py-4">
           <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Monthly Profit</p>
-            <p className={`font-mono text-3xl font-bold ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {fmt(monthlyProfit)}<span className="text-base font-semibold text-muted-foreground">/mo</span>
+            <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Monthly Profit</p>
+            <p className={`font-mono text-4xl font-bold tracking-tight ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {fmt(monthlyProfit)}<span className="text-lg font-semibold text-muted-foreground">/mo</span>
             </p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Annual</p>
-            <p className={`font-mono text-sm font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Annual</p>
+            <p className={`font-mono text-lg font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
               {fmt(netProfit)}/yr
             </p>
           </div>
         </div>
 
         {/* Key Metrics Row */}
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-lg border border-border p-2.5">
-            <p className="text-[11px] uppercase text-muted-foreground">Out-of-Pocket</p>
-            <p className={`font-mono text-base font-bold ${outOfPocket <= 0 ? 'text-success' : 'text-foreground'}`}>
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="rounded-xl border border-border px-3 py-3">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Out-of-Pocket</p>
+            <p className={`font-mono text-xl font-bold mt-1 ${outOfPocket <= 0 ? 'text-success' : 'text-foreground'}`}>
               {fmt(outOfPocket)}
             </p>
           </div>
-          <div className="rounded-lg border border-border p-2.5">
-            <p className="text-[11px] uppercase text-muted-foreground">Payback</p>
-            <p className="font-mono text-base font-bold text-foreground">
+          <div className="rounded-xl border border-border px-3 py-3">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Payback</p>
+            <p className="font-mono text-xl font-bold text-foreground mt-1">
               {isFinite(financials.paybackYears) && financials.paybackYears < 100
                 ? `${financials.paybackYears}yr`
                 : 'N/A'}
             </p>
           </div>
-          <div className="rounded-lg border border-border p-2.5">
-            <p className="text-[11px] uppercase text-muted-foreground">15yr NPV</p>
-            <p className={`font-mono text-base font-bold ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
+          <div className="rounded-xl border border-border px-3 py-3">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">15yr NPV</p>
+            <p className={`font-mono text-xl font-bold mt-1 ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
               {fmt(financials.npv15Year)}
             </p>
           </div>
@@ -160,29 +160,29 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
 
         {/* Incentives — collapsible */}
         <button
-          className="flex w-full items-center justify-between rounded-lg border border-success/20 bg-success/5 px-3 py-2 text-xs transition-colors hover:bg-success/10"
+          className="flex w-full items-center justify-between rounded-xl border border-success/20 bg-success/5 px-4 py-3 text-sm transition-colors hover:bg-success/10"
           onClick={() => setShowIncentives(!showIncentives)}
         >
-          <span className="flex items-center gap-1 font-medium text-success">
-            {showIncentives ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          <span className="flex items-center gap-1.5 font-semibold text-success">
+            {showIncentives ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             Incentives & Credits
           </span>
-          <span className="font-mono font-bold text-success">−{fmt(financials.estimatedIncentives)}</span>
+          <span className="font-mono text-sm font-bold text-success">−{fmt(financials.estimatedIncentives)}</span>
         </button>
 
         {showIncentives && (
-          <div className="space-y-1.5 pl-1">
+          <div className="space-y-2 pl-1">
             {eligibleByLayer.map(({ layer, label, items }) => (
-              <div key={layer} className="space-y-0.5">
-                <p className="text-[9px] uppercase tracking-wider text-muted-foreground/50 ml-1">{label}</p>
+              <div key={layer} className="space-y-1">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground/50 ml-2 font-medium">{label}</p>
                 {items.map(inc => (
                   <IncentiveRow key={inc.id} inc={inc} isAlt={!!inc.isAlternative} />
                 ))}
               </div>
             ))}
             {ineligible.length > 0 && (
-              <div className="space-y-0.5 border-t border-border/50 pt-1">
-                <p className="text-[9px] uppercase tracking-wider text-destructive/60 ml-1">Not eligible</p>
+              <div className="space-y-1 border-t border-border/50 pt-2">
+                <p className="text-xs uppercase tracking-wider text-destructive/60 ml-2 font-medium">Not eligible</p>
                 {ineligible.map(inc => (
                   <IncentiveRow key={inc.id} inc={inc} isAlt={false} />
                 ))}
@@ -193,14 +193,14 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
 
         {/* Year 1 P&L — collapsible */}
         <button
-          className="flex w-full items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs transition-colors hover:bg-muted/50"
+          className="flex w-full items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm transition-colors hover:bg-muted/50"
           onClick={() => setShowYear1(!showYear1)}
         >
-          <span className="flex items-center gap-1 text-muted-foreground">
-            {showYear1 ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          <span className="flex items-center gap-1.5 font-semibold text-muted-foreground">
+            {showYear1 ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             Year 1 P&L Breakdown
           </span>
-          <span className={`font-mono font-semibold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+          <span className={`font-mono text-sm font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
             {fmt(netProfit)}/yr
           </span>
         </button>
@@ -228,7 +228,7 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
                 )}
               </>
             )}
-            <div className="border-t border-border pt-1">
+            <div className="border-t border-border pt-1.5">
               <Row label="Net Profit" value={`${fmt(netProfit)}/yr`} valueClass={netProfit >= 0 ? 'text-success' : 'text-destructive'} />
             </div>
           </div>
