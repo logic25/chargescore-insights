@@ -128,17 +128,17 @@ const Dashboard = () => {
   useEffect(() => { fetchNearestHighway(site.lat, site.lng).then(setHighwayProximity); }, [site.lat, site.lng]);
 
   const stationMetrics = useMemo(() => {
-    const dcfcStations = stations.filter(s => s.chargerType === 'DCFC' || s.chargerType === 'Tesla');
-    const nearestDcfc = dcfcStations.length > 0
-      ? dcfcStations.reduce((min, s) => s.distanceMiles < min.distanceMiles ? s : min)
+    const allDcfc = stations.filter(s => s.chargerType === 'DCFC' || s.chargerType === 'Tesla');
+    const nearestDcfc = allDcfc.length > 0
+      ? allDcfc.reduce((min, s) => s.distanceMiles < min.distanceMiles ? s : min)
       : null;
-    const totalDcfcPorts = stations.reduce((sum, s) =>
-      (s.chargerType === 'DCFC' || s.chargerType === 'Tesla') ? sum + s.numPorts : sum, 0
-    );
+    // Filter to actual 5-mile radius for scoring (stations may be fetched at 10mi for map)
+    const dcfcWithin5 = allDcfc.filter(s => s.distanceMiles <= 5);
+    const totalDcfcPorts5mi = dcfcWithin5.reduce((sum, s) => sum + s.numPorts, 0);
     return {
       nearestDcfcMiles: nearestDcfc?.distanceMiles ?? null,
-      dcfcWithin5Miles: dcfcStations.length,
-      totalDcfcPortsWithin5Miles: totalDcfcPorts,
+      dcfcWithin5Miles: dcfcWithin5.length,
+      totalDcfcPortsWithin5Miles: totalDcfcPorts5mi,
     };
   }, [stations]);
 

@@ -83,18 +83,51 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   });
 
   // FACTOR 3: Competition Gap (18%)
+  // Use population density to determine urban context for thresholds
+  const effectivePop = inputs.popDensity ?? 3000;
+  const isUrban = effectivePop >= 10000;
+  const isDenseUrban = effectivePop >= 20000;
+
   let competitionScore = 50;
   if (inputs.nearestDcfcMiles !== null) {
-    if (inputs.nearestDcfcMiles >= 10) competitionScore = 100;
-    else if (inputs.nearestDcfcMiles >= 5) competitionScore = 85;
-    else if (inputs.nearestDcfcMiles >= 2) competitionScore = 65;
-    else if (inputs.nearestDcfcMiles >= 1) competitionScore = 40;
-    else competitionScore = 20;
+    if (isDenseUrban) {
+      // Dense urban: 1+ mi to nearest DCFC is excellent spacing
+      if (inputs.nearestDcfcMiles >= 5) competitionScore = 100;
+      else if (inputs.nearestDcfcMiles >= 3) competitionScore = 90;
+      else if (inputs.nearestDcfcMiles >= 1.5) competitionScore = 80;
+      else if (inputs.nearestDcfcMiles >= 0.75) competitionScore = 65;
+      else if (inputs.nearestDcfcMiles >= 0.3) competitionScore = 45;
+      else competitionScore = 25;
+    } else if (isUrban) {
+      // Urban: slightly wider thresholds
+      if (inputs.nearestDcfcMiles >= 7) competitionScore = 100;
+      else if (inputs.nearestDcfcMiles >= 4) competitionScore = 90;
+      else if (inputs.nearestDcfcMiles >= 2) competitionScore = 75;
+      else if (inputs.nearestDcfcMiles >= 1) competitionScore = 55;
+      else if (inputs.nearestDcfcMiles >= 0.5) competitionScore = 35;
+      else competitionScore = 20;
+    } else {
+      // Suburban/rural: original wider thresholds
+      if (inputs.nearestDcfcMiles >= 10) competitionScore = 100;
+      else if (inputs.nearestDcfcMiles >= 5) competitionScore = 85;
+      else if (inputs.nearestDcfcMiles >= 2) competitionScore = 65;
+      else if (inputs.nearestDcfcMiles >= 1) competitionScore = 40;
+      else competitionScore = 20;
+    }
   }
-  if (inputs.dcfcWithin5Miles > 5) competitionScore = Math.max(competitionScore - 20, 0);
-  if (inputs.plannedDcfcWithin5Miles >= 3) competitionScore = Math.max(competitionScore - 15, 0);
-  else if (inputs.plannedDcfcWithin5Miles >= 1) competitionScore = Math.max(competitionScore - 8, 0);
-  if (inputs.nearestPlannedDcfcMiles !== null && inputs.nearestPlannedDcfcMiles < 1) {
+
+  // Density-adjusted saturation penalty: urban areas naturally have more stations
+  const saturationThreshold = isDenseUrban ? 15 : isUrban ? 10 : 5;
+  if (inputs.dcfcWithin5Miles > saturationThreshold) {
+    const excess = inputs.dcfcWithin5Miles - saturationThreshold;
+    const penalty = Math.min(20, Math.round(excess * (isDenseUrban ? 1 : 2)));
+    competitionScore = Math.max(competitionScore - penalty, 0);
+  }
+
+  // Planned station penalties (softer — they may be delayed or cancelled)
+  if (inputs.plannedDcfcWithin5Miles >= 3) competitionScore = Math.max(competitionScore - 10, 0);
+  else if (inputs.plannedDcfcWithin5Miles >= 1) competitionScore = Math.max(competitionScore - 5, 0);
+  if (inputs.nearestPlannedDcfcMiles !== null && inputs.nearestPlannedDcfcMiles < 0.5) {
     competitionScore = Math.max(competitionScore - 10, 0);
   }
 
@@ -102,15 +135,16 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   const plannedText = inputs.plannedDcfcWithin5Miles > 0
     ? ` · ${inputs.plannedDcfcWithin5Miles} planned within 5 mi`
     : ' · No planned nearby';
+  const contextText = isDenseUrban ? ' (dense urban)' : isUrban ? ' (urban)' : '';
 
   factors.push({
     name: 'Competition Gap',
     score: competitionScore,
     weight: 0.18,
     weightedScore: competitionScore * 0.18,
-    tooltip: 'How much charging competition exists AND is coming. We check both existing stations and planned/under-construction ones. Planned stations get a softer penalty (they may be delayed) but still matter for your 15-year investment.',
+    tooltip: `How much charging competition exists AND is coming. Thresholds adjust for ${isDenseUrban ? 'dense urban' : isUrban ? 'urban' : 'suburban'} context — in cities, stations are naturally closer together, so we measure relative to what's normal for the area.`,
     dataSource: 'NLR Alternative Fuel Stations API (existing + planned)',
-    rawValue: existingText + plannedText,
+    rawValue: existingText + plannedText + contextText,
   });
 
   // FACTOR 4: Dwell Time Match (10%)
