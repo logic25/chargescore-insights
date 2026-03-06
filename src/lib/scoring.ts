@@ -44,6 +44,17 @@ export interface ScoringInputs {
 export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult {
   const factors: ScoreFactor[] = [];
 
+  // Pre-compute urban context (used by multiple factors)
+  const estimatedPopDensity = inputs.popDensity ?? (() => {
+    const zip = inputs.zipCode || '';
+    const state = inputs.state || '';
+    if (state === 'NY' && (zip.startsWith('10') || zip.startsWith('11'))) return 25000;
+    if (['NY', 'CA', 'MA', 'NJ', 'IL'].includes(state)) return 8000;
+    return 3000;
+  })();
+  const isUrban = estimatedPopDensity >= 10000;
+  const isDenseUrban = estimatedPopDensity >= 20000;
+
   // FACTOR 1: Traffic Volume (22%)
   let trafficScore = 50;
   if (inputs.aadtVpd !== null) {
@@ -64,12 +75,21 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   });
 
   // FACTOR 2: EV Density (13%)
+  // Apply urban multiplier — dense urban areas have higher EV concentrations
+  // (rideshare/TLC fleets, higher adoption) than state averages reflect
+  let effectiveEvRegistrations = inputs.evRegistrations;
+  if (effectiveEvRegistrations !== null && isDenseUrban) {
+    effectiveEvRegistrations = Math.round(effectiveEvRegistrations * 1.8);
+  } else if (effectiveEvRegistrations !== null && isUrban) {
+    effectiveEvRegistrations = Math.round(effectiveEvRegistrations * 1.3);
+  }
+
   let evScore = 50;
-  if (inputs.evRegistrations !== null) {
-    if (inputs.evRegistrations >= 3000) evScore = 100;
-    else if (inputs.evRegistrations >= 1500) evScore = 80;
-    else if (inputs.evRegistrations >= 500) evScore = 60;
-    else if (inputs.evRegistrations >= 100) evScore = 40;
+  if (effectiveEvRegistrations !== null) {
+    if (effectiveEvRegistrations >= 3000) evScore = 100;
+    else if (effectiveEvRegistrations >= 1500) evScore = 80;
+    else if (effectiveEvRegistrations >= 500) evScore = 60;
+    else if (effectiveEvRegistrations >= 100) evScore = 40;
     else evScore = 20;
   }
   factors.push({
@@ -79,41 +99,31 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     weightedScore: evScore * 0.13,
     tooltip: 'How many electric vehicles are registered in surrounding zip codes. More EVs nearby means more immediate charging demand without waiting for adoption to grow.',
     dataSource: 'State-level estimate (zip-level data coming soon)',
-    rawValue: inputs.evRegistrations ? `${inputs.evRegistrations.toLocaleString()} EVs nearby` : 'Using state estimate',
+    rawValue: effectiveEvRegistrations ? `~${effectiveEvRegistrations.toLocaleString()} EVs nearby${isUrban ? ' (urban-adjusted)' : ''}` : 'Using state estimate',
   });
 
   // FACTOR 3: Competition Gap (18%)
-  // Determine urban context using population density (with fallbacks)
-  const estimatedPopDensity = inputs.popDensity ?? (() => {
-    const zip = inputs.zipCode || '';
-    const state = inputs.state || '';
-    if (state === 'NY' && (zip.startsWith('10') || zip.startsWith('11'))) return 25000;
-    if (['NY', 'CA', 'MA', 'NJ', 'IL'].includes(state)) return 8000;
-    return 3000;
-  })();
-  const isUrban = estimatedPopDensity >= 10000;
-  const isDenseUrban = estimatedPopDensity >= 20000;
 
   let competitionScore = 50;
   if (inputs.nearestDcfcMiles !== null) {
     if (isDenseUrban) {
-      // Dense urban: 1+ mi to nearest DCFC is excellent spacing
+      // Dense urban: In cities like Brooklyn, 1+ mile to nearest is a genuine gap.
+      // Use continuous interpolation for smoother scoring.
+      if (inputs.nearestDcfcMiles >= 3) competitionScore = 100;
+      else if (inputs.nearestDcfcMiles >= 2) competitionScore = 95;
+      else if (inputs.nearestDcfcMiles >= 1) competitionScore = 85;
+      else if (inputs.nearestDcfcMiles >= 0.5) competitionScore = 70;
+      else if (inputs.nearestDcfcMiles >= 0.25) competitionScore = 50;
+      else competitionScore = 30;
+    } else if (isUrban) {
       if (inputs.nearestDcfcMiles >= 5) competitionScore = 100;
       else if (inputs.nearestDcfcMiles >= 3) competitionScore = 90;
-      else if (inputs.nearestDcfcMiles >= 1.5) competitionScore = 80;
-      else if (inputs.nearestDcfcMiles >= 0.75) competitionScore = 65;
-      else if (inputs.nearestDcfcMiles >= 0.3) competitionScore = 45;
-      else competitionScore = 25;
-    } else if (isUrban) {
-      // Urban: slightly wider thresholds
-      if (inputs.nearestDcfcMiles >= 7) competitionScore = 100;
-      else if (inputs.nearestDcfcMiles >= 4) competitionScore = 90;
-      else if (inputs.nearestDcfcMiles >= 2) competitionScore = 75;
-      else if (inputs.nearestDcfcMiles >= 1) competitionScore = 55;
-      else if (inputs.nearestDcfcMiles >= 0.5) competitionScore = 35;
+      else if (inputs.nearestDcfcMiles >= 1.5) competitionScore = 75;
+      else if (inputs.nearestDcfcMiles >= 0.75) competitionScore = 55;
+      else if (inputs.nearestDcfcMiles >= 0.3) competitionScore = 35;
       else competitionScore = 20;
     } else {
-      // Suburban/rural: original wider thresholds
+      // Suburban/rural
       if (inputs.nearestDcfcMiles >= 10) competitionScore = 100;
       else if (inputs.nearestDcfcMiles >= 5) competitionScore = 85;
       else if (inputs.nearestDcfcMiles >= 2) competitionScore = 65;
@@ -122,11 +132,13 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     }
   }
 
-  // Density-adjusted saturation penalty: urban areas naturally have more stations
-  const saturationThreshold = isDenseUrban ? 15 : isUrban ? 10 : 5;
+  // Density-adjusted saturation penalty: urban areas naturally have many stations within 5mi
+  // In dense urban, only penalize extreme saturation — 5mi covers a LOT of city
+  const saturationThreshold = isDenseUrban ? 30 : isUrban ? 15 : 5;
   if (inputs.dcfcWithin5Miles > saturationThreshold) {
     const excess = inputs.dcfcWithin5Miles - saturationThreshold;
-    const penalty = Math.min(20, Math.round(excess * (isDenseUrban ? 1 : 2)));
+    const penaltyPerStation = isDenseUrban ? 0.5 : isUrban ? 1 : 2;
+    const penalty = Math.min(15, Math.round(excess * penaltyPerStation));
     competitionScore = Math.max(competitionScore - penalty, 0);
   }
 
@@ -171,15 +183,25 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   });
 
   // FACTOR 5: Nearby Amenities (10%)
-  const amenityScore = Math.min(inputs.amenitiesNearby * 10, 100);
+  // Base: detected amenities nearby. Bonus: the property itself IS an amenity destination.
+  const anchorBonus: Record<string, number> = {
+    'shopping-center': 3, 'restaurant': 2, 'strip-retail': 2,
+    'hotel': 2, 'parking-garage': 1, 'gas-station': 0,
+    'office-park': 0, 'multifamily': 0, 'other': 0,
+  };
+  const effectiveAmenities = inputs.amenitiesNearby + (anchorBonus[inputs.propertyType] || 0);
+  const amenityScore = Math.min(effectiveAmenities * 10, 100);
+  const anchorNote = (anchorBonus[inputs.propertyType] || 0) > 0
+    ? ` (+${anchorBonus[inputs.propertyType]} anchor bonus)`
+    : '';
   factors.push({
     name: 'Nearby Amenities',
     score: amenityScore,
     weight: 0.10,
     weightedScore: amenityScore * 0.10,
-    tooltip: 'How many restaurants, cafes, and shops are within a short walk. EV drivers need something to do while charging. Tesla specifically requires sites near amenities.',
-    dataSource: 'Google Places API',
-    rawValue: `${inputs.amenitiesNearby} places within 0.25 mi`,
+    tooltip: 'How many restaurants, cafes, and shops are within a short walk. EV drivers need something to do while charging. Tesla specifically requires sites near amenities. Shopping centers and restaurants get a bonus as anchor destinations.',
+    dataSource: 'Google Places API + property type',
+    rawValue: `${inputs.amenitiesNearby} places within 0.25 mi${anchorNote}`,
   });
 
   // FACTOR 6: Parking Capacity (5%)
@@ -303,10 +325,18 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     const futureSupply = inputs.totalDcfcPortsWithin5Miles + inputs.totalPlannedDcfcPortsWithin5Miles;
     const futurePortsPerK = futureSupply / (adjustedEvDemand / 1000);
 
-    if (currentPortsPerK < 3) overflowScore = 100;
-    else if (currentPortsPerK < 6) overflowScore = 85;
-    else if (currentPortsPerK < 12) overflowScore = 65;
-    else if (currentPortsPerK < 25) overflowScore = 40;
+    // Urban areas need MORE ports per capita because of higher utilization rates
+    // (rideshare, no home charging, higher turnover). Scale thresholds up.
+    const urbanRatioMultiplier = isDenseUrban ? 2.5 : isUrban ? 1.5 : 1.0;
+    const t1 = 3 * urbanRatioMultiplier;   // underserved
+    const t2 = 6 * urbanRatioMultiplier;   // adequate
+    const t3 = 12 * urbanRatioMultiplier;  // well-served
+    const t4 = 25 * urbanRatioMultiplier;  // saturated
+
+    if (currentPortsPerK < t1) overflowScore = 100;
+    else if (currentPortsPerK < t2) overflowScore = 85;
+    else if (currentPortsPerK < t3) overflowScore = 65;
+    else if (currentPortsPerK < t4) overflowScore = 40;
     else overflowScore = 15;
 
     if (inputs.totalPlannedDcfcPortsWithin5Miles > 0 && futurePortsPerK > currentPortsPerK * 1.5) {
