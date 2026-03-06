@@ -241,6 +241,7 @@ const Dashboard = () => {
     }
   };
 
+  useEffect(() => {
     if (chargeScore.totalScore > 0) {
       void logAnalysis({
         address: site.address,
