@@ -259,6 +259,12 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:block truncate max-w-[400px]">{site.address}</span>
+            {gateUnlocked && user && (
+              <Button size="sm" variant="default" onClick={handleSaveProject} disabled={saving}>
+                <Save className="mr-1 h-4 w-4" />
+                {saving ? 'Saving…' : 'Save Project'}
+              </Button>
+            )}
             {gateUnlocked && (
               <ReportGenerator
                 site={site} score={chargeScore} financials={financials}
