@@ -84,7 +84,7 @@ const ParkingImpact = ({ totalSpaces, stalls, propertyType, peakUtilization, onP
             <Info className="h-3 w-3 text-muted-foreground/50" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs text-xs leading-relaxed">
-            Shows how dedicating spots to EV chargers affects parking availability during normal and peak periods.
+            You're dedicating {stalls} spots (plus ~2 for equipment) to chargers permanently. This card shows how many parking spots your tenants and customers still have on a normal day vs. a busy day like Black Friday. Use the slider to model different scenarios.
           </TooltipContent>
         </Tooltip>
       </div>
@@ -154,9 +154,9 @@ const ParkingImpact = ({ totalSpaces, stalls, propertyType, peakUtilization, onP
           </div>
         </div>
 
-        {/* Tesla requirement note */}
+        {/* Explanation */}
         <div className="rounded-lg border border-border bg-muted/30 p-2.5 text-[10px] text-muted-foreground leading-relaxed">
-          <strong>Tesla requirement:</strong> Each Supercharger stall requires a dedicated, signed parking space. Minimum 4 stalls per site. ADA-compliant spaces required per local code.
+          <strong>How to read this:</strong> Your {stalls} charger stalls + equipment take up {chargerFootprint} spots permanently. "Normal Day" shows spots left when nobody else is parked. "Peak" shows what happens when the lot is {peakUtilization}% full — like weekends or holidays. If the peak number is low or red, chargers may compete with tenant parking during busy times.
         </div>
 
         {/* Warning */}
