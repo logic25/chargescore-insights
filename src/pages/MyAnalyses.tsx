@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, MapPin, Trash2, ExternalLink } from 'lucide-react';
+import { Zap, ArrowLeft, MapPin, Trash2, ExternalLink, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import AddressAutocomplete from '@/components/AddressAutocomplete';
 
 type Analysis = Tables<'analyses'>;
 
@@ -14,6 +15,13 @@ const MyAnalyses = () => {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<{ formatted: string; lat: number; lng: number; stateCode: string } | null>(null);
+
+  const handleAnalyze = () => {
+    if (selectedAddress) {
+      navigate(`/dashboard?address=${encodeURIComponent(selectedAddress.formatted)}&lat=${selectedAddress.lat}&lng=${selectedAddress.lng}&state=${selectedAddress.stateCode}`);
+    }
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -89,16 +97,26 @@ const MyAnalyses = () => {
       </header>
 
       <main className="container max-w-4xl py-8">
+        {/* Address search bar */}
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row">
+          <AddressAutocomplete onSelect={(result) => setSelectedAddress(result)} />
+          <Button
+            className="h-14 px-8 text-base font-semibold shrink-0"
+            onClick={handleAnalyze}
+            disabled={!selectedAddress}
+          >
+            Analyze Site
+            <ChevronRight className="ml-1 h-5 w-5" />
+          </Button>
+        </div>
+
         {analyses.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <MapPin className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <h2 className="font-heading text-xl font-bold text-foreground">No projects yet</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Search for an address on the home page to run your first site analysis.
+              Search for an address above to run your first site analysis.
             </p>
-            <Button className="mt-6" onClick={() => navigate('/')}>
-              Analyze a Site
-            </Button>
           </div>
         ) : (
           <div className="space-y-3">
