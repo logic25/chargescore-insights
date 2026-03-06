@@ -82,7 +82,7 @@ const MyAnalyses = () => {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <Zap className="h-5 w-5 text-primary" />
-            <span className="font-heading text-lg font-bold">My Analyses</span>
+            <span className="font-heading text-lg font-bold">My Projects</span>
           </div>
           <span className="text-sm text-muted-foreground">{analyses.length} saved</span>
         </div>
