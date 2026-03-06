@@ -44,6 +44,17 @@ export interface ScoringInputs {
 export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult {
   const factors: ScoreFactor[] = [];
 
+  // Pre-compute urban context (used by multiple factors)
+  const estimatedPopDensity = inputs.popDensity ?? (() => {
+    const zip = inputs.zipCode || '';
+    const state = inputs.state || '';
+    if (state === 'NY' && (zip.startsWith('10') || zip.startsWith('11'))) return 25000;
+    if (['NY', 'CA', 'MA', 'NJ', 'IL'].includes(state)) return 8000;
+    return 3000;
+  })();
+  const isUrban = estimatedPopDensity >= 10000;
+  const isDenseUrban = estimatedPopDensity >= 20000;
+
   // FACTOR 1: Traffic Volume (22%)
   let trafficScore = 50;
   if (inputs.aadtVpd !== null) {
@@ -92,16 +103,6 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   });
 
   // FACTOR 3: Competition Gap (18%)
-  // Determine urban context using population density (with fallbacks)
-  const estimatedPopDensity = inputs.popDensity ?? (() => {
-    const zip = inputs.zipCode || '';
-    const state = inputs.state || '';
-    if (state === 'NY' && (zip.startsWith('10') || zip.startsWith('11'))) return 25000;
-    if (['NY', 'CA', 'MA', 'NJ', 'IL'].includes(state)) return 8000;
-    return 3000;
-  })();
-  const isUrban = estimatedPopDensity >= 10000;
-  const isDenseUrban = estimatedPopDensity >= 20000;
 
   let competitionScore = 50;
   if (inputs.nearestDcfcMiles !== null) {
