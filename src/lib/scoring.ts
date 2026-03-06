@@ -114,8 +114,8 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     score: evScore,
     weight: 0.15,
     weightedScore: evScore * 0.15,
-    tooltip: 'How many electric vehicles are registered in surrounding zip codes. More EVs nearby means more immediate charging demand without waiting for adoption to grow.',
-    dataSource: 'State-level estimate (zip-level data coming soon)',
+    tooltip: 'How many electric vehicles are registered nearby. More EVs = more immediate charging demand.',
+    dataSource: 'County-level estimate (Atlas EV Hub / DOE AFDC)',
     rawValue: effectiveEvRegistrations ? `~${effectiveEvRegistrations.toLocaleString()} EVs nearby${isUrban ? ' (urban-adjusted)' : ''}` : 'Using state estimate',
   });
 
@@ -188,12 +188,12 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   const contextText = isDenseUrban ? ' (dense urban)' : isUrban ? ' (urban)' : '';
 
   factors.push({
-    name: 'Competition Gap',
+    name: 'Market Opportunity',
     score: competitionScore,
     weight: 0.15,
     weightedScore: competitionScore * 0.15,
-    tooltip: `How much charging competition exists AND is coming. Thresholds adjust for ${isDenseUrban ? 'dense urban' : isUrban ? 'urban' : 'suburban'} context — in cities, stations are naturally closer together, so we measure relative to what's normal for the area.`,
-    dataSource: 'NLR Alternative Fuel Stations API (existing + planned)',
+    tooltip: `Blended view of competition and demand validation. When EV density is high, existing stations prove the market — we give a bonus instead of a pure penalty. Thresholds adjust for ${isDenseUrban ? 'dense urban' : isUrban ? 'urban' : 'suburban'} context.`,
+    dataSource: 'NREL Alt Fuel Stations + EV registrations',
     rawValue: existingText + plannedText + contextText,
   });
 
