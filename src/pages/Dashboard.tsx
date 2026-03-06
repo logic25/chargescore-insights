@@ -201,7 +201,46 @@ const Dashboard = () => {
   const parking = useMemo(() => calculateParkingImpact(site), [site]);
   const demandCharge = useMemo(() => calculateDemandCharge(site), [site]);
 
-  useEffect(() => {
+  const handleSaveProject = async () => {
+    if (!user) {
+      toast.error('Sign in to save projects');
+      navigate('/auth');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data: existing } = await supabase
+        .from('analyses')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('address', site.address)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        toast.info('This site is already saved in your projects.');
+      } else {
+        const { error } = await supabase.from('analyses').insert({
+          user_id: user.id,
+          address: site.address,
+          lat: site.lat,
+          lng: site.lng,
+          state: site.state,
+          charge_score: chargeScore.totalScore,
+          factors: Object.fromEntries(chargeScore.factors.map(f => [f.name, f.score])) as any,
+          num_stalls: site.teslaStalls,
+          predicted_utilization: revenueProjection.utilization,
+        });
+        if (error) throw error;
+        toast.success('Project saved!');
+      }
+      navigate('/my-analyses');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
     if (chargeScore.totalScore > 0) {
       void logAnalysis({
         address: site.address,
