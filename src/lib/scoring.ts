@@ -325,10 +325,18 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
     const futureSupply = inputs.totalDcfcPortsWithin5Miles + inputs.totalPlannedDcfcPortsWithin5Miles;
     const futurePortsPerK = futureSupply / (adjustedEvDemand / 1000);
 
-    if (currentPortsPerK < 3) overflowScore = 100;
-    else if (currentPortsPerK < 6) overflowScore = 85;
-    else if (currentPortsPerK < 12) overflowScore = 65;
-    else if (currentPortsPerK < 25) overflowScore = 40;
+    // Urban areas need MORE ports per capita because of higher utilization rates
+    // (rideshare, no home charging, higher turnover). Scale thresholds up.
+    const urbanRatioMultiplier = isDenseUrban ? 2.5 : isUrban ? 1.5 : 1.0;
+    const t1 = 3 * urbanRatioMultiplier;   // underserved
+    const t2 = 6 * urbanRatioMultiplier;   // adequate
+    const t3 = 12 * urbanRatioMultiplier;  // well-served
+    const t4 = 25 * urbanRatioMultiplier;  // saturated
+
+    if (currentPortsPerK < t1) overflowScore = 100;
+    else if (currentPortsPerK < t2) overflowScore = 85;
+    else if (currentPortsPerK < t3) overflowScore = 65;
+    else if (currentPortsPerK < t4) overflowScore = 40;
     else overflowScore = 15;
 
     if (inputs.totalPlannedDcfcPortsWithin5Miles > 0 && futurePortsPerK > currentPortsPerK * 1.5) {
