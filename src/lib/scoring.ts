@@ -183,15 +183,25 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
   });
 
   // FACTOR 5: Nearby Amenities (10%)
-  const amenityScore = Math.min(inputs.amenitiesNearby * 10, 100);
+  // Base: detected amenities nearby. Bonus: the property itself IS an amenity destination.
+  const anchorBonus: Record<string, number> = {
+    'shopping-center': 3, 'restaurant': 2, 'strip-retail': 2,
+    'hotel': 2, 'parking-garage': 1, 'gas-station': 0,
+    'office-park': 0, 'multifamily': 0, 'other': 0,
+  };
+  const effectiveAmenities = inputs.amenitiesNearby + (anchorBonus[inputs.propertyType] || 0);
+  const amenityScore = Math.min(effectiveAmenities * 10, 100);
+  const anchorNote = (anchorBonus[inputs.propertyType] || 0) > 0
+    ? ` (+${anchorBonus[inputs.propertyType]} anchor bonus)`
+    : '';
   factors.push({
     name: 'Nearby Amenities',
     score: amenityScore,
     weight: 0.10,
     weightedScore: amenityScore * 0.10,
-    tooltip: 'How many restaurants, cafes, and shops are within a short walk. EV drivers need something to do while charging. Tesla specifically requires sites near amenities.',
-    dataSource: 'Google Places API',
-    rawValue: `${inputs.amenitiesNearby} places within 0.25 mi`,
+    tooltip: 'How many restaurants, cafes, and shops are within a short walk. EV drivers need something to do while charging. Tesla specifically requires sites near amenities. Shopping centers and restaurants get a bonus as anchor destinations.',
+    dataSource: 'Google Places API + property type',
+    rawValue: `${inputs.amenitiesNearby} places within 0.25 mi${anchorNote}`,
   });
 
   // FACTOR 6: Parking Capacity (5%)
