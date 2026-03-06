@@ -361,11 +361,11 @@ const STATE_INCENTIVES: Record<string, StateIncentiveGroup[]> = {
     },
     {
       groupId: 'ny-state-small', name: 'Charge Ready NY 2.0', amountPerPort: 4000,
-      displayAmount: '$4,000/port',
-      details: '$3,000-$4,000 per port (L2 or DCFC). $28M program budget. Stackable with NYSBIP.',
+      displayAmount: '$4,000/port (L2 only)',
+      details: 'Up to $4,000 per L2 port. Not available for DCFC installations. $28M program budget. Stackable with NYSBIP.',
       layer: 'state', verified: '2025-03', programStatus: 'accepting',
       sourceUrl: 'https://www.nyserda.ny.gov/All-Programs/ChargeReady-NY',
-      checkEligibility: alwaysEligible(),
+      checkEligibility: () => ({ eligible: false, reason: 'Charge Ready NY is for Level 2 chargers only — not available for DCFC.' }),
     },
     {
       groupId: 'ny-utility-coned', name: 'Con Edison PowerReady', amountPctOfInstall: 0.85,
