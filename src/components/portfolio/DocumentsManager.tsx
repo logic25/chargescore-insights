@@ -210,18 +210,34 @@ export default function DocumentsManager({ sites = [] }: Props) {
             <div className="space-y-1">
               <Label className="text-xs">Site Name</Label>
               {(sites?.length ?? 0) > 0 ? (
-                <Select value={siteName} onValueChange={(name) => {
-                  setSiteName(name);
-                  const match = sites.find(s => s.name === name);
-                  if (match) setAddress(match.address);
-                }}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select site..." /></SelectTrigger>
-                  <SelectContent>
-                    {sites.map(s => <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-1">
+                  <Select value={siteName} onValueChange={(name) => {
+                    setSiteName(name);
+                    const match = sites.find(s => s.name === name);
+                    if (match) setAddress(match.address);
+                  }}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select site..." /></SelectTrigger>
+                    <SelectContent>
+                      {sites.map(s => <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-8 px-2 text-xs"
+                    onClick={() => {
+                      setSiteName("");
+                      setAddress("");
+                    }}
+                  >
+                    Manual
+                  </Button>
+                </div>
               ) : (
-                <Input value={siteName} onChange={e => setSiteName(e.target.value)} placeholder="Site name" className="h-8 text-sm" />
+                <>
+                  <Input value={siteName} onChange={e => setSiteName(e.target.value)} placeholder="Site name" className="h-8 text-sm" />
+                  <p className="text-[10px] text-muted-foreground">No portfolio sites yet — add one in Stall Sizer, or type site and address manually.</p>
+                </>
               )}
             </div>
             <div className="space-y-1">
