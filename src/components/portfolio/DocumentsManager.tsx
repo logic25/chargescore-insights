@@ -164,7 +164,7 @@ export default function DocumentsManager({ sites }: Props) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Site Name</Label>
-              {sites.length > 0 ? (
+              {(sites?.length ?? 0) > 0 ? (
                 <Select value={siteName} onValueChange={(name) => {
                   setSiteName(name);
                   const match = sites.find(s => s.name === name);
