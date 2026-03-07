@@ -305,6 +305,18 @@ export default function DocumentsManager({ sites = [] }: Props) {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        {doc.doc_type === "evpin_report" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleExtract(doc)}
+                            title="AI Extract"
+                            disabled={extractingId === doc.id}
+                          >
+                            {extractingId === doc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleView(doc)} title="View">
                           <Eye className="h-3 w-3" />
                         </Button>
