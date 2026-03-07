@@ -66,6 +66,9 @@ const Dashboard = () => {
     demandChargePerKw: 15,
     teslaServiceFeePerKwh: 0.10,
     npvYears: 15,
+    ownerSplitPct: 70,
+    annualInsurance: 5000,
+    monthlyRent: 0,
   });
 
   const [stations, setStations] = useState<NearbyStation[]>([]);
