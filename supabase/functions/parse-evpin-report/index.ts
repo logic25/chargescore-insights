@@ -15,6 +15,8 @@ interface EvpinExtracted {
   purchasingPowerPct: number | null;
   evRegistrations: number | null;
   chargingDemandScore: number | null;
+  siteName: string | null;
+  address: string | null;
   raw: Record<string, string>;
 }
 
