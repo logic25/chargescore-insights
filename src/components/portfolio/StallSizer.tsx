@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Zap, AlertTriangle, CheckCircle, Loader2, Info } from "lucide-react";
+import { Plus, Zap, AlertTriangle, CheckCircle, Loader2, Info, Upload } from "lucide-react";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 import ParkingGuidelines from "./ParkingGuidelines";
 import QuickFinancialPreview from "./QuickFinancialPreview";
 import type { StallSizerInputs, LocationType, SiteRow } from "@/lib/waterfallCalc";
@@ -50,8 +53,11 @@ const LOCATION_LABELS: Record<LocationType, string> = {
 };
 
 export default function StallSizer({ onAddToPortfolio }: Props) {
+  const { user } = useAuth();
   const [inputs, setInputs] = useState<StallSizerInputs>(DEFAULT_INPUTS);
   const [fetching, setFetching] = useState(false);
+  const [evpinUploading, setEvpinUploading] = useState(false);
+  const evpinFileRef = useRef<HTMLInputElement>(null);
   const set = <K extends keyof StallSizerInputs>(key: K, value: StallSizerInputs[K]) => setInputs(prev => ({ ...prev, [key]: value }));
 
   const recommendation = computeStallRecommendation(inputs);
