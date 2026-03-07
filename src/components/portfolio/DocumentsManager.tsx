@@ -62,6 +62,13 @@ export default function DocumentsManager({ sites = [] }: Props) {
 
   useEffect(() => { fetchDocs(); }, [fetchDocs]);
 
+  useEffect(() => {
+    if (!siteName && (sites?.length ?? 0) > 0) {
+      setSiteName(sites[0].name);
+      setAddress(sites[0].address);
+    }
+  }, [sites, siteName]);
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
