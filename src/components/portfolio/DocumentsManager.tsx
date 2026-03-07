@@ -133,6 +133,14 @@ export default function DocumentsManager({ sites }: Props) {
     }
   };
 
+  const handleView = async (doc: SiteDocument) => {
+    const { data } = await supabase.storage.from("site-documents").download(doc.file_path);
+    if (data) {
+      const url = URL.createObjectURL(data);
+      window.open(url, "_blank");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card className="border-border/50">
