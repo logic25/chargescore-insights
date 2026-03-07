@@ -18,6 +18,7 @@ const fmt = (n: number) => {
 };
 
 const pct = (n: number) => {
+  if (n === Infinity) return '∞';
   if (!isFinite(n)) return '—';
   return `${n.toFixed(1)}%`;
 };
