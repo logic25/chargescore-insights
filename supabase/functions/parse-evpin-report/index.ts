@@ -98,6 +98,96 @@ function extractMetrics(text: string): EvpinExtracted {
   return result;
 }
 
+async function extractWithAi(text: string): Promise<Partial<EvpinExtracted> | null> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY || text.trim().length < 50) return null;
+
+  const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        {
+          role: "system",
+          content: "Extract EV charging site report fields accurately. If unknown, return null.",
+        },
+        {
+          role: "user",
+          content: `Extract from this EVpin report text:\n\n${text.slice(0, 18000)}`,
+        },
+      ],
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "extract_evpin_fields",
+            description: "Extract EVpin report fields",
+            parameters: {
+              type: "object",
+              properties: {
+                totalScore: { type: ["number", "null"] },
+                aadt: { type: ["number", "null"] },
+                evAdoptionPct: { type: ["number", "null"] },
+                l3Ports: { type: ["number", "null"] },
+                crimeRate: { type: ["string", "null"] },
+                purchasingPowerPct: { type: ["number", "null"] },
+                evRegistrations: { type: ["number", "null"] },
+                chargingDemandScore: { type: ["number", "null"] },
+                siteName: { type: ["string", "null"] },
+                address: { type: ["string", "null"] },
+              },
+              required: [
+                "totalScore",
+                "aadt",
+                "evAdoptionPct",
+                "l3Ports",
+                "crimeRate",
+                "purchasingPowerPct",
+                "evRegistrations",
+                "chargingDemandScore",
+                "siteName",
+                "address",
+              ],
+              additionalProperties: false,
+            },
+          },
+        },
+      ],
+      tool_choice: { type: "function", function: { name: "extract_evpin_fields" } },
+    }),
+  });
+
+  if (!aiResponse.ok) {
+    if (aiResponse.status === 429) {
+      throw new Response(JSON.stringify({ error: "Rate limits exceeded, please try again shortly." }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (aiResponse.status === 402) {
+      throw new Response(JSON.stringify({ error: "AI credits required. Please add workspace usage credits." }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    return null;
+  }
+
+  const aiData = await aiResponse.json();
+  const args = aiData?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+  if (!args) return null;
+
+  try {
+    return JSON.parse(args) as Partial<EvpinExtracted>;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
