@@ -1,9 +1,12 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Zap } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { FinancialProjection as FP } from '@/types/chargeScore';
 
 interface Props {
   financials: FP;
+  npvYears: number;
+  onNpvYearsChange: (years: number) => void;
 }
 
 const fmt = (n: number) => {
@@ -11,7 +14,9 @@ const fmt = (n: number) => {
   return n < 0 ? `-$${Math.abs(Math.round(n)).toLocaleString()}` : `$${Math.round(n).toLocaleString()}`;
 };
 
-const FinancialProjection = ({ financials }: Props) => {
+const YEAR_OPTIONS = [5, 10, 15, 20];
+
+const FinancialProjection = ({ financials, npvYears, onNpvYearsChange }: Props) => {
   const isTesla = financials.chargingModel === 'tesla';
 
   const chartData = financials.cumulativeCashFlow.map((val, i) => ({
@@ -21,11 +26,31 @@ const FinancialProjection = ({ financials }: Props) => {
 
   return (
     <div className="glass-card">
-      <div className="flex items-center gap-2 border-b border-border px-5 py-4">
-        {isTesla && <Zap className="h-5 w-5 text-primary" />}
-        <h2 className="font-heading text-base font-bold text-foreground">
-          15-Year Cumulative Cash Flow
-        </h2>
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <div className="flex items-center gap-2">
+          {isTesla && <Zap className="h-5 w-5 text-primary" />}
+          <h2 className="font-heading text-base font-bold text-foreground">
+            Cumulative Cash Flow
+          </h2>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">NPV</p>
+            <p className={`font-mono text-lg font-bold ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
+              {fmt(financials.npv15Year)}
+            </p>
+          </div>
+          <Select value={String(npvYears)} onValueChange={(v) => onNpvYearsChange(Number(v))}>
+            <SelectTrigger className="h-8 w-[90px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {YEAR_OPTIONS.map(y => (
+                <SelectItem key={y} value={String(y)}>{y} years</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="px-5 py-4">
@@ -55,7 +80,7 @@ const FinancialProjection = ({ financials }: Props) => {
         </div>
 
         <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground leading-relaxed">
-          <p><strong>What is NPV?</strong> Net Present Value shows your total 15-year profit in today's dollars. Future earnings are worth less than money today — we discount at 8% annually, reflecting the opportunity cost of capital (i.e., what you'd likely earn investing elsewhere). A positive NPV means this charging station outperforms a typical market investment.</p>
+          <p><strong>What is NPV?</strong> Net Present Value shows your total {npvYears}-year profit in today's dollars. Future earnings are worth less than money today — we discount at 8% annually, reflecting the opportunity cost of capital (i.e., what you'd likely earn investing elsewhere). A positive NPV means this charging station outperforms a typical market investment.</p>
         </div>
       </div>
     </div>
