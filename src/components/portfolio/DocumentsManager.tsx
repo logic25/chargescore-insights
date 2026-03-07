@@ -39,14 +39,14 @@ interface Props {
   sites: SiteInfo[];
 }
 
-export default function DocumentsManager({ sites }: Props) {
+export default function DocumentsManager({ sites = [] }: Props) {
   const { user } = useAuth();
   const [docs, setDocs] = useState<SiteDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [docType, setDocType] = useState<string>("evpin_report");
-  const [siteName, setSiteName] = useState("");
-  const [address, setAddress] = useState("");
+  const [siteName, setSiteName] = useState(sites?.[0]?.name ?? "");
+  const [address, setAddress] = useState(sites?.[0]?.address ?? "");
 
   const fetchDocs = useCallback(async () => {
     if (!user) return;
@@ -215,6 +215,7 @@ export default function DocumentsManager({ sites }: Props) {
                   <TableHead className="text-xs">File</TableHead>
                   <TableHead className="text-xs">Type</TableHead>
                   <TableHead className="text-xs">Site</TableHead>
+                  <TableHead className="text-xs">Address</TableHead>
                   <TableHead className="text-xs">Extracted</TableHead>
                   <TableHead className="text-xs">Date</TableHead>
                   <TableHead className="text-xs w-20" />
@@ -228,6 +229,7 @@ export default function DocumentsManager({ sites }: Props) {
                       <Badge variant="outline" className="text-[10px]">{DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}</Badge>
                     </TableCell>
                     <TableCell className="text-xs">{doc.site_name || "—"}</TableCell>
+                    <TableCell className="text-xs">{doc.address || "—"}</TableCell>
                     <TableCell>
                       {doc.doc_type === "evpin_report" && doc.extracted_data?.totalScore ? (
                         <Badge className="text-[10px] bg-accent/20 text-accent border-accent/30">
