@@ -290,8 +290,9 @@ export function computeStallRecommendation(inputs: StallSizerInputs): StallRecom
   if (inputs.totalParkingSpaces || inputs.lotSizeSqFt) filled++;
   if (inputs.dailyTraffic > 0) filled++;
   if (inputs.evpinScore) filled++;
+  if (inputs.chargeScore !== null) filled++;
   if (inputs.nearbyL3Ports !== null) filled++;
-  const confidence: 'Low' | 'Medium' | 'High' = filled >= 4 ? 'High' : filled >= 2 ? 'Medium' : 'Low';
+  const confidence: 'Low' | 'Medium' | 'High' = filled >= 4 ? 'High' : filled >= 3 ? 'Medium' : 'Low';
 
   const avgKwhPerSession = 30;
   const dailySessions = chargingDemand;
