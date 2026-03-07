@@ -30,8 +30,13 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
+interface SiteInfo {
+  name: string;
+  address: string;
+}
+
 interface Props {
-  siteNames: string[];
+  sites: SiteInfo[];
 }
 
 export default function DocumentsManager({ siteNames }: Props) {
