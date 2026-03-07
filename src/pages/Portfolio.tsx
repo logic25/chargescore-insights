@@ -315,6 +315,12 @@ const Portfolio = () => {
               </table>
             </div>
 
+            {hasNaCoc && (
+              <p className="mt-3 text-xs text-muted-foreground text-center">
+                *CoC shown as N/A when out-of-pocket investment is $0, matching the spreadsheet logic.
+              </p>
+            )}
+
             {multiplier !== 1 && (
               <p className="mt-3 text-xs text-muted-foreground text-center">
                 Showing {scenario}x scenario — NOI, Owner/MS distributions, CoC, and NPV are scaled by {multiplier}×
