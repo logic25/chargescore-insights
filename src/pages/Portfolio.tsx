@@ -40,6 +40,18 @@ const pct = (n: number | null | undefined) => {
   return `${n.toFixed(1)}%`;
 };
 
+const formatCoc = (site: PortfolioSite) => {
+  if (site.coc != null && isFinite(site.coc)) return pct(site.coc);
+
+  const oop = site.net_investment;
+  const ownerAnnual = site.owner_monthly != null ? site.owner_monthly * 12 : null;
+
+  // Spreadsheet behavior: CoC is not a finite % when OOP is $0 and owner cash flow is positive
+  if (oop != null && Math.abs(oop) < 0.5 && ownerAnnual != null && ownerAnnual > 0) return 'N/A*';
+
+  return '—';
+};
+
 const SCENARIO_OPTIONS = [
   { value: '0.50', label: '0.50x (Bear)' },
   { value: '0.75', label: '0.75x (Conservative)' },
@@ -131,13 +143,9 @@ const Portfolio = () => {
     const byNpv = [...scaled].sort((a, b) => (b.npv ?? -Infinity) - (a.npv ?? -Infinity));
     const byCoc = [...scaled].sort((a, b) => (b.coc ?? -Infinity) - (a.coc ?? -Infinity));
     const byScore = [...scaled].sort((a, b) => b.charge_score - a.charge_score);
-    return scaled.map(s => {
-      const npvRank = byNpv.findIndex(x => x.id === s.id) + 1;
-      const cocRank = byCoc.findIndex(x => x.id === s.id) + 1;
-      const scoreRank = byScore.findIndex(x => x.id === s.id) + 1;
-      return { ...s, compositeRank: (npvRank + cocRank + scoreRank) / 3 };
-    }).sort((a, b) => a.compositeRank - b.compositeRank);
   }, [scaled]);
+
+  const hasNaCoc = ranked.some((site) => formatCoc(site) === 'N/A*');
 
   if (authLoading || loading) {
     return (
@@ -262,7 +270,7 @@ const Portfolio = () => {
                         {fmt(s.ms_monthly)}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono text-sm">
-                        {pct(s.coc)}
+                        {formatCoc(s)}
                       </td>
                       <td className={`px-3 py-2.5 text-right font-mono text-sm font-bold ${(s.npv ?? 0) > 0 ? 'text-success' : 'text-destructive'}`}>
                         {fmt(s.npv)}
@@ -306,6 +314,12 @@ const Portfolio = () => {
                 </tfoot>
               </table>
             </div>
+
+            {hasNaCoc && (
+              <p className="mt-3 text-xs text-muted-foreground text-center">
+                *CoC shown as N/A when out-of-pocket investment is $0, matching the spreadsheet logic.
+              </p>
+            )}
 
             {multiplier !== 1 && (
               <p className="mt-3 text-xs text-muted-foreground text-center">
