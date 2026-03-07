@@ -85,15 +85,15 @@ export default function DocumentsManager({ siteNames }: Props) {
         }
       }
 
-      const { error: insertError } = await supabase.from("site_documents").insert({
+      const { error: insertError } = await supabase.from("site_documents").insert([{
         user_id: user.id,
         site_name: siteName,
         address,
         file_name: file.name,
         file_path: filePath,
-        doc_type: docType as any,
-        extracted_data: extractedData,
-      });
+        doc_type: docType as "evpin_report" | "lease" | "permit" | "utility_bill" | "other",
+        extracted_data: extractedData as any,
+      }]);
 
       if (insertError) throw insertError;
 
