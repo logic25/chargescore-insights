@@ -40,6 +40,18 @@ const pct = (n: number | null | undefined) => {
   return `${n.toFixed(1)}%`;
 };
 
+const formatCoc = (site: PortfolioSite) => {
+  if (site.coc != null && isFinite(site.coc)) return pct(site.coc);
+
+  const oop = site.net_investment;
+  const ownerAnnual = site.owner_monthly != null ? site.owner_monthly * 12 : null;
+
+  // Spreadsheet behavior: CoC is not a finite % when OOP is $0 and owner cash flow is positive
+  if (oop != null && Math.abs(oop) < 0.5 && ownerAnnual != null && ownerAnnual > 0) return 'N/A*';
+
+  return '—';
+};
+
 const SCENARIO_OPTIONS = [
   { value: '0.50', label: '0.50x (Bear)' },
   { value: '0.75', label: '0.75x (Conservative)' },
