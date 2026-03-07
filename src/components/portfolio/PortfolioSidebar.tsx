@@ -1,4 +1,4 @@
-import { BarChart3, Zap, TrendingUp } from "lucide-react";
+import { BarChart3, Zap, TrendingUp, FileText } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +19,7 @@ interface Props {
 const items = [
   { id: "waterfall", title: "Portfolio Waterfall", icon: BarChart3 },
   { id: "chargescore", title: "ChargeScore (Stall Sizer)", icon: Zap },
+  { id: "documents", title: "Documents", icon: FileText },
   { id: "exit", title: "Exit Scenarios", icon: TrendingUp, disabled: true },
 ];
 

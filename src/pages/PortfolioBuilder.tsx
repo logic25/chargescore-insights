@@ -10,6 +10,7 @@ import WaterfallTable from "@/components/portfolio/WaterfallTable";
 import ExitAnalysisCard from "@/components/portfolio/ExitAnalysis";
 import WaterfallCharts from "@/components/portfolio/WaterfallCharts";
 import StallSizer from "@/components/portfolio/StallSizer";
+import DocumentsManager from "@/components/portfolio/DocumentsManager";
 import {
   DEFAULT_CONTROLS,
   PRELOADED_SITES,
@@ -63,6 +64,9 @@ export default function PortfolioBuilder() {
             )}
             {activeTab === "chargescore" && (
               <StallSizer onAddToPortfolio={handleAddFromSizer} />
+            )}
+            {activeTab === "documents" && (
+              <DocumentsManager siteNames={sites.map(s => s.name)} />
             )}
           </main>
         </div>
