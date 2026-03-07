@@ -71,7 +71,7 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
     try {
       // Run all API lookups in parallel
       const [aadtResult, stations, parcel, siteData, tractFips] = await Promise.all([
-        fetchAadt(lat, lng),
+        fetchAadt(lat, lng, 500, stateCode, formatted),
         fetchNearbyStations(lat, lng, 5),
         fetchParcelInfo(lat, lng, stateCode),
         fetchSiteData(lat, lng),
@@ -335,7 +335,7 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
       </Card>
 
       <QuickFinancialPreview stalls={recommendation.base} kwhPerStallPerDay={recommendation.kwhPerStallPerDay} />
-      <ParkingGuidelines />
+      <ParkingGuidelines state={inputs.state || undefined} />
     </div>
   );
 }

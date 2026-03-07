@@ -12,16 +12,19 @@ export interface AadtResult {
 }
 
 /**
- * Fetch AADT for the nearest road segment within `radiusMeters` of (lat, lng).
+ * Fetch AADT for the nearest road segment.
+ * Tries federal HPMS first, then falls back to state DOT Socrata data.
  */
 export async function fetchAadt(
   lat: number,
   lng: number,
   radiusMeters = 500,
+  state?: string,
+  address?: string,
 ): Promise<AadtResult> {
   try {
     const { data, error } = await supabase.functions.invoke('get-traffic-data', {
-      body: { lat, lng, radiusMeters },
+      body: { lat, lng, radiusMeters, state, address },
     });
 
     if (error) {
