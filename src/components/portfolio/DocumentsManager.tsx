@@ -39,11 +39,14 @@ interface Props {
   sites: SiteInfo[];
 }
 
-export default function DocumentsManager({ siteNames }: Props) {
+export default function DocumentsManager({ sites }: Props) {
   const { user } = useAuth();
   const [docs, setDocs] = useState<SiteDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [docType, setDocType] = useState<string>("evpin_report");
+  const [siteName, setSiteName] = useState("");
+  const [address, setAddress] = useState("");
   const [docType, setDocType] = useState<string>("evpin_report");
   const [siteName, setSiteName] = useState("");
   const [address, setAddress] = useState("");
