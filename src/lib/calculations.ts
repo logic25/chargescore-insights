@@ -30,6 +30,27 @@ const TESLA_FEE_ESCALATION = 1.03;        // 3% YoY Tesla service fee escalation
 const DISCOUNT_RATE = 0.08;               // 8% discount rate for NPV
 const DEFAULT_PROJECT_YEARS = 15;
 
+// --- IRR Solver (Newton-Raphson) ---
+function solveIrr(cashFlows: number[], maxIter = 100, tol = 1e-7): number | null {
+  if (cashFlows.length < 2) return null;
+  let rate = 0.10; // initial guess
+  for (let i = 0; i < maxIter; i++) {
+    let npv = 0;
+    let dNpv = 0;
+    for (let t = 0; t < cashFlows.length; t++) {
+      const d = Math.pow(1 + rate, t);
+      npv += cashFlows[t] / d;
+      if (t > 0) dNpv -= t * cashFlows[t] / Math.pow(1 + rate, t + 1);
+    }
+    if (Math.abs(dNpv) < 1e-12) break;
+    const newRate = rate - npv / dNpv;
+    if (Math.abs(newRate - rate) < tol) return newRate * 100;
+    rate = newRate;
+    if (rate < -0.99 || rate > 10) return null; // diverged
+  }
+  return rate * 100;
+}
+
 // --- Financial Projection ---
 
 export function calculateFinancials(site: SiteAnalysis, incentives: Incentive[]): FinancialProjection {
