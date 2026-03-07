@@ -47,9 +47,6 @@ export default function DocumentsManager({ sites }: Props) {
   const [docType, setDocType] = useState<string>("evpin_report");
   const [siteName, setSiteName] = useState("");
   const [address, setAddress] = useState("");
-  const [docType, setDocType] = useState<string>("evpin_report");
-  const [siteName, setSiteName] = useState("");
-  const [address, setAddress] = useState("");
 
   const fetchDocs = useCallback(async () => {
     if (!user) return;
@@ -159,11 +156,15 @@ export default function DocumentsManager({ sites }: Props) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Site Name</Label>
-              {siteNames.length > 0 ? (
-                <Select value={siteName} onValueChange={setSiteName}>
+              {sites.length > 0 ? (
+                <Select value={siteName} onValueChange={(name) => {
+                  setSiteName(name);
+                  const match = sites.find(s => s.name === name);
+                  if (match) setAddress(match.address);
+                }}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select site..." /></SelectTrigger>
                   <SelectContent>
-                    {siteNames.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                    {sites.map(s => <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               ) : (
@@ -172,7 +173,7 @@ export default function DocumentsManager({ sites }: Props) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Address</Label>
-              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Site address" className="h-8 text-sm" />
+              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Auto-filled from site" className="h-8 text-sm text-muted-foreground" readOnly={!!sites.find(s => s.name === siteName)} />
             </div>
             <div>
               <Label htmlFor="doc-upload" className="cursor-pointer">
