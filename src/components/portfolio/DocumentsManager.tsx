@@ -279,7 +279,7 @@ export default function DocumentsManager({ sites = [] }: Props) {
                   <TableHead className="text-xs">Address</TableHead>
                   <TableHead className="text-xs">Extracted</TableHead>
                   <TableHead className="text-xs">Date</TableHead>
-                  <TableHead className="text-xs w-20" />
+                  <TableHead className="text-xs w-28" />
                 </TableRow>
               </TableHeader>
               <TableBody>
