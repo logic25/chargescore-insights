@@ -92,7 +92,12 @@ const MyAnalyses = () => {
             <Zap className="h-5 w-5 text-primary" />
             <span className="font-heading text-lg font-bold">My Projects</span>
           </div>
-          <span className="text-sm text-muted-foreground">{analyses.length} projects</span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/portfolio')}>
+              Portfolio View
+            </Button>
+            <span className="text-sm text-muted-foreground">{analyses.length} projects</span>
+          </div>
         </div>
       </header>
 
