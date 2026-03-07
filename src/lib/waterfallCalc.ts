@@ -240,6 +240,10 @@ const UTILIZATION_FACTORS = {
 
 export interface StallSizerInputs {
   siteName: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  state: string;
   totalParkingSpaces: number | null;
   lotSizeSqFt: number | null;
   dailyTraffic: number;
@@ -248,6 +252,7 @@ export interface StallSizerInputs {
   operatingHours: number;    // default 16
   locationType: LocationType;
   evpinScore: number | null;
+  chargeScore: number | null;
   nearbyL3Ports: number | null;
 }
 
@@ -285,8 +290,9 @@ export function computeStallRecommendation(inputs: StallSizerInputs): StallRecom
   if (inputs.totalParkingSpaces || inputs.lotSizeSqFt) filled++;
   if (inputs.dailyTraffic > 0) filled++;
   if (inputs.evpinScore) filled++;
+  if (inputs.chargeScore !== null) filled++;
   if (inputs.nearbyL3Ports !== null) filled++;
-  const confidence: 'Low' | 'Medium' | 'High' = filled >= 4 ? 'High' : filled >= 2 ? 'Medium' : 'Low';
+  const confidence: 'Low' | 'Medium' | 'High' = filled >= 4 ? 'High' : filled >= 3 ? 'Medium' : 'Low';
 
   const avgKwhPerSession = 30;
   const dailySessions = chargingDemand;
