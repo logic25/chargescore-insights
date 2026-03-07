@@ -44,6 +44,7 @@ export default function DocumentsManager({ sites = [] }: Props) {
   const [docs, setDocs] = useState<SiteDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [extractingId, setExtractingId] = useState<string | null>(null);
   const [docType, setDocType] = useState<string>("evpin_report");
   const [siteName, setSiteName] = useState(sites?.[0]?.name ?? "");
   const [address, setAddress] = useState(sites?.[0]?.address ?? "");
