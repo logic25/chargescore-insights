@@ -274,7 +274,7 @@ const Portfolio = () => {
                         {fmt(s.ms_monthly)}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono text-sm">
-                        {pct(s.coc)}
+                        {formatCoc(s)}
                       </td>
                       <td className={`px-3 py-2.5 text-right font-mono text-sm font-bold ${(s.npv ?? 0) > 0 ? 'text-success' : 'text-destructive'}`}>
                         {fmt(s.npv)}
