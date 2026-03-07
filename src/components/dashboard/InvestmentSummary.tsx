@@ -141,7 +141,7 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
             </div>
 
             {/* Key Metrics */}
-            <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
               <div className="rounded-xl border border-border px-2 py-3">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Out-of-Pocket</p>
                 <p className={`font-mono text-lg font-bold mt-1 ${outOfPocket <= 0 ? 'text-success' : 'text-foreground'}`}>
@@ -160,6 +160,18 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">CoC Return</p>
                 <p className={`font-mono text-lg font-bold mt-1 ${financials.cashOnCashReturn > 0 ? 'text-success' : 'text-destructive'}`}>
                   {pct(financials.cashOnCashReturn)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border px-2 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">5-Year IRR</p>
+                <p className={`font-mono text-lg font-bold mt-1 ${(financials.irr5Year ?? 0) >= 15 ? 'text-success' : (financials.irr5Year ?? 0) >= 10 ? 'text-amber-500' : 'text-destructive'}`}>
+                  {financials.irr5Year != null ? pct(financials.irr5Year) : '—'}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border px-2 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">10-Year IRR</p>
+                <p className={`font-mono text-lg font-bold mt-1 ${(financials.irr10Year ?? 0) >= 15 ? 'text-success' : (financials.irr10Year ?? 0) >= 10 ? 'text-amber-500' : 'text-destructive'}`}>
+                  {financials.irr10Year != null ? pct(financials.irr10Year) : '—'}
                 </p>
               </div>
               <div className="rounded-xl border border-border px-2 py-3">
