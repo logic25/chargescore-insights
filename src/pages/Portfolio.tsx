@@ -312,7 +312,7 @@ const Portfolio = () => {
                 Showing {scenario}x scenario — NOI, Owner/MS distributions, CoC, and NPV are scaled by {multiplier}×
               </p>
             )}
-            <p className="mt-2 text-[10px] text-muted-foreground">* N/A = Fully funded by incentives ($0 out-of-pocket), so Cash-on-Cash is not applicable.</p>
+            
           </>
         )}
       </main>
