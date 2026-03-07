@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, FileText, Trash2, Download, Loader2, Eye } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, Eye, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -44,6 +44,7 @@ export default function DocumentsManager({ sites = [] }: Props) {
   const [docs, setDocs] = useState<SiteDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [extractingId, setExtractingId] = useState<string | null>(null);
   const [docType, setDocType] = useState<string>("evpin_report");
   const [siteName, setSiteName] = useState(sites?.[0]?.name ?? "");
   const [address, setAddress] = useState(sites?.[0]?.address ?? "");
@@ -60,6 +61,13 @@ export default function DocumentsManager({ sites = [] }: Props) {
   }, [user]);
 
   useEffect(() => { fetchDocs(); }, [fetchDocs]);
+
+  useEffect(() => {
+    if (!siteName && (sites?.length ?? 0) > 0) {
+      setSiteName(sites[0].name);
+      setAddress(sites[0].address);
+    }
+  }, [sites, siteName]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -104,8 +112,6 @@ export default function DocumentsManager({ sites = [] }: Props) {
 
       toast({ title: "Document uploaded", description: extractedData.totalScore ? `EVpin Score: ${extractedData.totalScore}/5 extracted` : file.name });
       await fetchDocs();
-      setSiteName("");
-      setAddress("");
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {
@@ -130,6 +136,43 @@ export default function DocumentsManager({ sites = [] }: Props) {
       a.download = doc.file_name;
       a.click();
       URL.revokeObjectURL(url);
+    }
+  };
+
+  const handleExtract = async (doc: SiteDocument) => {
+    if (doc.doc_type !== "evpin_report") return;
+    setExtractingId(doc.id);
+    try {
+      const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-evpin-report", {
+        body: { filePath: doc.file_path },
+      });
+      if (parseError) throw parseError;
+
+      const extracted = parseData?.extracted ?? {};
+      const updates: Record<string, unknown> = {
+        extracted_data: extracted,
+      };
+
+      if (!doc.site_name && extracted?.siteName) updates.site_name = extracted.siteName;
+      if (!doc.address && extracted?.address) updates.address = extracted.address;
+
+      const { error: updateError } = await supabase
+        .from("site_documents")
+        .update(updates as any)
+        .eq("id", doc.id)
+        .eq("user_id", user?.id ?? "");
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "AI extraction complete",
+        description: extracted?.totalScore ? `EVpin Score: ${extracted.totalScore}/5` : "Data saved to document",
+      });
+      await fetchDocs();
+    } catch (err: any) {
+      toast({ title: "Extraction failed", description: err.message, variant: "destructive" });
+    } finally {
+      setExtractingId(null);
     }
   };
 
@@ -165,18 +208,34 @@ export default function DocumentsManager({ sites = [] }: Props) {
             <div className="space-y-1">
               <Label className="text-xs">Site Name</Label>
               {(sites?.length ?? 0) > 0 ? (
-                <Select value={siteName} onValueChange={(name) => {
-                  setSiteName(name);
-                  const match = sites.find(s => s.name === name);
-                  if (match) setAddress(match.address);
-                }}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select site..." /></SelectTrigger>
-                  <SelectContent>
-                    {sites.map(s => <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-1">
+                  <Select value={siteName} onValueChange={(name) => {
+                    setSiteName(name);
+                    const match = sites.find(s => s.name === name);
+                    if (match) setAddress(match.address);
+                  }}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select site..." /></SelectTrigger>
+                    <SelectContent>
+                      {sites.map(s => <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-8 px-2 text-xs"
+                    onClick={() => {
+                      setSiteName("");
+                      setAddress("");
+                    }}
+                  >
+                    Manual
+                  </Button>
+                </div>
               ) : (
-                <Input value={siteName} onChange={e => setSiteName(e.target.value)} placeholder="Site name" className="h-8 text-sm" />
+                <>
+                  <Input value={siteName} onChange={e => setSiteName(e.target.value)} placeholder="Site name" className="h-8 text-sm" />
+                  <p className="text-[10px] text-muted-foreground">No portfolio sites yet — add one in Stall Sizer, or type site and address manually.</p>
+                </>
               )}
             </div>
             <div className="space-y-1">
@@ -218,7 +277,7 @@ export default function DocumentsManager({ sites = [] }: Props) {
                   <TableHead className="text-xs">Address</TableHead>
                   <TableHead className="text-xs">Extracted</TableHead>
                   <TableHead className="text-xs">Date</TableHead>
-                  <TableHead className="text-xs w-20" />
+                  <TableHead className="text-xs w-28" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -244,6 +303,18 @@ export default function DocumentsManager({ sites = [] }: Props) {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        {doc.doc_type === "evpin_report" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleExtract(doc)}
+                            title="AI Extract"
+                            disabled={extractingId === doc.id}
+                          >
+                            {extractingId === doc.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleView(doc)} title="View">
                           <Eye className="h-3 w-3" />
                         </Button>
