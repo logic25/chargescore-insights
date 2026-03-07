@@ -137,8 +137,6 @@ const Portfolio = () => {
     };
   }, [scaled]);
 
-  const hasNaCoc = ranked.some((site) => formatCoc(site) === 'N/A*');
-
   // Composite ranking: average of NPV rank, CoC rank, Score rank (lower = better)
   const ranked = useMemo(() => {
     if (scaled.length === 0) return [];
