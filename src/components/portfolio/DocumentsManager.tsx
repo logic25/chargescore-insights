@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, FileText, Trash2, Download, Loader2 } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Loader2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -30,11 +30,16 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-interface Props {
-  siteNames: string[];
+interface SiteInfo {
+  name: string;
+  address: string;
 }
 
-export default function DocumentsManager({ siteNames }: Props) {
+interface Props {
+  sites: SiteInfo[];
+}
+
+export default function DocumentsManager({ sites }: Props) {
   const { user } = useAuth();
   const [docs, setDocs] = useState<SiteDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,6 +133,14 @@ export default function DocumentsManager({ siteNames }: Props) {
     }
   };
 
+  const handleView = async (doc: SiteDocument) => {
+    const { data } = await supabase.storage.from("site-documents").download(doc.file_path);
+    if (data) {
+      const url = URL.createObjectURL(data);
+      window.open(url, "_blank");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card className="border-border/50">
@@ -151,11 +164,15 @@ export default function DocumentsManager({ siteNames }: Props) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Site Name</Label>
-              {siteNames.length > 0 ? (
-                <Select value={siteName} onValueChange={setSiteName}>
+              {sites.length > 0 ? (
+                <Select value={siteName} onValueChange={(name) => {
+                  setSiteName(name);
+                  const match = sites.find(s => s.name === name);
+                  if (match) setAddress(match.address);
+                }}>
                   <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select site..." /></SelectTrigger>
                   <SelectContent>
-                    {siteNames.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                    {sites.map(s => <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               ) : (
@@ -164,7 +181,7 @@ export default function DocumentsManager({ siteNames }: Props) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Address</Label>
-              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Site address" className="h-8 text-sm" />
+              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Auto-filled from site" className="h-8 text-sm text-muted-foreground" readOnly={!!sites.find(s => s.name === siteName)} />
             </div>
             <div>
               <Label htmlFor="doc-upload" className="cursor-pointer">
@@ -225,10 +242,13 @@ export default function DocumentsManager({ siteNames }: Props) {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownload(doc)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleView(doc)} title="View">
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownload(doc)} title="Download">
                           <Download className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete(doc)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete(doc)} title="Delete">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>

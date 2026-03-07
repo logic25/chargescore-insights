@@ -66,7 +66,7 @@ export default function PortfolioBuilder() {
               <StallSizer onAddToPortfolio={handleAddFromSizer} />
             )}
             {activeTab === "documents" && (
-              <DocumentsManager siteNames={sites.map(s => s.name)} />
+              <DocumentsManager sites={sites.map(s => ({ name: s.name, address: s.address }))} />
             )}
           </main>
         </div>
