@@ -234,6 +234,19 @@ serve(async (req: Request) => {
       }
     }
 
+    // Fallback 2: state ArcGIS FeatureServer (geospatial, e.g. FL FDOT)
+    if (state) {
+      const arcResult = await fetchArcGisAadt(state, lat, lng);
+      if (arcResult.aadt) {
+        return new Response(JSON.stringify({
+          ...arcResult,
+          source: `arcgis_${state.toLowerCase()}`,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // No results at any source
     return new Response(JSON.stringify({ aadt: null, routeId: null, year: null, source: null }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
