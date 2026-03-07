@@ -33,6 +33,9 @@ const LandingPage = () => {
           </div>
           {user ? (
             <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/portfolio-builder')} className="hidden sm:flex">
+                Portfolio Builder
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => navigate('/my-analyses')} className="hidden sm:flex">
                 My Projects
               </Button>
