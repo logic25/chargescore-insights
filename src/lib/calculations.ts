@@ -89,10 +89,22 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
 
+  // Phase 1: NOI & split
+  const ownerPct = (site.ownerSplitPct ?? 70) / 100;
+  const insurance = site.annualInsurance ?? 5000;
+  const rent = (site.monthlyRent ?? 0) * 12;
+  const annualNoi = annualNetRevenue - insurance - rent;
+  const ownerMonthly = (annualNoi * ownerPct) / 12;
+  const msMonthly = (annualNoi * (1 - ownerPct)) / 12;
+  const marginPerKwh = site.pricePerKwh - site.electricityCostPerKwh - site.teslaServiceFeePerKwh;
+  const cashOnCashReturn = netInvestment > 0 ? (annualNoi * ownerPct / netInvestment) * 100 : Infinity;
+
   const projectYears = site.npvYears || DEFAULT_PROJECT_YEARS;
   const cumulativeCashFlow: number[] = [];
+  const yearByYear: import('@/types/chargeScore').YearByYearRow[] = [];
   let npv15Year = -netInvestment;
   let paybackYears = Infinity;
+  let cumOwner = -netInvestment;
 
   for (let year = 1; year <= projectYears; year++) {
     const growthFactor = Math.pow(TESLA_UTILIZATION_GROWTH, year - 1);
@@ -101,8 +113,25 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
     const yearAnnualRevenue = yearDailyKwh * site.pricePerKwh * 365;
     const yearElectricity = yearDailyKwh * 365 * site.electricityCostPerKwh;
     const yearTeslaFee = yearDailyKwh * site.teslaServiceFeePerKwh * feeEscalation * 365;
-    // NO demand charge line — already in levelized electricity rate
     const yearNetRevenue = yearAnnualRevenue - yearElectricity - yearTeslaFee;
+    const yearNoi = yearNetRevenue - insurance - rent;
+    const yearOwnerDist = yearNoi * ownerPct;
+    const yearMsDist = yearNoi * (1 - ownerPct);
+    cumOwner += yearOwnerDist;
+
+    yearByYear.push({
+      year,
+      revenue: yearAnnualRevenue,
+      electricity: yearElectricity,
+      teslaFee: yearTeslaFee,
+      insurance,
+      rent,
+      noi: yearNoi,
+      ownerDist: yearOwnerDist,
+      msDist: yearMsDist,
+      cumOwner,
+      coc: netInvestment > 0 ? (yearOwnerDist / netInvestment) * 100 : Infinity,
+    });
 
     const prev = year === 1 ? -netInvestment : cumulativeCashFlow[year - 2];
     cumulativeCashFlow.push(prev + yearNetRevenue);
@@ -130,6 +159,7 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
     totalProjectCost, estimatedIncentives, netInvestment,
     annualNetRevenue, paybackMonths, fiveYearRoi, cumulativeCashFlow,
     npv15Year, paybackYears,
+    annualNoi, ownerMonthly, msMonthly, marginPerKwh, cashOnCashReturn, yearByYear,
   };
 }
 
@@ -175,14 +205,46 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
   const estimatedIncentives = Math.min(selectedTotal, totalProjectCost);
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
+
+  // Phase 1: NOI & split
+  const ownerPct = (site.ownerSplitPct ?? 70) / 100;
+  const insurance = site.annualInsurance ?? 5000;
+  const rent = (site.monthlyRent ?? 0) * 12;
+  const annualNoi = annualNetRevenue - insurance - rent;
+  const ownerMonthly = (annualNoi * ownerPct) / 12;
+  const msMonthly = (annualNoi * (1 - ownerPct)) / 12;
+  const marginPerKwh = site.pricePerKwh - site.electricityCostPerKwh - (site.demandChargePerKw > 0 ? 0.02 : 0);
+  const cashOnCashReturn = netInvestment > 0 ? (annualNoi * ownerPct / netInvestment) * 100 : Infinity;
+
   const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
 
   const projectYears = site.npvYears || DEFAULT_PROJECT_YEARS;
   const cumulativeCashFlow: number[] = [];
+  const yearByYear: import('@/types/chargeScore').YearByYearRow[] = [];
   let npv15Year = -netInvestment;
   let paybackYears = Infinity;
+  let cumOwner = -netInvestment;
 
   for (let year = 1; year <= projectYears; year++) {
+    const yearNoi = annualNoi; // generic model: no growth
+    const yearOwnerDist = yearNoi * ownerPct;
+    const yearMsDist = yearNoi * (1 - ownerPct);
+    cumOwner += yearOwnerDist;
+
+    yearByYear.push({
+      year,
+      revenue: annualRevenue,
+      electricity: monthlyElectricityCost * 12,
+      teslaFee: 0,
+      insurance,
+      rent,
+      noi: yearNoi,
+      ownerDist: yearOwnerDist,
+      msDist: yearMsDist,
+      cumOwner,
+      coc: netInvestment > 0 ? (yearOwnerDist / netInvestment) * 100 : Infinity,
+    });
+
     const prev = year === 1 ? -netInvestment : cumulativeCashFlow[year - 2];
     cumulativeCashFlow.push(prev + annualNetRevenue);
     npv15Year += annualNetRevenue / Math.pow(1 + DISCOUNT_RATE, year);
@@ -205,6 +267,7 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
     totalProjectCost, estimatedIncentives, netInvestment,
     annualNetRevenue, paybackMonths, fiveYearRoi, cumulativeCashFlow,
     npv15Year, paybackYears,
+    annualNoi, ownerMonthly, msMonthly, marginPerKwh, cashOnCashReturn, yearByYear,
   };
 }
 

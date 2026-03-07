@@ -319,6 +319,58 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
               </div>
             </div>
           </div>
+
+          {/* Row 5: Owner Split + Insurance + Rent */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                  Owner Split
+                  <Tooltip>
+                    <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground/50" /></TooltipTrigger>
+                    <TooltipContent className="max-w-[260px] text-sm">Percentage of NOI distributed to the property owner. The remainder goes to MS.</TooltipContent>
+                  </Tooltip>
+                </Label>
+                <span className="font-mono text-sm font-bold text-primary">{site.ownerSplitPct}%</span>
+              </div>
+              <Slider
+                value={[site.ownerSplitPct]}
+                onValueChange={([v]) => update({ ownerSplitPct: v })}
+                min={0} max={100} step={5}
+                className="py-1"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground/60">
+                <span>MS gets all</span>
+                <span>Owner gets all</span>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                Annual Insurance
+                <Tooltip>
+                  <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground/50" /></TooltipTrigger>
+                  <TooltipContent className="max-w-[260px] text-sm">Annual insurance cost for the charging equipment. Subtracted from revenue to calculate NOI.</TooltipContent>
+                </Tooltip>
+              </Label>
+              <Input type="number" step="500" className="h-10 font-mono text-sm"
+                value={site.annualInsurance}
+                onChange={(e) => update({ annualInsurance: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                Monthly Rent
+                <Tooltip>
+                  <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground/50" /></TooltipTrigger>
+                  <TooltipContent className="max-w-[260px] text-sm">Monthly site rent paid to the property. Subtracted from revenue to calculate NOI.</TooltipContent>
+                </Tooltip>
+              </Label>
+              <Input type="number" step="100" className="h-10 font-mono text-sm"
+                value={site.monthlyRent}
+                onChange={(e) => update({ monthlyRent: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

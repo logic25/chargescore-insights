@@ -33,6 +33,10 @@ export interface SiteAnalysis {
   demandChargePerKw: number;
   teslaServiceFeePerKwh: number;
   npvYears: number;
+  // Phase 1: Owner/MS split model
+  ownerSplitPct: number;       // 0-100, default 70 (owner gets 70%)
+  annualInsurance: number;     // annual insurance cost, default 5000
+  monthlyRent: number;         // monthly site rent, default 0
 }
 
 export type PropertyType =
@@ -123,6 +127,27 @@ export interface FinancialProjection {
   cumulativeCashFlow: number[];
   npv15Year: number;
   paybackYears: number;
+  // Phase 1: NOI & split metrics
+  annualNoi: number;
+  ownerMonthly: number;
+  msMonthly: number;
+  marginPerKwh: number;
+  cashOnCashReturn: number;    // annual CoC %
+  yearByYear: YearByYearRow[];
+}
+
+export interface YearByYearRow {
+  year: number;
+  revenue: number;
+  electricity: number;
+  teslaFee: number;
+  insurance: number;
+  rent: number;
+  noi: number;
+  ownerDist: number;
+  msDist: number;
+  cumOwner: number;
+  coc: number;  // CoC % for that year
 }
 
 export interface Incentive {

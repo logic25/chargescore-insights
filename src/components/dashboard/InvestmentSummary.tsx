@@ -17,6 +17,11 @@ const fmt = (n: number) => {
   return n < 0 ? `-$${Math.abs(Math.round(n)).toLocaleString()}` : `$${Math.round(n).toLocaleString()}`;
 };
 
+const pct = (n: number) => {
+  if (!isFinite(n)) return '—';
+  return `${n.toFixed(1)}%`;
+};
+
 const InfoTip = ({ text }: { text: string }) => (
   <Tooltip>
     <TooltipTrigger asChild>
@@ -84,9 +89,9 @@ const Row = ({ label, value, valueClass = 'text-foreground', tip, indent = false
 const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
   const [showIncentives, setShowIncentives] = useState(false);
   const [showYear1, setShowYear1] = useState(false);
+  const [showYearByYear, setShowYearByYear] = useState(false);
 
   const netProfit = financials.annualNetRevenue;
-  const monthlyProfit = netProfit / 12;
   const outOfPocket = financials.netInvestment;
 
   const eligiblePrimary = incentives.filter(i => !i.isAlternative && i.eligible !== false);
@@ -109,44 +114,58 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
       <div className="px-5 py-4">
         {/* Two-column layout */}
         <div className="grid gap-5 lg:grid-cols-2">
-          {/* LEFT COLUMN: Profit + Key Metrics */}
+          {/* LEFT COLUMN: Owner/MS Split + Key Metrics */}
           <div className="space-y-4">
-            {/* Hero: Monthly Profit */}
+            {/* Hero: Owner vs MS Monthly */}
             <div className="rounded-xl border border-border bg-muted/20 px-5 py-4">
-              <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Monthly Profit</p>
-              <p className={`font-mono text-4xl font-bold tracking-tight ${monthlyProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {fmt(monthlyProfit)}<span className="text-lg font-semibold text-muted-foreground">/mo</span>
-              </p>
-              <div className="mt-2 pt-2 border-t border-border/50">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-muted-foreground">Annual</span>
-                  <span className={`font-mono text-lg font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                    {fmt(netProfit)}/yr
-                  </span>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">Owner Monthly</p>
+                  <p className={`font-mono text-3xl font-bold tracking-tight ${financials.ownerMonthly >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {fmt(financials.ownerMonthly)}<span className="text-sm font-semibold text-muted-foreground">/mo</span>
+                  </p>
                 </div>
+                <div>
+                  <p className="text-sm uppercase tracking-wider text-muted-foreground font-medium">MS Monthly</p>
+                  <p className={`font-mono text-3xl font-bold tracking-tight ${financials.msMonthly >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                    {fmt(financials.msMonthly)}<span className="text-sm font-semibold text-muted-foreground">/mo</span>
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 pt-2 border-t border-border/50 flex items-center justify-between">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">Annual NOI</span>
+                <span className={`font-mono text-lg font-bold ${financials.annualNoi >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {fmt(financials.annualNoi)}/yr
+                </span>
               </div>
             </div>
 
             {/* Key Metrics */}
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-xl border border-border px-3 py-3">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Out-of-Pocket</p>
-                <p className={`font-mono text-xl font-bold mt-1 ${outOfPocket <= 0 ? 'text-success' : 'text-foreground'}`}>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="rounded-xl border border-border px-2 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Out-of-Pocket</p>
+                <p className={`font-mono text-lg font-bold mt-1 ${outOfPocket <= 0 ? 'text-success' : 'text-foreground'}`}>
                   {fmt(outOfPocket)}
                 </p>
               </div>
-              <div className="rounded-xl border border-border px-3 py-3">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Payback</p>
-                <p className="font-mono text-xl font-bold text-foreground mt-1">
+              <div className="rounded-xl border border-border px-2 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Payback</p>
+                <p className="font-mono text-lg font-bold text-foreground mt-1">
                   {isFinite(financials.paybackYears) && financials.paybackYears < 100
                     ? `${financials.paybackYears}yr`
                     : 'N/A'}
                 </p>
               </div>
-              <div className="rounded-xl border border-border px-3 py-3">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">15yr NPV</p>
-                <p className={`font-mono text-xl font-bold mt-1 ${financials.npv15Year > 0 ? 'text-success' : 'text-destructive'}`}>
-                  {fmt(financials.npv15Year)}
+              <div className="rounded-xl border border-border px-2 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">CoC Return</p>
+                <p className={`font-mono text-lg font-bold mt-1 ${financials.cashOnCashReturn > 0 ? 'text-success' : 'text-destructive'}`}>
+                  {pct(financials.cashOnCashReturn)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border px-2 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Margin/kWh</p>
+                <p className={`font-mono text-lg font-bold mt-1 ${financials.marginPerKwh > 0 ? 'text-success' : 'text-destructive'}`}>
+                  ${financials.marginPerKwh.toFixed(2)}
                 </p>
               </div>
             </div>
@@ -185,7 +204,7 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
             )}
           </div>
 
-          {/* RIGHT COLUMN: Costs + Year 1 P&L */}
+          {/* RIGHT COLUMN: Costs + Year 1 P&L + Year-by-Year */}
           <div className="space-y-4">
             {/* Project Cost Breakdown */}
             <div className="rounded-xl border border-border bg-muted/10 px-5 py-4 space-y-1">
@@ -208,8 +227,8 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
                 {showYear1 ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 Year 1 P&L Breakdown
               </span>
-              <span className={`font-mono text-sm font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {fmt(netProfit)}/yr
+              <span className={`font-mono text-sm font-bold ${financials.annualNoi >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {fmt(financials.annualNoi)}/yr NOI
               </span>
             </button>
 
@@ -237,8 +256,54 @@ const InvestmentSummary = ({ financials, incentives, stalls }: Props) => {
                   </>
                 )}
                 <div className="border-t border-border pt-1.5">
-                  <Row label="Net Profit" value={`${fmt(netProfit)}/yr`} valueClass={netProfit >= 0 ? 'text-success' : 'text-destructive'} />
+                  <Row label="Net Revenue" value={`${fmt(netProfit)}/yr`} valueClass={netProfit >= 0 ? 'text-success' : 'text-destructive'} />
                 </div>
+                <Row label="Less: Insurance" value={`(${fmt(financials.yearByYear[0]?.insurance ?? 0)})/yr`} valueClass="text-destructive" />
+                <Row label="Less: Rent" value={`(${fmt(financials.yearByYear[0]?.rent ?? 0)})/yr`} valueClass="text-destructive" />
+                <div className="border-t border-border pt-1.5">
+                  <Row label="NOI" value={`${fmt(financials.annualNoi)}/yr`} valueClass={financials.annualNoi >= 0 ? 'text-success' : 'text-destructive'}
+                    tip="Net Operating Income = Revenue − Electricity − Tesla Fee − Insurance − Rent" />
+                </div>
+              </div>
+            )}
+
+            {/* Year-by-Year Projection — collapsible */}
+            <button
+              className="flex w-full items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm transition-colors hover:bg-muted/50"
+              onClick={() => setShowYearByYear(!showYearByYear)}
+            >
+              <span className="flex items-center gap-1.5 font-semibold text-muted-foreground">
+                {showYearByYear ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                {financials.yearByYear.length}-Year Distribution Table
+              </span>
+            </button>
+
+            {showYearByYear && financials.yearByYear.length > 0 && (
+              <div className="rounded-xl border border-border bg-muted/10 overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Year</th>
+                      <th className="px-3 py-2 text-right font-semibold text-muted-foreground">NOI</th>
+                      <th className="px-3 py-2 text-right font-semibold text-muted-foreground">Owner</th>
+                      <th className="px-3 py-2 text-right font-semibold text-muted-foreground">MS</th>
+                      <th className="px-3 py-2 text-right font-semibold text-muted-foreground">Cum. Owner</th>
+                      <th className="px-3 py-2 text-right font-semibold text-muted-foreground">CoC</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {financials.yearByYear.map((row) => (
+                      <tr key={row.year} className="border-b border-border/50 last:border-0">
+                        <td className="px-3 py-1.5 font-mono font-semibold text-foreground">Y{row.year}</td>
+                        <td className={`px-3 py-1.5 font-mono text-right ${row.noi >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(row.noi)}</td>
+                        <td className={`px-3 py-1.5 font-mono text-right ${row.ownerDist >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(row.ownerDist)}</td>
+                        <td className="px-3 py-1.5 font-mono text-right text-primary">{fmt(row.msDist)}</td>
+                        <td className={`px-3 py-1.5 font-mono text-right ${row.cumOwner >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(row.cumOwner)}</td>
+                        <td className="px-3 py-1.5 font-mono text-right text-foreground">{pct(row.coc)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
