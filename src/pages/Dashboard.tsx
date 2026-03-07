@@ -65,6 +65,7 @@ const Dashboard = () => {
     electricityCostPerKwh: 0.223,
     demandChargePerKw: 15,
     teslaServiceFeePerKwh: 0.10,
+    npvYears: 15,
   });
 
   const [stations, setStations] = useState<NearbyStation[]>([]);
@@ -371,7 +372,7 @@ const Dashboard = () => {
             {([
               { key: 'revenue' as const, icon: TrendingUp, iconClass: 'text-success', label: 'Monthly Revenue', value: fmt(monthlyProfit), valueClass: monthlyProfit >= 0 ? 'text-success' : 'text-destructive', sub: '/mo net profit' },
               { key: 'investment' as const, icon: DollarSign, iconClass: 'text-primary', label: 'Out-of-Pocket', value: fmt(financials.netInvestment), valueClass: financials.netInvestment <= 0 ? 'text-success' : 'text-foreground', sub: 'after incentives' },
-              { key: 'npv' as const, icon: BarChart3, iconClass: 'text-primary', label: '15-Year NPV', value: fmt(financials.npv15Year), valueClass: financials.npv15Year > 0 ? 'text-success' : 'text-destructive', sub: 'Total profit in today\'s dollars' },
+              { key: 'npv' as const, icon: BarChart3, iconClass: 'text-primary', label: `${site.npvYears}-Year NPV`, value: fmt(financials.npv15Year), valueClass: financials.npv15Year > 0 ? 'text-success' : 'text-destructive', sub: 'Total profit in today\'s dollars' },
             ] as const).map((card, i) => (
               <button
                 key={card.key}
@@ -388,7 +389,7 @@ const Dashboard = () => {
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[300px] text-xs leading-relaxed">
                         <p className="font-semibold mb-1">Net Present Value (NPV)</p>
-                        <p>Your total 15-year profit expressed in today's dollars. We discount future cash flows at 8% — the typical opportunity cost of capital (what you'd earn investing that money elsewhere, e.g. S&P 500 average). A positive NPV means this investment outperforms the alternative.</p>
+                        <p>Your total {site.npvYears}-year profit expressed in today's dollars. We discount future cash flows at 8% — the typical opportunity cost of capital (what you'd earn investing that money elsewhere, e.g. S&P 500 average). A positive NPV means this investment outperforms the alternative.</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -419,7 +420,7 @@ const Dashboard = () => {
             }} />
           )}
           {activePanel === 'npv' && (
-            <FinancialProjection financials={financials} />
+            <FinancialProjection financials={financials} npvYears={site.npvYears} onNpvYearsChange={(v) => setSite(prev => ({ ...prev, npvYears: v }))} />
           )}
         </div>
       </main>

@@ -28,7 +28,7 @@ const TESLA_PEAK_KW_PER_STALL = 325;      // V4 max output kW (kept for referenc
 const TESLA_UTILIZATION_GROWTH = 1.07;     // 7% YoY utilization growth
 const TESLA_FEE_ESCALATION = 1.03;        // 3% YoY Tesla service fee escalation
 const DISCOUNT_RATE = 0.08;               // 8% discount rate for NPV
-const PROJECT_YEARS = 15;                 // 15-year analysis
+const DEFAULT_PROJECT_YEARS = 15;
 
 // --- Financial Projection ---
 
@@ -89,12 +89,12 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
 
-  // 15-year cash flow with 7% utilization growth and 3% Tesla fee escalation
+  const projectYears = site.npvYears || DEFAULT_PROJECT_YEARS;
   const cumulativeCashFlow: number[] = [];
   let npv15Year = -netInvestment;
   let paybackYears = Infinity;
 
-  for (let year = 1; year <= PROJECT_YEARS; year++) {
+  for (let year = 1; year <= projectYears; year++) {
     const growthFactor = Math.pow(TESLA_UTILIZATION_GROWTH, year - 1);
     const feeEscalation = Math.pow(TESLA_FEE_ESCALATION, year - 1);
     const yearDailyKwh = baseDailyKwh * growthFactor;
@@ -177,11 +177,12 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
   const annualNetRevenue = annualRevenue - totalAnnualOperatingCost;
   const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
 
+  const projectYears = site.npvYears || DEFAULT_PROJECT_YEARS;
   const cumulativeCashFlow: number[] = [];
   let npv15Year = -netInvestment;
   let paybackYears = Infinity;
 
-  for (let year = 1; year <= 15; year++) {
+  for (let year = 1; year <= projectYears; year++) {
     const prev = year === 1 ? -netInvestment : cumulativeCashFlow[year - 2];
     cumulativeCashFlow.push(prev + annualNetRevenue);
     npv15Year += annualNetRevenue / Math.pow(1 + DISCOUNT_RATE, year);

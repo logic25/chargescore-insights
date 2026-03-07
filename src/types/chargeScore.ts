@@ -32,6 +32,7 @@ export interface SiteAnalysis {
   electricityCostPerKwh: number;
   demandChargePerKw: number;
   teslaServiceFeePerKwh: number;
+  npvYears: number;
 }
 
 export type PropertyType =
