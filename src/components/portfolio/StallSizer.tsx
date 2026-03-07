@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, Zap, AlertTriangle, CheckCircle, Loader2, Info } from "lucide-react";
+import { Plus, Zap, AlertTriangle, CheckCircle, Loader2, Info, Upload } from "lucide-react";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 import ParkingGuidelines from "./ParkingGuidelines";
 import QuickFinancialPreview from "./QuickFinancialPreview";
 import type { StallSizerInputs, LocationType, SiteRow } from "@/lib/waterfallCalc";
@@ -50,8 +53,11 @@ const LOCATION_LABELS: Record<LocationType, string> = {
 };
 
 export default function StallSizer({ onAddToPortfolio }: Props) {
+  const { user } = useAuth();
   const [inputs, setInputs] = useState<StallSizerInputs>(DEFAULT_INPUTS);
   const [fetching, setFetching] = useState(false);
+  const [evpinUploading, setEvpinUploading] = useState(false);
+  const evpinFileRef = useRef<HTMLInputElement>(null);
   const set = <K extends keyof StallSizerInputs>(key: K, value: StallSizerInputs[K]) => setInputs(prev => ({ ...prev, [key]: value }));
 
   const recommendation = computeStallRecommendation(inputs);
@@ -170,6 +176,43 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
     onAddToPortfolio(site);
   };
 
+  const handleEvpinUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setEvpinUploading(true);
+    try {
+      const filePath = `${user.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage.from("site-documents").upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      // Save doc record
+      await supabase.from("site_documents").insert([{
+        user_id: user.id,
+        site_name: inputs.siteName,
+        address: inputs.address,
+        file_name: file.name,
+        file_path: filePath,
+        doc_type: "evpin_report" as const,
+        extracted_data: {} as any,
+      }]);
+
+      // Try to parse
+      const { data: parseData } = await supabase.functions.invoke("parse-evpin-report", { body: { filePath } });
+      if (parseData?.extracted?.totalScore) {
+        set("evpinScore", parseData.extracted.totalScore);
+        // Update the doc record with extracted data
+        toast({ title: "EVpin Score extracted", description: `Score: ${parseData.extracted.totalScore}/5` });
+      } else {
+        toast({ title: "Report uploaded", description: "Could not auto-extract score. Enter manually." });
+      }
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setEvpinUploading(false);
+      e.target.value = "";
+    }
+  }, [user, inputs.siteName, inputs.address]);
+
   const parkingWarning = recommendation.parkingPctBase > 10 ? 'over' : recommendation.parkingPctBase < 2 ? 'under' : null;
 
   return (
@@ -262,9 +305,15 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <Tooltip><TooltipTrigger asChild>
-                        <Label className="text-xs flex items-center gap-1 cursor-help">EVpin Score <Info className="h-3 w-3 text-muted-foreground" /></Label>
-                      </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Third-party site suitability score (1–5) from EVpin.com. Higher scores indicate better EV charging potential. Enter manually if available.</TooltipContent></Tooltip>
-                      <Input type="number" min={1} max={5} value={inputs.evpinScore ?? ''} onChange={e => set('evpinScore', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" />
+                        <Label className="text-xs flex items-center gap-1 cursor-help">EVpin Score <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">Manual / Upload</Badge> <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                      </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Third-party site suitability score (1–5) from EVpin.com. Upload a PDF report to auto-extract, or enter manually.</TooltipContent></Tooltip>
+                      <div className="flex gap-1">
+                        <Input type="number" min={1} max={5} step={0.1} value={inputs.evpinScore ?? ''} onChange={e => set('evpinScore', e.target.value ? parseFloat(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" placeholder="1-5" />
+                        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => evpinFileRef.current?.click()} disabled={evpinUploading}>
+                          {evpinUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                        </Button>
+                        <input ref={evpinFileRef} type="file" accept=".pdf" className="hidden" onChange={handleEvpinUpload} />
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <Tooltip><TooltipTrigger asChild>
