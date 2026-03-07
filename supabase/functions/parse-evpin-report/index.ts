@@ -31,6 +31,8 @@ function extractMetrics(text: string): EvpinExtracted {
     purchasingPowerPct: null,
     evRegistrations: null,
     chargingDemandScore: null,
+    siteName: null,
+    address: null,
     raw,
   };
 
