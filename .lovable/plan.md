@@ -1,26 +1,64 @@
 
 
-## Problem
+# Gap Analysis: Portfolio Waterfall + ChargeScore Stall Sizer
 
-The satellite image on the dashboard is broken. The `<img>` tag points to a Google Maps Static API URL, but the request is failing (referrer restriction or API not enabled). When the image fails, there's no `onError` handler, so the browser just shows the alt text.
+## What Already Exists
 
-## Plan
+| Requirement | Status | Where |
+|---|---|---|
+| Per-site NOI calculation | **Done** | `calculations.ts` — full NOI with insurance, rent, Tesla fee |
+| Owner/MS split logic | **Done** | `calculations.ts` — configurable ownerSplitPct |
+| CoC Return | **Done** | `calculations.ts` + `InvestmentSummary.tsx` |
+| 5-Year & 10-Year IRR | **Done** | `calculations.ts` (solveIrr) + `InvestmentSummary.tsx` |
+| Margin/kWh | **Done** | `calculations.ts` |
+| Year-by-Year distribution table (10yr) | **Done** | `InvestmentSummary.tsx` — collapsible table |
+| Incentive engine (federal/state/utility) | **Done** | `calculations.ts` — ~600 lines of state-level logic |
+| Scenario multiplier (0.5x–1.25x) | **Done** | `Portfolio.tsx` — dropdown with 4 presets |
+| Portfolio comparison table | **Done** | `Portfolio.tsx` — ranked table with totals row |
+| Summary cards (stalls, NOI, owner/mo, NPV) | **Done** | `Portfolio.tsx` |
+| Parking impact analysis | **Done** | `ParkingImpact.tsx` — peak utilization slider |
+| Parking spot estimation from lot size | **Done** | `PropertyInputs.tsx` + `ParkingLotMeasure.tsx` |
+| ChargeScore scoring engine (9 factors) | **Done** | `scoring.ts` — traffic, EV density, competition, etc. |
+| Recharts dependency | **Done** | Already installed, used in `FinancialProjection.tsx` |
+| Cumulative cash flow chart | **Done** | `FinancialProjection.tsx` |
+| Revenue/Costs breakdown | **Done** | `RevenueCosts.tsx` |
+| Network comparison (Tesla vs ChargePoint vs Turnkey) | **Done** | `NetworkComparison.tsx` |
+| Site save to database | **Done** | `analyses` table in database |
 
-**Fix `src/components/dashboard/SiteAerial.tsx`:**
+## What's Missing (Must Build)
 
-1. Add an `onError` handler on the `<img>` tag that switches to a fallback state when the Google Static Map image fails to load.
-2. The fallback will show:
-   - An embedded Leaflet/OpenStreetMap satellite tile map as the primary fallback (using the same Leaflet library already installed), OR
-   - A cleaner placeholder with a map icon and coordinates if Leaflet is too heavy for this component.
+| Requirement | Notes |
+|---|---|
+| **Waterfall tiered distribution** (Tier 1 / Tier 2 hurdle logic) | Core new feature — no existing code. Need `waterfallCalc.ts` |
+| **Master Controls** (hurdle %, tier splits, growth rate, hold period, exit multiple, MS promote) | New UI component. Current portfolio only has scenario multiplier |
+| **Editable site table** with 16 pre-loaded sites | Current portfolio pulls from DB. Need in-memory editable table with hardcoded 16 sites |
+| **10-year waterfall table** (Tier 1/2 rows, cumulative target, "made whole?" indicator) | New — completely different from per-site year-by-year table |
+| **Exit analysis** (exit value, disposition fee, MS promote, proceeds) | New feature |
+| **4 Recharts charts** (stacked distributions, cumulative vs target, exit pie, CoC bar) | New visualizations |
+| **Sidebar navigation** for Portfolio Builder | Current app uses header nav only |
+| **Stall Sizer tool** (demand estimation engine with capture rates, utilization factors) | New — different from existing ChargeScore scoring |
+| **Parking guidelines reference table** (NYC, CA, CT, Denver, LEED) | New static content |
+| **"Add to Portfolio" button** connecting Stall Sizer → site table | New integration |
+| **CSV export** | Not implemented |
+| **URL state encoding** | Not implemented |
+| **Navy/orange branding** for Portfolio Builder | Current app uses different color scheme |
+| **Auto parking spot count** (AI vision on satellite imagery) | New feature — separate from lot-size estimation |
 
-**Recommended approach** — Use an OpenStreetMap static image as fallback:
-- On `<img onError>`, swap `src` to an OpenStreetMap-based static image tile (e.g., from `tile.openstreetmap.org`) or show the "Satellite view unavailable" placeholder with proper styling instead of broken alt text.
-- This requires no additional dependencies.
+## What Can Be Reused vs Rebuilt
 
-**Specifically:**
-- Add `useState` for `imageError`
-- Add `onError={() => setImageError(true)}` to the `<img>`
-- When `imageError` is true, render the fallback placeholder (styled nicely with a Map icon) instead of the broken image
+- **Reuse directly**: `solveIrr()`, Recharts, all shadcn/ui components, formatting helpers (`fmt`, `pct`)
+- **Reuse concepts but rebuild**: NOI formula (waterfall version uses simpler inputs — stalls × kWh × margin × 365 − insurance − rent, no incentive engine per site), scenario multiplier (expand to master controls)
+- **Build from scratch**: Waterfall engine, tier logic, exit analysis, stall sizer demand model, sidebar layout, all 4 new charts, editable table, 16 hardcoded sites
 
-This is a quick fix that ensures users never see broken image alt text.
+## Recommended Build Order
+
+1. **Waterfall calc engine** (`waterfallCalc.ts`) — types + pure math for site NOI, waterfall tiers, exit
+2. **Page layout + sidebar** — new route `/portfolio-builder` with sidebar
+3. **Master controls + editable site table** with 16 pre-loaded sites
+4. **Waterfall table + exit analysis** UI
+5. **Charts** (4 Recharts visualizations)
+6. **Stall Sizer** (inputs, demand engine, parking guidelines, mini P&L, "Add to Portfolio")
+7. **Polish** (CSV export, URL state, branding, tooltips)
+
+This is a large feature (~8-10 new files). The existing codebase covers ~40% of the financial logic concepts but the waterfall tier model and stall sizer are entirely new.
 
