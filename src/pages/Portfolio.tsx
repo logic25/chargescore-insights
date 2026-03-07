@@ -143,6 +143,15 @@ const Portfolio = () => {
     const byNpv = [...scaled].sort((a, b) => (b.npv ?? -Infinity) - (a.npv ?? -Infinity));
     const byCoc = [...scaled].sort((a, b) => (b.coc ?? -Infinity) - (a.coc ?? -Infinity));
     const byScore = [...scaled].sort((a, b) => b.charge_score - a.charge_score);
+
+    return scaled
+      .map((s) => {
+        const npvRank = byNpv.findIndex((x) => x.id === s.id) + 1;
+        const cocRank = byCoc.findIndex((x) => x.id === s.id) + 1;
+        const scoreRank = byScore.findIndex((x) => x.id === s.id) + 1;
+        return { ...s, compositeRank: (npvRank + cocRank + scoreRank) / 3 };
+      })
+      .sort((a, b) => a.compositeRank - b.compositeRank);
   }, [scaled]);
 
   const hasNaCoc = ranked.some((site) => formatCoc(site) === 'N/A*');
