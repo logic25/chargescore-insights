@@ -99,9 +99,11 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
       // Rough adoption rate: higher registrations = higher adoption
       const adoptionRate = Math.min(0.15, Math.max(0.03, evRegs / 100000));
 
-      // Lot size / parking from parcel
+      // Lot size / parking from parcel — subtract building footprint if available
       const lotSizeSqFt = parcel.lotArea ?? null;
-      const totalParkingSpaces = lotSizeSqFt ? Math.floor(lotSizeSqFt / 350) : null;
+      const bldgArea = parcel.bldgArea ?? 0;
+      const usableLotSqFt = lotSizeSqFt ? Math.max(lotSizeSqFt - bldgArea, lotSizeSqFt * 0.3) : null;
+      const totalParkingSpaces = usableLotSqFt ? Math.floor(usableLotSqFt / 350) : null;
 
       // Calculate ChargeScore
       const nearestDcfc = stations.filter(s => s.chargerType === 'DCFC' || s.chargerType === 'Tesla');
