@@ -305,9 +305,15 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <Tooltip><TooltipTrigger asChild>
-                        <Label className="text-xs flex items-center gap-1 cursor-help">EVpin Score <Info className="h-3 w-3 text-muted-foreground" /></Label>
-                      </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Third-party site suitability score (1–5) from EVpin.com. Higher scores indicate better EV charging potential. Enter manually if available.</TooltipContent></Tooltip>
-                      <Input type="number" min={1} max={5} value={inputs.evpinScore ?? ''} onChange={e => set('evpinScore', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" />
+                        <Label className="text-xs flex items-center gap-1 cursor-help">EVpin Score <Badge variant="outline" className="text-[9px] px-1 py-0 ml-1">Manual / Upload</Badge> <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                      </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Third-party site suitability score (1–5) from EVpin.com. Upload a PDF report to auto-extract, or enter manually.</TooltipContent></Tooltip>
+                      <div className="flex gap-1">
+                        <Input type="number" min={1} max={5} step={0.1} value={inputs.evpinScore ?? ''} onChange={e => set('evpinScore', e.target.value ? parseFloat(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" placeholder="1-5" />
+                        <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => evpinFileRef.current?.click()} disabled={evpinUploading}>
+                          {evpinUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                        </Button>
+                        <input ref={evpinFileRef} type="file" accept=".pdf" className="hidden" onChange={handleEvpinUpload} />
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <Tooltip><TooltipTrigger asChild>
