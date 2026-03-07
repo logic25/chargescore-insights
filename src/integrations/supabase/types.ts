@@ -17,41 +17,86 @@ export type Database = {
       analyses: {
         Row: {
           address: string
+          annual_insurance: number | null
           charge_score: number
+          coc: number | null
           created_at: string
+          electricity_cost: number | null
+          estimated_incentives: number | null
           factors: Json | null
           id: string
+          kwh_per_stall_per_day: number | null
           lat: number
           lng: number
+          margin_kwh: number | null
+          monthly_rent: number | null
+          ms_monthly: number | null
+          net_investment: number | null
+          noi: number | null
+          npv: number | null
           num_stalls: number | null
+          owner_monthly: number | null
+          owner_split_pct: number | null
           predicted_utilization: number | null
+          price_per_kwh: number | null
           state: string
+          total_project_cost: number | null
           user_id: string
         }
         Insert: {
           address: string
+          annual_insurance?: number | null
           charge_score: number
+          coc?: number | null
           created_at?: string
+          electricity_cost?: number | null
+          estimated_incentives?: number | null
           factors?: Json | null
           id?: string
+          kwh_per_stall_per_day?: number | null
           lat: number
           lng: number
+          margin_kwh?: number | null
+          monthly_rent?: number | null
+          ms_monthly?: number | null
+          net_investment?: number | null
+          noi?: number | null
+          npv?: number | null
           num_stalls?: number | null
+          owner_monthly?: number | null
+          owner_split_pct?: number | null
           predicted_utilization?: number | null
+          price_per_kwh?: number | null
           state: string
+          total_project_cost?: number | null
           user_id: string
         }
         Update: {
           address?: string
+          annual_insurance?: number | null
           charge_score?: number
+          coc?: number | null
           created_at?: string
+          electricity_cost?: number | null
+          estimated_incentives?: number | null
           factors?: Json | null
           id?: string
+          kwh_per_stall_per_day?: number | null
           lat?: number
           lng?: number
+          margin_kwh?: number | null
+          monthly_rent?: number | null
+          ms_monthly?: number | null
+          net_investment?: number | null
+          noi?: number | null
+          npv?: number | null
           num_stalls?: number | null
+          owner_monthly?: number | null
+          owner_split_pct?: number | null
           predicted_utilization?: number | null
+          price_per_kwh?: number | null
           state?: string
+          total_project_cost?: number | null
           user_id?: string
         }
         Relationships: []
