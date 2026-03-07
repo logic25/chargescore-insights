@@ -214,6 +214,8 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
   }, [user, inputs.siteName, inputs.address]);
 
   const parkingWarning = recommendation.parkingPctBase > 10 ? 'over' : recommendation.parkingPctBase < 2 ? 'under' : null;
+
+  return (
     <div className="space-y-4">
       <Card className="border-border/50">
         <CardHeader className="pb-2">
