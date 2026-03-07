@@ -141,6 +141,43 @@ export default function DocumentsManager({ sites = [] }: Props) {
     }
   };
 
+  const handleExtract = async (doc: SiteDocument) => {
+    if (doc.doc_type !== "evpin_report") return;
+    setExtractingId(doc.id);
+    try {
+      const { data: parseData, error: parseError } = await supabase.functions.invoke("parse-evpin-report", {
+        body: { filePath: doc.file_path },
+      });
+      if (parseError) throw parseError;
+
+      const extracted = parseData?.extracted ?? {};
+      const updates: Record<string, unknown> = {
+        extracted_data: extracted,
+      };
+
+      if (!doc.site_name && extracted?.siteName) updates.site_name = extracted.siteName;
+      if (!doc.address && extracted?.address) updates.address = extracted.address;
+
+      const { error: updateError } = await supabase
+        .from("site_documents")
+        .update(updates as any)
+        .eq("id", doc.id)
+        .eq("user_id", user?.id ?? "");
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "AI extraction complete",
+        description: extracted?.totalScore ? `EVpin Score: ${extracted.totalScore}/5` : "Data saved to document",
+      });
+      await fetchDocs();
+    } catch (err: any) {
+      toast({ title: "Extraction failed", description: err.message, variant: "destructive" });
+    } finally {
+      setExtractingId(null);
+    }
+  };
+
   const handleView = async (doc: SiteDocument) => {
     const { data } = await supabase.storage.from("site-documents").download(doc.file_path);
     if (data) {
