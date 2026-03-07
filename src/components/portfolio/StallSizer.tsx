@@ -284,7 +284,6 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
                 </div>
               </div>
             </TooltipProvider>
-            </div>
           </div>
         </CardContent>
       </Card>
