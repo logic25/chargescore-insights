@@ -78,60 +78,62 @@ function extractCountyFromAddress(address: string): string | null {
 }
 
 /**
- * Try state-level Socrata AADT dataset as fallback.
+ * Try state ArcGIS AADT FeatureServers (geospatial query by lat/lng envelope).
+ * These support spatial queries unlike Socrata.
  */
-async function fetchStateAadt(
+const ARCGIS_AADT_SOURCES: Record<string, { url: string; aadtField: string; roadField: string; yearField: string }> = {
+  FL: {
+    url: 'https://services1.arcgis.com/O1JpcwDW8sjYuddV/arcgis/rest/services/Annual_Average_Daily_Traffic_TDA/FeatureServer/0/query',
+    aadtField: 'AADT',
+    roadField: 'ROADWAY',
+    yearField: 'YEAR_',
+  },
+};
+
+async function fetchArcGisAadt(
   state: string,
-  address: string,
+  lat: number,
+  lng: number,
 ): Promise<{ aadt: number | null; routeId: string | null; year: number | null }> {
-  const source = STATE_AADT_SOURCES[state];
+  const source = ARCGIS_AADT_SOURCES[state];
   if (!source) return { aadt: null, routeId: null, year: null };
 
-  const streetName = extractStreetName(address);
-  const county = extractCountyFromAddress(address);
-
-  if (!streetName) return { aadt: null, routeId: null, year: null };
+  // ~500m envelope around the point
+  const delta = 0.005;
+  const envelope = `${lng - delta},${lat - delta},${lng + delta},${lat + delta}`;
 
   try {
     const url = new URL(source.url);
+    url.searchParams.set('geometry', envelope);
+    url.searchParams.set('geometryType', 'esriGeometryEnvelope');
+    url.searchParams.set('inSR', '4326');
+    url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
+    url.searchParams.set('outFields', `${source.aadtField},${source.roadField},${source.yearField}`);
+    url.searchParams.set('returnGeometry', 'false');
+    url.searchParams.set('orderByFields', `${source.aadtField} DESC`);
+    url.searchParams.set('resultRecordCount', '3');
+    url.searchParams.set('f', 'json');
 
-    // Build query — search by road name (fuzzy), optionally by county
-    let whereClause = `upper(${source.roadField}) like '%${streetName.replace(/'/g, "''")}%'`;
-    if (county) {
-      whereClause += ` AND upper(${source.countyField}) like '%${county.toUpperCase()}%'`;
-    }
-
-    url.searchParams.set('$where', whereClause);
-    url.searchParams.set('$order', `${source.yearField} DESC`);
-    url.searchParams.set('$limit', '5');
-
-    console.log('State AADT query:', url.toString());
+    console.log('ArcGIS AADT query:', url.toString());
 
     const res = await fetch(url.toString());
     if (!res.ok) {
-      console.error('State AADT error', res.status, await res.text());
+      console.error('ArcGIS AADT error', res.status, await res.text());
       return { aadt: null, routeId: null, year: null };
     }
 
-    const rows = await res.json();
-    if (!rows.length) return { aadt: null, routeId: null, year: null };
+    const data = await res.json();
+    const features = data?.features;
+    if (!features?.length) return { aadt: null, routeId: null, year: null };
 
-    // Pick the highest AADT from the most recent year results
-    const top = rows.reduce((best: any, row: any) => {
-      const val = parseInt(row[source.aadtField], 10);
-      const bestVal = best ? parseInt(best[source.aadtField], 10) : 0;
-      return val > bestVal ? row : best;
-    }, null);
-
-    if (!top) return { aadt: null, routeId: null, year: null };
-
+    const attrs = features[0].attributes;
     return {
-      aadt: parseInt(top[source.aadtField], 10) || null,
-      routeId: top[source.roadField] ?? null,
-      year: top[source.yearField] ? parseInt(top[source.yearField], 10) : null,
+      aadt: attrs[source.aadtField] ?? null,
+      routeId: attrs[source.roadField] ?? null,
+      year: attrs[source.yearField] ?? null,
     };
   } catch (err) {
-    console.error('State AADT fetch failed', err);
+    console.error('ArcGIS AADT fetch failed', err);
     return { aadt: null, routeId: null, year: null };
   }
 }
@@ -226,6 +228,19 @@ serve(async (req: Request) => {
         return new Response(JSON.stringify({
           ...stateResult,
           source: `state_dot_${state.toLowerCase()}`,
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Fallback 2: state ArcGIS FeatureServer (geospatial, e.g. FL FDOT)
+    if (state) {
+      const arcResult = await fetchArcGisAadt(state, lat, lng);
+      if (arcResult.aadt) {
+        return new Response(JSON.stringify({
+          ...arcResult,
+          source: `arcgis_${state.toLowerCase()}`,
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
