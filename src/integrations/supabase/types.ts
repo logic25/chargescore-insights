@@ -101,6 +101,42 @@ export type Database = {
         }
         Relationships: []
       }
+      site_documents: {
+        Row: {
+          address: string
+          created_at: string
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          extracted_data: Json | null
+          file_name: string
+          file_path: string
+          id: string
+          site_name: string
+          user_id: string
+        }
+        Insert: {
+          address?: string
+          created_at?: string
+          doc_type?: Database["public"]["Enums"]["doc_type"]
+          extracted_data?: Json | null
+          file_name: string
+          file_path: string
+          id?: string
+          site_name?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          doc_type?: Database["public"]["Enums"]["doc_type"]
+          extracted_data?: Json | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          site_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -109,7 +145,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      doc_type: "evpin_report" | "lease" | "permit" | "utility_bill" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -236,6 +272,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      doc_type: ["evpin_report", "lease", "permit", "utility_bill", "other"],
+    },
   },
 } as const
