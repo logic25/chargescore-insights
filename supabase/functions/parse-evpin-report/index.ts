@@ -270,7 +270,13 @@ Deno.serve(async (req) => {
       text = asciiChunks.join(" ");
     }
 
-    const extracted = extractMetrics(text);
+    const regexExtracted = extractMetrics(text);
+    const aiExtracted = await extractWithAi(text);
+    const extracted: EvpinExtracted = {
+      ...regexExtracted,
+      ...aiExtracted,
+      raw: regexExtracted.raw,
+    };
 
     return new Response(JSON.stringify({ extracted, textLength: text.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
