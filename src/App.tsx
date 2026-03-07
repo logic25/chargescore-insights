@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import MlAdmin from "./pages/MlAdmin";
 import MyAnalyses from "./pages/MyAnalyses";
 import Portfolio from "./pages/Portfolio";
+import PortfolioBuilder from "./pages/PortfolioBuilder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

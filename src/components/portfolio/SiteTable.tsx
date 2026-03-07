@@ -12,7 +12,7 @@ interface Props {
   onSitesChange: (sites: SiteRow[]) => void;
 }
 
-const TH = ({ children, tip }: { children: React.ReactNode; tip?: string }) => (
+const TH = ({ children, tip }: { children?: React.ReactNode; tip?: string }) => (
   <TableHead className="text-xs font-medium whitespace-nowrap px-2">
     {children}
     {tip && (
