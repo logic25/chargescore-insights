@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Zap, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, Zap, AlertTriangle, CheckCircle, Loader2, Info } from "lucide-react";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
 import ParkingGuidelines from "./ParkingGuidelines";
 import QuickFinancialPreview from "./QuickFinancialPreview";
@@ -198,69 +199,91 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Total Parking Spaces</Label>
-                  <Input type="number" value={inputs.totalParkingSpaces ?? ''} onChange={e => set('totalParkingSpaces', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" placeholder="Or estimate from lot size" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Lot Size (sq ft) — optional</Label>
-                  <Input type="number" value={inputs.lotSizeSqFt ?? ''} onChange={e => set('lotSizeSqFt', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" placeholder="Auto-estimate spaces at 350 sqft/space" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Daily Traffic Count</Label>
-                  <Input type="number" value={inputs.dailyTraffic} onChange={e => set('dailyTraffic', parseInt(e.target.value) || 0)} className="h-8 text-sm bg-amber/10 text-primary" />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">EV Adoption Rate (%)</Label>
-                  <Input type="number" step={0.5} value={(inputs.evAdoptionRate * 100).toFixed(1)} onChange={e => set('evAdoptionRate', (parseFloat(e.target.value) || 0) / 100)} className="h-8 text-sm bg-amber/10 text-primary" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Avg Charge Time (min)</Label>
-                  <Input type="number" value={inputs.avgChargeTimeMin} onChange={e => set('avgChargeTimeMin', parseInt(e.target.value) || 25)} className="h-8 text-sm bg-amber/10 text-primary" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Operating Hours/Day</Label>
-                  <Input type="number" value={inputs.operatingHours} onChange={e => set('operatingHours', parseInt(e.target.value) || 16)} className="h-8 text-sm bg-amber/10 text-primary" />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Location Type</Label>
-                  <Select value={inputs.locationType} onValueChange={v => set('locationType', v as LocationType)}>
-                    <SelectTrigger className="h-8 text-sm bg-amber/10 text-primary"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(LOCATION_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Nearby L3 Ports</Label>
-                  <Input type="number" value={inputs.nearbyL3Ports ?? ''} onChange={e => set('nearbyL3Ports', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+            <TooltipProvider delayDuration={200}>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">EVpin Score (1-5)</Label>
-                    <Input type="number" min={1} max={5} value={inputs.evpinScore ?? ''} onChange={e => set('evpinScore', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" />
+                    <Tooltip><TooltipTrigger asChild>
+                      <Label className="text-xs flex items-center gap-1 cursor-help">Total Parking Spaces <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                    </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Total number of parking spaces at the site. Auto-estimated from lot size minus building footprint at ~350 sqft/space.</TooltipContent></Tooltip>
+                    <Input type="number" value={inputs.totalParkingSpaces ?? ''} onChange={e => set('totalParkingSpaces', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" placeholder="Or estimate from lot size" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">ChargeScore™</Label>
-                    <div className={`h-8 flex items-center justify-center rounded-md border text-sm font-mono font-bold ${
-                      inputs.chargeScore !== null
-                        ? inputs.chargeScore >= 70 ? 'border-green-500/50 bg-green-500/10 text-green-400'
-                        : inputs.chargeScore >= 50 ? 'border-amber-500/50 bg-amber-500/10 text-amber-400'
-                        : 'border-red-500/50 bg-red-500/10 text-red-400'
-                        : 'border-border bg-muted/30 text-muted-foreground'
-                    }`}>
-                      {inputs.chargeScore !== null ? inputs.chargeScore : '—'}
+                    <Tooltip><TooltipTrigger asChild>
+                      <Label className="text-xs flex items-center gap-1 cursor-help">Lot Size (sq ft) <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                    </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Total lot area from parcel data. Used to estimate parking spaces if not manually entered. Auto-filled from MapPLUTO (NYC) or NYS Tax Parcels.</TooltipContent></Tooltip>
+                    <Input type="number" value={inputs.lotSizeSqFt ?? ''} onChange={e => set('lotSizeSqFt', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" placeholder="Auto-estimate spaces at 350 sqft/space" />
+                  </div>
+                  <div className="space-y-1">
+                    <Tooltip><TooltipTrigger asChild>
+                      <Label className="text-xs flex items-center gap-1 cursor-help">Daily Traffic Count <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                    </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Annual Average Daily Traffic (AADT) on the nearest road. Auto-filled from FHWA/state DOT data. Higher traffic = more potential EV charging demand.</TooltipContent></Tooltip>
+                    <Input type="number" value={inputs.dailyTraffic} onChange={e => set('dailyTraffic', parseInt(e.target.value) || 0)} className="h-8 text-sm bg-amber/10 text-primary" />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Tooltip><TooltipTrigger asChild>
+                      <Label className="text-xs flex items-center gap-1 cursor-help">EV Adoption Rate (%) <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                    </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Local EV adoption rate based on state/county registration data. Determines what percentage of passing traffic is electric and likely to charge.</TooltipContent></Tooltip>
+                    <Input type="number" step={0.5} value={(inputs.evAdoptionRate * 100).toFixed(1)} onChange={e => set('evAdoptionRate', (parseFloat(e.target.value) || 0) / 100)} className="h-8 text-sm bg-amber/10 text-primary" />
+                  </div>
+                  <div className="space-y-1">
+                    <Tooltip><TooltipTrigger asChild>
+                      <Label className="text-xs flex items-center gap-1 cursor-help">Avg Charge Time (min) <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                    </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Average time a vehicle occupies a stall per session. DCFC sessions typically run 20–30 min. Longer dwell times reduce throughput per stall.</TooltipContent></Tooltip>
+                    <Input type="number" value={inputs.avgChargeTimeMin} onChange={e => set('avgChargeTimeMin', parseInt(e.target.value) || 25)} className="h-8 text-sm bg-amber/10 text-primary" />
+                  </div>
+                  <div className="space-y-1">
+                    <Tooltip><TooltipTrigger asChild>
+                      <Label className="text-xs flex items-center gap-1 cursor-help">Operating Hours/Day <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                    </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Hours per day the chargers are available. 24h sites capture late-night demand; 16h is typical for retail-adjacent locations.</TooltipContent></Tooltip>
+                    <Input type="number" value={inputs.operatingHours} onChange={e => set('operatingHours', parseInt(e.target.value) || 16)} className="h-8 text-sm bg-amber/10 text-primary" />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Tooltip><TooltipTrigger asChild>
+                      <Label className="text-xs flex items-center gap-1 cursor-help">Location Type <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                    </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Site category affecting capture rate. Highway sites capture ~8% of EV traffic; urban retail ~3%; suburban retail ~5%; rural ~10%. Auto-inferred from census population density.</TooltipContent></Tooltip>
+                    <Select value={inputs.locationType} onValueChange={v => set('locationType', v as LocationType)}>
+                      <SelectTrigger className="h-8 text-sm bg-amber/10 text-primary"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(LOCATION_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Tooltip><TooltipTrigger asChild>
+                      <Label className="text-xs flex items-center gap-1 cursor-help">Nearby L3 Ports <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                    </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Number of existing DCFC and Tesla Supercharger ports within 5 miles. More nearby competition may reduce demand at this site. Auto-filled from NREL AFDC data.</TooltipContent></Tooltip>
+                    <Input type="number" value={inputs.nearbyL3Ports ?? ''} onChange={e => set('nearbyL3Ports', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Tooltip><TooltipTrigger asChild>
+                        <Label className="text-xs flex items-center gap-1 cursor-help">EVpin Score <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                      </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Third-party site suitability score (1–5) from EVpin.com. Higher scores indicate better EV charging potential. Enter manually if available.</TooltipContent></Tooltip>
+                      <Input type="number" min={1} max={5} value={inputs.evpinScore ?? ''} onChange={e => set('evpinScore', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <Tooltip><TooltipTrigger asChild>
+                        <Label className="text-xs flex items-center gap-1 cursor-help">ChargeScore™ <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                      </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Proprietary 0–100 site viability score combining traffic, EV density, competition, incentives, and grid access. Auto-calculated when address is entered.</TooltipContent></Tooltip>
+                      <div className={`h-8 flex items-center justify-center rounded-md border text-sm font-mono font-bold ${
+                        inputs.chargeScore !== null
+                          ? inputs.chargeScore >= 70 ? 'border-green-500/50 bg-green-500/10 text-green-400'
+                          : inputs.chargeScore >= 50 ? 'border-amber-500/50 bg-amber-500/10 text-amber-400'
+                          : 'border-red-500/50 bg-red-500/10 text-red-400'
+                          : 'border-border bg-muted/30 text-muted-foreground'
+                      }`}>
+                        {inputs.chargeScore !== null ? inputs.chargeScore : '—'}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </TooltipProvider>
           </div>
         </CardContent>
       </Card>
