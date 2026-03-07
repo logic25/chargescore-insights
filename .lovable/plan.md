@@ -1,26 +1,30 @@
 
 
-## Problem
+## Make NPV Year Range Adjustable
 
-The satellite image on the dashboard is broken. The `<img>` tag points to a Google Maps Static API URL, but the request is failing (referrer restriction or API not enabled). When the image fails, there's no `onError` handler, so the browser just shows the alt text.
+Add a dropdown/select inside the Financial Projection panel and the metrics strip label so users can switch between common analysis periods (5, 10, 15, 20 years).
 
-## Plan
+### Changes
 
-**Fix `src/components/dashboard/SiteAerial.tsx`:**
+**`src/types/chargeScore.ts`**
+- Add `npvYears: number` to `SiteAnalysis` (default 15)
 
-1. Add an `onError` handler on the `<img>` tag that switches to a fallback state when the Google Static Map image fails to load.
-2. The fallback will show:
-   - An embedded Leaflet/OpenStreetMap satellite tile map as the primary fallback (using the same Leaflet library already installed), OR
-   - A cleaner placeholder with a map icon and coordinates if Leaflet is too heavy for this component.
+**`src/lib/calculations.ts`**
+- Replace hardcoded `PROJECT_YEARS = 15` with `site.npvYears` (fallback 15)
+- `cumulativeCashFlow` array length, NPV sum, and payback all use the dynamic year count
+- Same change in both `calculateTeslaFinancials` and `calculateGenericFinancials`
 
-**Recommended approach** — Use an OpenStreetMap static image as fallback:
-- On `<img onError>`, swap `src` to an OpenStreetMap-based static image tile (e.g., from `tile.openstreetmap.org`) or show the "Satellite view unavailable" placeholder with proper styling instead of broken alt text.
-- This requires no additional dependencies.
+**`src/pages/Dashboard.tsx`**
+- Add `npvYears: 15` to initial site state
+- Update NPV card label from `'15-Year NPV'` to dynamic `${site.npvYears}-Year NPV`
+- Update tooltip text similarly
 
-**Specifically:**
-- Add `useState` for `imageError`
-- Add `onError={() => setImageError(true)}` to the `<img>`
-- When `imageError` is true, render the fallback placeholder (styled nicely with a Map icon) instead of the broken image
+**`src/components/dashboard/FinancialProjection.tsx`**
+- Add a small Select dropdown in the panel header: options 5, 10, 15, 20 years
+- Accept new props `npvYears` and `onNpvYearsChange`
+- Update chart title to reflect selected years
 
-This is a quick fix that ensures users never see broken image alt text.
+**Dashboard wiring**
+- Pass `npvYears={site.npvYears}` and `onNpvYearsChange` to `FinancialProjection`
+- `onNpvYearsChange` updates `site.npvYears` via `setSite`
 
