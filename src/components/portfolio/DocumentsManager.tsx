@@ -112,8 +112,6 @@ export default function DocumentsManager({ sites = [] }: Props) {
 
       toast({ title: "Document uploaded", description: extractedData.totalScore ? `EVpin Score: ${extractedData.totalScore}/5 extracted` : file.name });
       await fetchDocs();
-      setSiteName("");
-      setAddress("");
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {
