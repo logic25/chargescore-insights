@@ -30,6 +30,27 @@ const TESLA_FEE_ESCALATION = 1.03;        // 3% YoY Tesla service fee escalation
 const DISCOUNT_RATE = 0.08;               // 8% discount rate for NPV
 const DEFAULT_PROJECT_YEARS = 15;
 
+// --- IRR Solver (Newton-Raphson) ---
+function solveIrr(cashFlows: number[], maxIter = 100, tol = 1e-7): number | null {
+  if (cashFlows.length < 2) return null;
+  let rate = 0.10; // initial guess
+  for (let i = 0; i < maxIter; i++) {
+    let npv = 0;
+    let dNpv = 0;
+    for (let t = 0; t < cashFlows.length; t++) {
+      const d = Math.pow(1 + rate, t);
+      npv += cashFlows[t] / d;
+      if (t > 0) dNpv -= t * cashFlows[t] / Math.pow(1 + rate, t + 1);
+    }
+    if (Math.abs(dNpv) < 1e-12) break;
+    const newRate = rate - npv / dNpv;
+    if (Math.abs(newRate - rate) < tol) return newRate * 100;
+    rate = newRate;
+    if (rate < -0.99 || rate > 10) return null; // diverged
+  }
+  return rate * 100;
+}
+
 // --- Financial Projection ---
 
 export function calculateFinancials(site: SiteAnalysis, incentives: Incentive[]): FinancialProjection {
@@ -146,6 +167,12 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
   const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
   const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : (cumulativeCashFlow[4] > 0 ? Infinity : 0);
 
+  // IRR: cash flows from owner's perspective (investment + owner distributions)
+  const ownerCf5 = [-netInvestment, ...yearByYear.slice(0, 5).map(r => r.ownerDist)];
+  const ownerCf10 = [-netInvestment, ...yearByYear.slice(0, 10).map(r => r.ownerDist)];
+  const irr5Year = netInvestment > 0 ? solveIrr(ownerCf5) : null;
+  const irr10Year = netInvestment > 0 ? solveIrr(ownerCf10) : null;
+
   return {
     chargingModel: 'tesla',
     dailyKwhL2: 0, dailyKwhDcfc: dailyKwh,
@@ -159,7 +186,7 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
     totalProjectCost, estimatedIncentives, netInvestment,
     annualNetRevenue, paybackMonths, fiveYearRoi, cumulativeCashFlow,
     npv15Year, paybackYears,
-    annualNoi, ownerMonthly, msMonthly, marginPerKwh, cashOnCashReturn, yearByYear,
+    annualNoi, ownerMonthly, msMonthly, marginPerKwh, cashOnCashReturn, irr5Year, irr10Year, yearByYear,
   };
 }
 
@@ -255,6 +282,11 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
 
   const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : (cumulativeCashFlow[4] > 0 ? Infinity : 0);
 
+  const ownerCf5 = [-netInvestment, ...yearByYear.slice(0, 5).map(r => r.ownerDist)];
+  const ownerCf10 = [-netInvestment, ...yearByYear.slice(0, 10).map(r => r.ownerDist)];
+  const irr5Year = netInvestment > 0 ? solveIrr(ownerCf5) : null;
+  const irr10Year = netInvestment > 0 ? solveIrr(ownerCf10) : null;
+
   return {
     chargingModel: 'generic',
     dailyKwhL2, dailyKwhDcfc, dailyRevenue, monthlyRevenue, annualRevenue,
@@ -267,7 +299,7 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
     totalProjectCost, estimatedIncentives, netInvestment,
     annualNetRevenue, paybackMonths, fiveYearRoi, cumulativeCashFlow,
     npv15Year, paybackYears,
-    annualNoi, ownerMonthly, msMonthly, marginPerKwh, cashOnCashReturn, yearByYear,
+    annualNoi, ownerMonthly, msMonthly, marginPerKwh, cashOnCashReturn, irr5Year, irr10Year, yearByYear,
   };
 }
 

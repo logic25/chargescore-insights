@@ -133,6 +133,8 @@ export interface FinancialProjection {
   msMonthly: number;
   marginPerKwh: number;
   cashOnCashReturn: number;    // annual CoC %
+  irr5Year: number | null;     // 5-year IRR %
+  irr10Year: number | null;    // 10-year IRR %
   yearByYear: YearByYearRow[];
 }
 
