@@ -262,7 +262,16 @@ const Portfolio = () => {
                         {fmt(s.ms_monthly)}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono text-sm">
-                        {s.coc != null ? (s.coc === Infinity ? '∞' : pct(s.coc)) : '—'}
+                        {(() => {
+                          // Recalculate owner CoC from raw data when stored value is null/Infinity
+                          const inv = s.net_investment;
+                          const ownerAnnual = s.noi != null && s.owner_split_pct != null ? s.noi * (s.owner_split_pct / 100) : null;
+                          if (inv != null && inv > 0 && ownerAnnual != null) {
+                            return pct((ownerAnnual / inv) * 100);
+                          }
+                          if (inv === 0 && ownerAnnual != null && ownerAnnual > 0) return 'N/A*';
+                          return '—';
+                        })()}
                       </td>
                       <td className={`px-3 py-2.5 text-right font-mono text-sm font-bold ${(s.npv ?? 0) > 0 ? 'text-success' : 'text-destructive'}`}>
                         {fmt(s.npv)}
