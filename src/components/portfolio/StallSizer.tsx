@@ -176,9 +176,44 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
     onAddToPortfolio(site);
   };
 
-  const parkingWarning = recommendation.parkingPctBase > 10 ? 'over' : recommendation.parkingPctBase < 2 ? 'under' : null;
+  const handleEvpinUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setEvpinUploading(true);
+    try {
+      const filePath = `${user.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage.from("site-documents").upload(filePath, file);
+      if (uploadError) throw uploadError;
 
-  return (
+      // Save doc record
+      await supabase.from("site_documents").insert([{
+        user_id: user.id,
+        site_name: inputs.siteName,
+        address: inputs.address,
+        file_name: file.name,
+        file_path: filePath,
+        doc_type: "evpin_report" as const,
+        extracted_data: {} as any,
+      }]);
+
+      // Try to parse
+      const { data: parseData } = await supabase.functions.invoke("parse-evpin-report", { body: { filePath } });
+      if (parseData?.extracted?.totalScore) {
+        set("evpinScore", parseData.extracted.totalScore);
+        // Update the doc record with extracted data
+        toast({ title: "EVpin Score extracted", description: `Score: ${parseData.extracted.totalScore}/5` });
+      } else {
+        toast({ title: "Report uploaded", description: "Could not auto-extract score. Enter manually." });
+      }
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setEvpinUploading(false);
+      e.target.value = "";
+    }
+  }, [user, inputs.siteName, inputs.address]);
+
+  const parkingWarning = recommendation.parkingPctBase > 10 ? 'over' : recommendation.parkingPctBase < 2 ? 'under' : null;
     <div className="space-y-4">
       <Card className="border-border/50">
         <CardHeader className="pb-2">
