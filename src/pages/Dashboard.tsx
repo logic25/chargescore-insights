@@ -234,7 +234,22 @@ const Dashboard = () => {
           factors: Object.fromEntries(chargeScore.factors.map(f => [f.name, f.score])) as any,
           num_stalls: site.teslaStalls,
           predicted_utilization: revenueProjection.utilization,
-        });
+          owner_split_pct: site.ownerSplitPct,
+          annual_insurance: site.annualInsurance,
+          monthly_rent: site.monthlyRent,
+          noi: financials.annualNoi,
+          owner_monthly: financials.ownerMonthly,
+          ms_monthly: financials.msMonthly,
+          coc: isFinite(financials.cashOnCashReturn) ? financials.cashOnCashReturn : null,
+          npv: financials.npv15Year,
+          margin_kwh: financials.marginPerKwh,
+          price_per_kwh: site.pricePerKwh,
+          electricity_cost: site.electricityCostPerKwh,
+          kwh_per_stall_per_day: site.kwhPerStallPerDay,
+          total_project_cost: financials.totalProjectCost,
+          net_investment: financials.netInvestment,
+          estimated_incentives: financials.estimatedIncentives,
+        } as any);
         if (error) throw error;
         toast.success('Project saved!');
       }
