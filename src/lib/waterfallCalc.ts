@@ -240,6 +240,10 @@ const UTILIZATION_FACTORS = {
 
 export interface StallSizerInputs {
   siteName: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  state: string;
   totalParkingSpaces: number | null;
   lotSizeSqFt: number | null;
   dailyTraffic: number;
@@ -248,6 +252,7 @@ export interface StallSizerInputs {
   operatingHours: number;    // default 16
   locationType: LocationType;
   evpinScore: number | null;
+  chargeScore: number | null;
   nearbyL3Ports: number | null;
 }
 
