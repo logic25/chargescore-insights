@@ -181,7 +181,7 @@ export default function DocumentsManager({ sites }: Props) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Address</Label>
-              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Auto-filled from site" className="h-8 text-sm text-muted-foreground" readOnly={!!sites.find(s => s.name === siteName)} />
+              <Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Auto-filled from site" className="h-8 text-sm text-muted-foreground" readOnly={!!sites?.find(s => s.name === siteName)} />
             </div>
             <div>
               <Label htmlFor="doc-upload" className="cursor-pointer">
