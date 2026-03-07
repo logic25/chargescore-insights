@@ -167,6 +167,12 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
   const paybackMonths = annualNetRevenue > 0 ? (netInvestment / annualNetRevenue) * 12 : Infinity;
   const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : (cumulativeCashFlow[4] > 0 ? Infinity : 0);
 
+  // IRR: cash flows from owner's perspective (investment + owner distributions)
+  const ownerCf5 = [-netInvestment, ...yearByYear.slice(0, 5).map(r => r.ownerDist)];
+  const ownerCf10 = [-netInvestment, ...yearByYear.slice(0, 10).map(r => r.ownerDist)];
+  const irr5Year = netInvestment > 0 ? solveIrr(ownerCf5) : null;
+  const irr10Year = netInvestment > 0 ? solveIrr(ownerCf10) : null;
+
   return {
     chargingModel: 'tesla',
     dailyKwhL2: 0, dailyKwhDcfc: dailyKwh,
@@ -180,7 +186,7 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
     totalProjectCost, estimatedIncentives, netInvestment,
     annualNetRevenue, paybackMonths, fiveYearRoi, cumulativeCashFlow,
     npv15Year, paybackYears,
-    annualNoi, ownerMonthly, msMonthly, marginPerKwh, cashOnCashReturn, yearByYear,
+    annualNoi, ownerMonthly, msMonthly, marginPerKwh, cashOnCashReturn, irr5Year, irr10Year, yearByYear,
   };
 }
 
@@ -276,6 +282,11 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
 
   const fiveYearRoi = netInvestment > 0 ? ((cumulativeCashFlow[4] + netInvestment) / netInvestment) * 100 : (cumulativeCashFlow[4] > 0 ? Infinity : 0);
 
+  const ownerCf5 = [-netInvestment, ...yearByYear.slice(0, 5).map(r => r.ownerDist)];
+  const ownerCf10 = [-netInvestment, ...yearByYear.slice(0, 10).map(r => r.ownerDist)];
+  const irr5Year = netInvestment > 0 ? solveIrr(ownerCf5) : null;
+  const irr10Year = netInvestment > 0 ? solveIrr(ownerCf10) : null;
+
   return {
     chargingModel: 'generic',
     dailyKwhL2, dailyKwhDcfc, dailyRevenue, monthlyRevenue, annualRevenue,
@@ -288,7 +299,7 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
     totalProjectCost, estimatedIncentives, netInvestment,
     annualNetRevenue, paybackMonths, fiveYearRoi, cumulativeCashFlow,
     npv15Year, paybackYears,
-    annualNoi, ownerMonthly, msMonthly, marginPerKwh, cashOnCashReturn, yearByYear,
+    annualNoi, ownerMonthly, msMonthly, marginPerKwh, cashOnCashReturn, irr5Year, irr10Year, yearByYear,
   };
 }
 
