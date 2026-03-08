@@ -10,7 +10,9 @@ import Auth from "./pages/Auth";
 import MlAdmin from "./pages/MlAdmin";
 import MyAnalyses from "./pages/MyAnalyses";
 import Portfolio from "./pages/Portfolio";
-import PortfolioBuilder from "./pages/PortfolioBuilder";
+import Pricing from "./pages/Pricing";
+import Contact from "./pages/Contact";
+import StallSizerPage from "./pages/StallSizerPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,7 +30,9 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/my-analyses" element={<MyAnalyses />} />
             <Route path="/portfolio" element={<Portfolio />} />
-            <Route path="/portfolio-builder" element={<PortfolioBuilder />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/stall-sizer" element={<StallSizerPage />} />
             <Route path="/admin/ml" element={<MlAdmin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
