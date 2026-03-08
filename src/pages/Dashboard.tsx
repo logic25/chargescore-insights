@@ -83,6 +83,7 @@ const Dashboard = () => {
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
   const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
   const [activePanel, setActivePanel] = useState<'revenue' | 'investment' | 'npv' | null>('revenue');
+  const [manualKwhOverride, setManualKwhOverride] = useState(false);
 
   // Freemium: count lookup once when full analysis loads
   useEffect(() => {

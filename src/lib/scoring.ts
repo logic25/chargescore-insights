@@ -449,13 +449,10 @@ export function projectRevenue(inputs: {
   incentivesPerStall: number;
 }): RevenueProjection {
   let kwhPerStallPerDay: number;
-  if (inputs.chargeScore >= 90) kwhPerStallPerDay = 300;
-  else if (inputs.chargeScore >= 80) kwhPerStallPerDay = 250;
-  else if (inputs.chargeScore >= 70) kwhPerStallPerDay = 190;
-  else if (inputs.chargeScore >= 60) kwhPerStallPerDay = 140;
-  else if (inputs.chargeScore >= 50) kwhPerStallPerDay = 100;
-  else if (inputs.chargeScore >= 40) kwhPerStallPerDay = 65;
-  else kwhPerStallPerDay = 40;
+  if (inputs.chargeScore >= 80) kwhPerStallPerDay = 400;
+  else if (inputs.chargeScore >= 70) kwhPerStallPerDay = 300;
+  else if (inputs.chargeScore >= 50) kwhPerStallPerDay = 250;
+  else kwhPerStallPerDay = 100;
 
   const utilization = kwhPerStallPerDay / (24 * 100);
   const annualKwh = kwhPerStallPerDay * inputs.numStalls * 365;
