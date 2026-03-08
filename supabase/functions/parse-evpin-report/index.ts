@@ -20,14 +20,6 @@ interface EvpinExtracted {
   raw: Record<string, string>;
 }
 
-function extractMetrics(text: string): EvpinExtracted {
-  const raw: Record<string, string> = {};
-  const result: EvpinExtracted = {
-    totalScore: null,
-    aadt: null,
-    evAdoptionPct: null,
-    l3Ports: null,
-    crimeRate: null,
     purchasingPowerPct: null,
     evRegistrations: null,
     chargingDemandScore: null,
