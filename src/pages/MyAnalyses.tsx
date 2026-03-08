@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, MapPin, Trash2, ExternalLink, ChevronRight } from 'lucide-react';
+import { Zap, ArrowLeft, MapPin, Trash2, ExternalLink, ChevronRight, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
+import { PRELOADED_SITES } from '@/lib/waterfallCalc';
 
 type Analysis = Tables<'analyses'>;
 
