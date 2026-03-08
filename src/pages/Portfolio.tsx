@@ -1,17 +1,36 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, Sliders, ExternalLink, Trash2 } from 'lucide-react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Zap, ArrowLeft, TrendingUp, Sliders, Trash2, ExternalLink, BarChart3, FileText, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import RoleGuard from '@/components/RoleGuard';
+import MasterControls from '@/components/portfolio/MasterControls';
+import SiteTable from '@/components/portfolio/SiteTable';
+import WaterfallTable from '@/components/portfolio/WaterfallTable';
+import ExitAnalysisCard from '@/components/portfolio/ExitAnalysis';
+import WaterfallCharts from '@/components/portfolio/WaterfallCharts';
+import StallSizer from '@/components/portfolio/StallSizer';
+import DocumentsManager from '@/components/portfolio/DocumentsManager';
+import { seedPortfolioIfEmpty } from '@/lib/seedPortfolio';
+import {
+  DEFAULT_CONTROLS,
+  computeSite,
+  computeWaterfall,
+  computeExit,
+} from '@/lib/waterfallCalc';
+import type { MasterControls as MCType, SiteRow } from '@/lib/waterfallCalc';
 
-interface PortfolioSite {
+interface AnalysisRow {
   id: string;
   address: string;
   state: string;
+  lat: number;
+  lng: number;
   charge_score: number;
   num_stalls: number | null;
   kwh_per_stall_per_day: number | null;
@@ -27,6 +46,8 @@ interface PortfolioSite {
   npv: number | null;
   margin_kwh: number | null;
   owner_split_pct: number | null;
+  annual_insurance: number | null;
+  monthly_rent: number | null;
   created_at: string;
 }
 
@@ -40,15 +61,11 @@ const pct = (n: number | null | undefined) => {
   return `${n.toFixed(1)}%`;
 };
 
-const formatCoc = (site: PortfolioSite) => {
+const formatCoc = (site: AnalysisRow) => {
   if (site.coc != null && isFinite(site.coc)) return pct(site.coc);
-
   const oop = site.net_investment;
   const ownerAnnual = site.owner_monthly != null ? site.owner_monthly * 12 : null;
-
-  // Spreadsheet behavior: CoC is not a finite % when OOP is $0 and owner cash flow is positive
   if (oop != null && Math.abs(oop) < 0.5 && ownerAnnual != null && ownerAnnual > 0) return 'N/A*';
-
   return '—';
 };
 
@@ -59,7 +76,7 @@ const SCENARIO_OPTIONS = [
   { value: '1.25', label: '1.25x (Bull)' },
 ];
 
-const COLUMNS = [
+const SITE_COLUMNS = [
   { key: 'address', label: 'Site', align: 'left' as const },
   { key: 'charge_score', label: 'Score', align: 'center' as const },
   { key: 'num_stalls', label: 'Stalls', align: 'center' as const },
@@ -80,51 +97,83 @@ const getScoreColor = (score: number) => {
   return 'text-destructive';
 };
 
+function analysisToSiteRow(a: AnalysisRow): SiteRow {
+  const stalls = a.num_stalls ?? 8;
+  const totalCost = a.total_project_cost ?? stalls * 87500;
+  const costPerStall = stalls > 0 ? totalCost / stalls : 87500;
+  return {
+    id: a.id,
+    name: a.address.split(',')[0],
+    address: a.address,
+    stalls,
+    baseKwhPerStallPerDay: a.kwh_per_stall_per_day ?? 250,
+    customerPrice: a.price_per_kwh ?? 0.45,
+    electricityCost: a.electricity_cost ?? 0.223,
+    teslaFee: 0.10,
+    bomPerStall: 62500,
+    installPerStall: Math.round(costPerStall - 62500),
+    incentives: a.estimated_incentives ?? 0,
+    insurance: a.annual_insurance ?? 5000,
+    monthlyRent: a.monthly_rent ?? 0,
+  };
+}
+
 const Portfolio = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [sites, setSites] = useState<PortfolioSite[]>([]);
+  const [searchParams] = useSearchParams();
+  const [analyses, setAnalyses] = useState<AnalysisRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [scenario, setScenario] = useState('1.00');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'sites');
+  const [controls, setControls] = useState<MCType>(DEFAULT_CONTROLS);
 
   const multiplier = parseFloat(scenario);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/auth'); return; }
-    fetchSites();
+    initPortfolio();
   }, [user, authLoading]);
 
-  const fetchSites = async () => {
+  const initPortfolio = async () => {
+    if (!user) return;
     setLoading(true);
+    // Auto-seed on first visit
+    await seedPortfolioIfEmpty(user.id);
+    await fetchSites();
+    setLoading(false);
+  };
+
+  const fetchSites = async () => {
     const { data, error } = await supabase
       .from('analyses')
       .select('*')
       .order('created_at', { ascending: false });
-    if (!error && data) setSites(data as any);
-    setLoading(false);
+    if (!error && data) setAnalyses(data as any);
   };
 
   const handleDelete = async (id: string) => {
     setDeleting(id);
     await supabase.from('analyses').delete().eq('id', id);
-    setSites(prev => prev.filter(s => s.id !== id));
+    setAnalyses(prev => prev.filter(s => s.id !== id));
     setDeleting(null);
     toast.success('Site removed');
   };
 
-  const scaled = useMemo(() => sites.map(s => ({
+  // --- Sites tab data ---
+  const scaled = useMemo(() => analyses.map(s => ({
     ...s,
     noi: s.noi != null ? s.noi * multiplier : null,
     owner_monthly: s.owner_monthly != null ? s.owner_monthly * multiplier : null,
     ms_monthly: s.ms_monthly != null ? s.ms_monthly * multiplier : null,
     npv: s.npv != null ? s.npv * multiplier : null,
     coc: s.coc != null ? s.coc * multiplier : null,
-  })), [sites, multiplier]);
+  })), [analyses, multiplier]);
 
   const totals = useMemo(() => {
-    const sum = (key: keyof PortfolioSite) => scaled.reduce((acc, s) => acc + ((s[key] as number) ?? 0), 0);
+    const sum = (key: keyof AnalysisRow) => scaled.reduce((acc, s) => acc + ((s[key] as number) ?? 0), 0);
     return {
       totalProjectCost: sum('total_project_cost'),
       estimatedIncentives: sum('estimated_incentives'),
@@ -137,13 +186,11 @@ const Portfolio = () => {
     };
   }, [scaled]);
 
-  // Composite ranking: average of NPV rank, CoC rank, Score rank (lower = better)
   const ranked = useMemo(() => {
     if (scaled.length === 0) return [];
     const byNpv = [...scaled].sort((a, b) => (b.npv ?? -Infinity) - (a.npv ?? -Infinity));
     const byCoc = [...scaled].sort((a, b) => (b.coc ?? -Infinity) - (a.coc ?? -Infinity));
     const byScore = [...scaled].sort((a, b) => b.charge_score - a.charge_score);
-
     return scaled
       .map((s) => {
         const npvRank = byNpv.findIndex((x) => x.id === s.id) + 1;
@@ -153,6 +200,57 @@ const Portfolio = () => {
       })
       .sort((a, b) => a.compositeRank - b.compositeRank);
   }, [scaled]);
+
+  // --- Financials tab data ---
+  const siteRows = useMemo(() => analyses.map(analysisToSiteRow), [analyses]);
+  const [editableSites, setEditableSites] = useState<SiteRow[]>([]);
+
+  useEffect(() => {
+    setEditableSites(siteRows);
+  }, [siteRows]);
+
+  const computedSites = useMemo(() => editableSites.map(s => computeSite(s, controls)), [editableSites, controls]);
+  const totalOOP = useMemo(() => computedSites.reduce((s, c) => s + c.outOfPocket, 0), [computedSites]);
+  const waterfallRows = useMemo(() => computeWaterfall(computedSites, controls), [computedSites, controls]);
+  const exitAnalysis = useMemo(() => computeExit(waterfallRows, controls, totalOOP), [waterfallRows, controls, totalOOP]);
+
+  const handleAddFromSizer = useCallback(async (site: Omit<SiteRow, 'id'>) => {
+    if (!user) return;
+    // Save to DB
+    const margin = site.customerPrice - site.electricityCost - site.teslaFee;
+    const totalCost = (site.bomPerStall + site.installPerStall) * site.stalls;
+    const netInv = Math.max(0, totalCost - site.incentives);
+    const annualRev = site.stalls * site.baseKwhPerStallPerDay * margin * 365;
+    const noi = annualRev - site.insurance - (site.monthlyRent * 12);
+
+    const { error } = await supabase.from('analyses').insert({
+      user_id: user.id,
+      address: site.address || site.name,
+      lat: 0,
+      lng: 0,
+      state: 'NY',
+      charge_score: 70,
+      num_stalls: site.stalls,
+      kwh_per_stall_per_day: site.baseKwhPerStallPerDay,
+      price_per_kwh: site.customerPrice,
+      electricity_cost: site.electricityCost,
+      total_project_cost: totalCost,
+      estimated_incentives: site.incentives,
+      net_investment: netInv,
+      noi,
+      margin_kwh: margin,
+      annual_insurance: site.insurance,
+      monthly_rent: site.monthlyRent,
+    } as any);
+
+    if (error) {
+      toast.error('Failed to add site');
+    } else {
+      toast.success(`Added "${site.name}" to portfolio`);
+      await fetchSites();
+      setActiveTab('sites');
+    }
+  }, [user]);
 
   const hasNaCoc = ranked.some((site) => formatCoc(site) === 'N/A*');
 
@@ -168,178 +266,197 @@ const Portfolio = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <Zap className="h-5 w-5 text-primary" />
-            <span className="font-heading text-lg font-bold">Portfolio</span>
-            <span className="text-sm text-muted-foreground ml-2">{sites.length} sites</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Sliders className="h-4 w-4 text-muted-foreground" />
-              <Select value={scenario} onValueChange={setScenario}>
-                <SelectTrigger className="h-8 w-[160px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SCENARIO_OPTIONS.map(o => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+    <RoleGuard requiredRole="pro">
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-card/80 backdrop-blur-xl sticky top-0 z-50">
+          <div className="flex h-14 items-center justify-between px-4">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <Zap className="h-5 w-5 text-primary" />
+              <span className="font-heading text-lg font-bold">ChargeScore Pro — Portfolio</span>
+              <span className="text-sm text-muted-foreground ml-2">{analyses.length} sites</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/my-analyses')}>
-              My Projects
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="px-4 py-6">
-        {sites.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <TrendingUp className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <h2 className="font-heading text-xl font-bold text-foreground">No saved sites</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Save site analyses from the dashboard to compare them here.
-            </p>
-            <Button className="mt-4" onClick={() => navigate('/')}>Analyze a Site</Button>
-          </div>
-        ) : (
-          <>
-            {/* Summary cards */}
-            <TooltipProvider>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-              <div className="rounded-xl border border-border bg-card px-4 py-3 text-center">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Stalls</p>
-                <p className="font-mono text-2xl font-bold text-foreground">{totals.stalls}</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card px-4 py-3 text-center">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Portfolio NOI</p>
-                <p className={`font-mono text-2xl font-bold ${totals.noi >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.noi)}</p>
-                <p className="text-[10px] text-muted-foreground">/yr</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card px-4 py-3 text-center">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Owner Monthly</p>
-                <p className={`font-mono text-2xl font-bold ${totals.ownerMonthly >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.ownerMonthly)}</p>
-                <p className="text-[10px] text-muted-foreground">/mo total</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card px-4 py-3 text-center">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Portfolio NPV</p>
-                <p className={`font-mono text-2xl font-bold ${totals.npv >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.npv)}</p>
-              </div>
+            <div className="flex items-center gap-3">
+              {activeTab === 'sites' && (
+                <div className="flex items-center gap-2">
+                  <Sliders className="h-4 w-4 text-muted-foreground" />
+                  <Select value={scenario} onValueChange={setScenario}>
+                    <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SCENARIO_OPTIONS.map(o => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
-            </TooltipProvider>
+          </div>
+        </header>
 
-            {/* Comparison table */}
-            <div className="rounded-xl border border-border bg-card overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-8">#</th>
-                    {COLUMNS.map(col => (
-                      <th key={col.key} className={`px-3 py-2.5 text-${col.align} text-[10px] uppercase tracking-wider text-muted-foreground font-semibold whitespace-nowrap`}>
-                        {col.label}
-                      </th>
-                    ))}
-                    <th className="px-3 py-2.5 text-center text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-16">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ranked.map((s, i) => (
-                    <tr
-                      key={s.id}
-                      className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/dashboard?address=${encodeURIComponent(s.address)}&lat=${(s as any).lat}&lng=${(s as any).lng}&state=${s.state}`)}
-                    >
-                      <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{i + 1}</td>
-                      <td className="px-3 py-2.5 max-w-[220px]">
-                        <p className="text-sm font-medium text-foreground truncate">{s.address}</p>
-                        <p className="text-[10px] text-muted-foreground">{s.state} · {s.owner_split_pct ?? 70}/{100 - (s.owner_split_pct ?? 70)} split</p>
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
-                        <span className={`font-mono text-sm font-bold ${getScoreColor(s.charge_score)}`}>{s.charge_score}</span>
-                      </td>
-                      <td className="px-3 py-2.5 text-center font-mono text-sm">{s.num_stalls ?? '—'}</td>
-                      <td className="px-3 py-2.5 text-right font-mono text-sm">{fmt(s.total_project_cost)}</td>
-                      <td className="px-3 py-2.5 text-right font-mono text-sm text-success">{fmt(s.estimated_incentives)}</td>
-                      <td className="px-3 py-2.5 text-right font-mono text-sm">{fmt(s.net_investment)}</td>
-                      <td className={`px-3 py-2.5 text-right font-mono text-sm font-bold ${(s.noi ?? 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
-                        {fmt(s.noi)}
-                      </td>
-                      <td className={`px-3 py-2.5 text-right font-mono text-sm ${(s.owner_monthly ?? 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
-                        {fmt(s.owner_monthly)}
-                      </td>
-                      <td className="px-3 py-2.5 text-right font-mono text-sm text-primary">
-                        {fmt(s.ms_monthly)}
-                      </td>
-                      <td className="px-3 py-2.5 text-right font-mono text-sm">
-                        {formatCoc(s)}
-                      </td>
-                      <td className={`px-3 py-2.5 text-right font-mono text-sm font-bold ${(s.npv ?? 0) > 0 ? 'text-success' : 'text-destructive'}`}>
-                        {fmt(s.npv)}
-                      </td>
-                      <td className="px-3 py-2.5 text-right font-mono text-sm">
-                        {s.margin_kwh != null ? `$${s.margin_kwh.toFixed(2)}` : '—'}
-                      </td>
-                      <td className="px-3 py-2.5 text-center" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7"
-                            onClick={() => navigate(`/dashboard?address=${encodeURIComponent(s.address)}&lat=${(s as any).lat}&lng=${(s as any).lng}&state=${s.state}`)}>
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(s.id)} disabled={deleting === s.id}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                {/* Totals row */}
-                <tfoot>
-                  <tr className="border-t-2 border-border bg-muted/40 font-bold">
-                    <td className="px-3 py-2.5"></td>
-                    <td className="px-3 py-2.5 text-sm text-foreground">Portfolio Total</td>
-                    <td className="px-3 py-2.5"></td>
-                    <td className="px-3 py-2.5 text-center font-mono text-sm">{totals.stalls}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-sm">{fmt(totals.totalProjectCost)}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-sm text-success">{fmt(totals.estimatedIncentives)}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-sm">{fmt(totals.netInvestment)}</td>
-                    <td className={`px-3 py-2.5 text-right font-mono text-sm ${totals.noi >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.noi)}</td>
-                    <td className={`px-3 py-2.5 text-right font-mono text-sm ${totals.ownerMonthly >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.ownerMonthly)}</td>
-                    <td className="px-3 py-2.5 text-right font-mono text-sm text-primary">{fmt(totals.msMonthly)}</td>
-                    <td className="px-3 py-2.5"></td>
-                    <td className={`px-3 py-2.5 text-right font-mono text-sm ${totals.npv >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.npv)}</td>
-                    <td className="px-3 py-2.5"></td>
-                    <td className="px-3 py-2.5"></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+        <main className="px-4 py-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="sites" className="gap-1.5">
+                <BarChart3 className="h-3.5 w-3.5" /> Sites
+              </TabsTrigger>
+              <TabsTrigger value="financials" className="gap-1.5">
+                <TrendingUp className="h-3.5 w-3.5" /> Financials
+              </TabsTrigger>
+              <TabsTrigger value="sizer" className="gap-1.5">
+                <Zap className="h-3.5 w-3.5" /> Stall Sizer
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="gap-1.5">
+                <FileText className="h-3.5 w-3.5" /> Documents
+              </TabsTrigger>
+            </TabsList>
 
-            {hasNaCoc && (
-              <p className="mt-3 text-xs text-muted-foreground text-center">
-                *CoC shown as N/A when out-of-pocket investment is $0, matching the spreadsheet logic.
-              </p>
-            )}
+            {/* ═══ SITES TAB ═══ */}
+            <TabsContent value="sites">
+              {analyses.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <TrendingUp className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                  <h2 className="font-heading text-xl font-bold text-foreground">No saved sites</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">Save site analyses from the dashboard to compare them here.</p>
+                  <Button className="mt-4" onClick={() => navigate('/')}>Analyze a Site</Button>
+                </div>
+              ) : (
+                <>
+                  <TooltipProvider>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                      <div className="rounded-xl border border-border bg-card px-4 py-3 text-center">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Stalls</p>
+                        <p className="font-mono text-2xl font-bold text-foreground">{totals.stalls}</p>
+                      </div>
+                      <div className="rounded-xl border border-border bg-card px-4 py-3 text-center">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Portfolio NOI</p>
+                        <p className={`font-mono text-2xl font-bold ${totals.noi >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.noi)}</p>
+                        <p className="text-[10px] text-muted-foreground">/yr</p>
+                      </div>
+                      <div className="rounded-xl border border-border bg-card px-4 py-3 text-center">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Owner Monthly</p>
+                        <p className={`font-mono text-2xl font-bold ${totals.ownerMonthly >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.ownerMonthly)}</p>
+                        <p className="text-[10px] text-muted-foreground">/mo total</p>
+                      </div>
+                      <div className="rounded-xl border border-border bg-card px-4 py-3 text-center">
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Portfolio NPV</p>
+                        <p className={`font-mono text-2xl font-bold ${totals.npv >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.npv)}</p>
+                      </div>
+                    </div>
+                  </TooltipProvider>
 
-            {multiplier !== 1 && (
-              <p className="mt-3 text-xs text-muted-foreground text-center">
-                Showing {scenario}x scenario — NOI, Owner/MS distributions, CoC, and NPV are scaled by {multiplier}×
-              </p>
-            )}
-            
-          </>
-        )}
-      </main>
-    </div>
+                  <div className="rounded-xl border border-border bg-card overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-3 py-2.5 text-left text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-8">#</th>
+                          {SITE_COLUMNS.map(col => (
+                            <th key={col.key} className={`px-3 py-2.5 text-${col.align} text-[10px] uppercase tracking-wider text-muted-foreground font-semibold whitespace-nowrap`}>
+                              {col.label}
+                            </th>
+                          ))}
+                          <th className="px-3 py-2.5 text-center text-[10px] uppercase tracking-wider text-muted-foreground font-semibold w-16">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ranked.map((s, i) => (
+                          <tr
+                            key={s.id}
+                            className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors cursor-pointer"
+                            onClick={() => navigate(`/dashboard?address=${encodeURIComponent(s.address)}&lat=${(s as any).lat}&lng=${(s as any).lng}&state=${s.state}`)}
+                          >
+                            <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{i + 1}</td>
+                            <td className="px-3 py-2.5 max-w-[220px]">
+                              <p className="text-sm font-medium text-foreground truncate">{s.address}</p>
+                              <p className="text-[10px] text-muted-foreground">{s.state} · {s.owner_split_pct ?? 70}/{100 - (s.owner_split_pct ?? 70)} split</p>
+                            </td>
+                            <td className="px-3 py-2.5 text-center"><span className={`font-mono text-sm font-bold ${getScoreColor(s.charge_score)}`}>{s.charge_score}</span></td>
+                            <td className="px-3 py-2.5 text-center font-mono text-sm">{s.num_stalls ?? '—'}</td>
+                            <td className="px-3 py-2.5 text-right font-mono text-sm">{fmt(s.total_project_cost)}</td>
+                            <td className="px-3 py-2.5 text-right font-mono text-sm text-success">{fmt(s.estimated_incentives)}</td>
+                            <td className="px-3 py-2.5 text-right font-mono text-sm">{fmt(s.net_investment)}</td>
+                            <td className={`px-3 py-2.5 text-right font-mono text-sm font-bold ${(s.noi ?? 0) >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(s.noi)}</td>
+                            <td className={`px-3 py-2.5 text-right font-mono text-sm ${(s.owner_monthly ?? 0) >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(s.owner_monthly)}</td>
+                            <td className="px-3 py-2.5 text-right font-mono text-sm text-primary">{fmt(s.ms_monthly)}</td>
+                            <td className="px-3 py-2.5 text-right font-mono text-sm">{formatCoc(s)}</td>
+                            <td className={`px-3 py-2.5 text-right font-mono text-sm font-bold ${(s.npv ?? 0) > 0 ? 'text-success' : 'text-destructive'}`}>{fmt(s.npv)}</td>
+                            <td className="px-3 py-2.5 text-right font-mono text-sm">{s.margin_kwh != null ? `$${s.margin_kwh.toFixed(2)}` : '—'}</td>
+                            <td className="px-3 py-2.5 text-center" onClick={e => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7"
+                                  onClick={() => navigate(`/dashboard?address=${encodeURIComponent(s.address)}&lat=${(s as any).lat}&lng=${(s as any).lng}&state=${s.state}`)}>
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(s.id)} disabled={deleting === s.id}>
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 border-border bg-muted/40 font-bold">
+                          <td className="px-3 py-2.5"></td>
+                          <td className="px-3 py-2.5 text-sm text-foreground">Portfolio Total</td>
+                          <td className="px-3 py-2.5"></td>
+                          <td className="px-3 py-2.5 text-center font-mono text-sm">{totals.stalls}</td>
+                          <td className="px-3 py-2.5 text-right font-mono text-sm">{fmt(totals.totalProjectCost)}</td>
+                          <td className="px-3 py-2.5 text-right font-mono text-sm text-success">{fmt(totals.estimatedIncentives)}</td>
+                          <td className="px-3 py-2.5 text-right font-mono text-sm">{fmt(totals.netInvestment)}</td>
+                          <td className={`px-3 py-2.5 text-right font-mono text-sm ${totals.noi >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.noi)}</td>
+                          <td className={`px-3 py-2.5 text-right font-mono text-sm ${totals.ownerMonthly >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.ownerMonthly)}</td>
+                          <td className="px-3 py-2.5 text-right font-mono text-sm text-primary">{fmt(totals.msMonthly)}</td>
+                          <td className="px-3 py-2.5"></td>
+                          <td className={`px-3 py-2.5 text-right font-mono text-sm ${totals.npv >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.npv)}</td>
+                          <td className="px-3 py-2.5"></td>
+                          <td className="px-3 py-2.5"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  {hasNaCoc && (
+                    <p className="mt-3 text-xs text-muted-foreground text-center">
+                      *CoC shown as N/A when out-of-pocket investment is $0.
+                    </p>
+                  )}
+                  {multiplier !== 1 && (
+                    <p className="mt-3 text-xs text-muted-foreground text-center">
+                      Showing {scenario}x scenario — NOI, distributions, CoC, and NPV are scaled by {multiplier}×
+                    </p>
+                  )}
+                </>
+              )}
+            </TabsContent>
+
+            {/* ═══ FINANCIALS TAB ═══ */}
+            <TabsContent value="financials">
+              <div className="space-y-4">
+                <MasterControls controls={controls} onChange={setControls} />
+                <SiteTable sites={editableSites} controls={controls} onSitesChange={setEditableSites} />
+                <WaterfallTable rows={waterfallRows} />
+                <ExitAnalysisCard exit={exitAnalysis} controls={controls} totalOOP={totalOOP} />
+                <WaterfallCharts waterfallRows={waterfallRows} exit={exitAnalysis} sites={computedSites} />
+              </div>
+            </TabsContent>
+
+            {/* ═══ STALL SIZER TAB ═══ */}
+            <TabsContent value="sizer">
+              <StallSizer onAddToPortfolio={handleAddFromSizer} />
+            </TabsContent>
+
+            {/* ═══ DOCUMENTS TAB ═══ */}
+            <TabsContent value="documents">
+              <DocumentsManager sites={analyses.map(s => ({ name: s.address.split(',')[0], address: s.address }))} />
+            </TabsContent>
+          </Tabs>
+        </main>
+      </div>
+    </RoleGuard>
   );
 };
 

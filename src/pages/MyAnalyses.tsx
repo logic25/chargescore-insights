@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, MapPin, Trash2, ExternalLink, ChevronRight, Database } from 'lucide-react';
+import { Zap, ArrowLeft, MapPin, Trash2, ExternalLink, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
-import { PRELOADED_SITES } from '@/lib/waterfallCalc';
 
 type Analysis = Tables<'analyses'>;
 
@@ -17,7 +15,6 @@ const MyAnalyses = () => {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [seeding, setSeeding] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<{ formatted: string; lat: number; lng: number; stateCode: string } | null>(null);
 
   const handleAnalyze = () => {
@@ -51,49 +48,6 @@ const MyAnalyses = () => {
     await supabase.from('analyses').delete().eq('id', id);
     setAnalyses(prev => prev.filter(a => a.id !== id));
     setDeleting(null);
-  };
-
-  const handleSeedPortfolio = async () => {
-    if (!user) return;
-    setSeeding(true);
-    try {
-      const stateScores: Record<string, number> = { NY: 78, FL: 72, NJ: 68, MA: 74 };
-      const rows = PRELOADED_SITES.map(s => {
-        const stateCode = s.address.includes('NY') ? 'NY' : s.address.includes('FL') ? 'FL' : s.address.includes('NJ') ? 'NJ' : 'MA';
-        const margin = s.customerPrice - s.electricityCost - s.teslaFee;
-        const annualRev = s.stalls * s.baseKwhPerStallPerDay * margin * 365;
-        const noi = annualRev - s.insurance - (s.monthlyRent * 12);
-        const totalCost = (s.bomPerStall + s.installPerStall) * s.stalls;
-        const netInv = Math.max(0, totalCost - s.incentives);
-        return {
-          user_id: user.id,
-          address: `${s.name}, ${s.address}`,
-          lat: 40.7 + Math.random() * 0.5,
-          lng: -74.0 + Math.random() * 0.5,
-          state: stateCode,
-          charge_score: stateScores[stateCode] ?? 70,
-          num_stalls: s.stalls,
-          price_per_kwh: s.customerPrice,
-          electricity_cost: s.electricityCost,
-          kwh_per_stall_per_day: s.baseKwhPerStallPerDay,
-          total_project_cost: totalCost,
-          estimated_incentives: s.incentives,
-          net_investment: netInv,
-          noi,
-          margin_kwh: margin,
-          annual_insurance: s.insurance,
-          monthly_rent: s.monthlyRent,
-        };
-      });
-      const { error } = await supabase.from('analyses').insert(rows as any);
-      if (error) throw error;
-      toast.success(`Seeded ${rows.length} portfolio sites`);
-      fetchAnalyses();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to seed');
-    } finally {
-      setSeeding(false);
-    }
   };
 
   const handleOpen = (a: Analysis) => {
@@ -142,17 +96,12 @@ const MyAnalyses = () => {
             <Button variant="outline" size="sm" onClick={() => navigate('/portfolio')}>
               Portfolio View
             </Button>
-            <Button variant="outline" size="sm" onClick={handleSeedPortfolio} disabled={seeding}>
-              <Database className="mr-1 h-3.5 w-3.5" />
-              {seeding ? 'Seeding…' : 'Seed Portfolio Sites'}
-            </Button>
             <span className="text-sm text-muted-foreground">{analyses.length} projects</span>
           </div>
         </div>
       </header>
 
       <main className="container max-w-4xl py-8">
-        {/* Address search bar */}
         <div className="mb-8 flex flex-col gap-3 sm:flex-row">
           <AddressAutocomplete onSelect={(result) => setSelectedAddress(result)} />
           <Button
@@ -175,7 +124,6 @@ const MyAnalyses = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {/* Comparison header row */}
             <div className="hidden sm:grid grid-cols-[1fr_80px_80px_80px_80px] gap-3 px-4 text-[10px] uppercase tracking-wider text-muted-foreground/60">
               <span>Address</span>
               <span className="text-center">Score</span>
@@ -191,7 +139,6 @@ const MyAnalyses = () => {
                 onClick={() => handleOpen(a)}
               >
                 <div className="sm:grid sm:grid-cols-[1fr_80px_80px_80px_80px] sm:gap-3 sm:items-center">
-                  {/* Address */}
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{a.address}</p>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -202,15 +149,11 @@ const MyAnalyses = () => {
                       </span>
                     </div>
                   </div>
-
-                  {/* Score */}
                   <div className="text-center mt-2 sm:mt-0">
                     <span className={`font-mono text-xl font-bold ${getScoreColor(a.charge_score)}`}>
                       {a.charge_score}
                     </span>
                   </div>
-
-                  {/* Grade */}
                   <div className="text-center mt-1 sm:mt-0">
                     <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
                       a.charge_score >= 80 ? 'bg-primary/10 text-primary' :
@@ -220,20 +163,11 @@ const MyAnalyses = () => {
                       {getScoreGrade(a.charge_score)}
                     </span>
                   </div>
-
-                  {/* Stalls */}
                   <div className="text-center mt-1 sm:mt-0">
                     <span className="font-mono text-sm text-foreground">{a.num_stalls ?? '—'}</span>
                   </div>
-
-                  {/* Actions */}
                   <div className="flex items-center justify-center gap-1 mt-2 sm:mt-0" onClick={e => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleOpen(a)}
-                    >
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpen(a)}>
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Button>
                     <Button

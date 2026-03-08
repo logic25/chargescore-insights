@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, DollarSign, BarChart3, Building2, ChevronRight, LogIn, LogOut } from 'lucide-react';
+import { Zap, DollarSign, BarChart3, ChevronRight, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { getAnalysisCount } from '@/lib/analytics';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 
 const LandingPage = () => {
   const [selectedAddress, setSelectedAddress] = useState<{ formatted: string; lat: number; lng: number; stateCode: string } | null>(null);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { profile, isAtLeast } = useProfile();
 
   const handleAddressSelect = (result: { formatted: string; lat: number; lng: number; stateCode: string }) => {
     setSelectedAddress(result);
@@ -31,23 +33,35 @@ const LandingPage = () => {
             <Zap className="h-6 w-6 text-primary" />
             <span className="font-heading text-xl font-bold text-foreground">ChargeScore</span>
           </div>
-          {user ? (
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/portfolio-builder')} className="hidden sm:flex">
-                Portfolio Builder
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate('/my-analyses')} className="hidden sm:flex">
-                My Projects
-              </Button>
-              <Button variant="outline" size="sm" onClick={signOut} className="hidden sm:flex">
-                <LogOut className="mr-1.5 h-4 w-4" /> Sign Out
-              </Button>
-            </div>
-          ) : (
-            <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="hidden sm:flex">
-              <LogIn className="mr-1.5 h-4 w-4" /> Sign In
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/pricing')} className="hidden sm:flex">
+              Pricing
             </Button>
-          )}
+            {user ? (
+              <>
+                {isAtLeast('pro') && (
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/portfolio')} className="hidden sm:flex">
+                    Portfolio
+                  </Button>
+                )}
+                {isAtLeast('plus') && !isAtLeast('pro') && (
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/stall-sizer')} className="hidden sm:flex">
+                    Stall Sizer
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => navigate('/my-analyses')} className="hidden sm:flex">
+                  My Projects
+                </Button>
+                <Button variant="outline" size="sm" onClick={signOut} className="hidden sm:flex">
+                  <LogOut className="mr-1.5 h-4 w-4" /> Sign Out
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="hidden sm:flex">
+                <LogIn className="mr-1.5 h-4 w-4" /> Sign In
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -62,14 +76,17 @@ const LandingPage = () => {
             className="mx-auto max-w-3xl text-center"
           >
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-              ⚡ Tesla Supercharger for Business
+              ⚡ EV Charging Site Intelligence
             </div>
             <h1 className="font-heading text-4xl font-extrabold leading-tight tracking-tight text-foreground md:text-6xl">
-              Turn your parking lot into a{' '}
-              <span className="text-primary">revenue engine</span>
+              See your property's{' '}
+              <span className="text-primary">EV charging potential</span>
             </h1>
             <p className="mt-6 text-lg text-muted-foreground md:text-xl">
-              See if your property qualifies for a Tesla Supercharger installation. Get your ChargeScore, full revenue projection, and every available incentive — in 60 seconds.
+              Search any address to get a free site analysis. ChargeScore evaluates traffic, competition, incentives, and revenue potential — in 60 seconds.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              5 free analyses. No credit card required.
             </p>
 
             <div className="mx-auto mt-10 flex max-w-xl flex-col gap-3 sm:flex-row">
@@ -106,18 +123,18 @@ const LandingPage = () => {
             {[
               {
                 icon: Zap,
-                title: 'Tesla-Ready Site Score',
-                desc: 'Our ChargeScore algorithm evaluates your property for Tesla Supercharger viability — competition, traffic, electrical capacity, and more.',
+                title: 'Instant Site Score',
+                desc: 'Our ChargeScore™ algorithm evaluates your property for EV charger viability — competition, traffic, electrical capacity, and more.',
               },
               {
                 icon: DollarSign,
                 title: 'Find Every Incentive',
-                desc: 'Federal 30C tax credits, NEVI funding, and state programs can cover 30-80% of your Supercharger investment. We find every dollar.',
+                desc: 'Federal 30C tax credits, NEVI funding, and state programs can cover 30-80% of your investment. We find every dollar.',
               },
               {
                 icon: BarChart3,
                 title: 'Full Revenue Projection',
-                desc: 'See your 5-year ROI with Tesla\'s pricing model — hardware costs, built-in load management, and service fees all calculated.',
+                desc: 'See your 5-year ROI with hardware costs, load management, and service fees all calculated.',
               },
             ].map((prop, i) => (
               <motion.div
@@ -172,17 +189,26 @@ const LandingPage = () => {
       <section className="border-t border-border/50 bg-primary/5">
         <div className="container py-20 text-center">
           <h2 className="font-heading text-3xl font-bold text-foreground">
-            Ready to host Tesla Superchargers?
+            Ready to explore EV charging?
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
-            Join property owners discovering how Tesla's Supercharger for Business program can turn idle parking spaces into consistent revenue.
+            Join property owners discovering how EV chargers can turn idle parking spaces into consistent revenue.
           </p>
-          <Button
-            className="mt-8 h-14 px-10 text-base font-semibold"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          >
-            Analyze Your Site — Free
-          </Button>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button
+              className="h-14 px-10 text-base font-semibold"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
+              Analyze Your Site — Free
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 px-10 text-base"
+              onClick={() => navigate('/contact')}
+            >
+              Get a Free Consultation
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -190,10 +216,14 @@ const LandingPage = () => {
       <footer className="border-t border-border/50 bg-muted/30">
         <div className="container flex flex-col items-center justify-between gap-4 py-8 sm:flex-row">
           <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Powered by Managed Squares LLC</span>
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-sm text-muted-foreground">ChargeScore — EV Charging Site Intelligence</span>
           </div>
-          <p className="text-xs text-muted-foreground">© 2025 ChargeScore. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/pricing')} className="text-xs text-muted-foreground hover:text-foreground">Pricing</button>
+            <button onClick={() => navigate('/contact')} className="text-xs text-muted-foreground hover:text-foreground">Contact</button>
+          </div>
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} ChargeScore. All rights reserved.</p>
         </div>
       </footer>
     </div>
