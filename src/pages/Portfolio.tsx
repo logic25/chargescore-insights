@@ -383,15 +383,20 @@ const Portfolio = () => {
                       </thead>
                       <tbody>
                         {ranked.map((s, i) => (
+                          <React.Fragment key={s.id}>
                           <tr
-                            key={s.id}
-                            className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors cursor-pointer"
-                            onClick={() => navigate(`/dashboard?address=${encodeURIComponent(s.address)}&lat=${(s as any).lat}&lng=${(s as any).lng}&state=${s.state}`)}
+                            className={`border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors cursor-pointer ${expandedSiteId === s.id ? 'bg-muted/10' : ''}`}
+                            onClick={() => handleExpandSite(s)}
                           >
                             <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{i + 1}</td>
                             <td className="px-3 py-2.5 max-w-[220px]">
-                              <p className="text-sm font-medium text-foreground truncate">{s.address}</p>
-                              <p className="text-[10px] text-muted-foreground">{s.state} · {s.owner_split_pct ?? 70}/{100 - (s.owner_split_pct ?? 70)} split</p>
+                              <div className="flex items-center gap-1.5">
+                                <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform flex-shrink-0 ${expandedSiteId === s.id ? 'rotate-180' : ''}`} />
+                                <div>
+                                  <p className="text-sm font-medium text-foreground truncate">{s.address}</p>
+                                  <p className="text-[10px] text-muted-foreground">{s.state} · {s.owner_split_pct ?? 70}/{100 - (s.owner_split_pct ?? 70)} split</p>
+                                </div>
+                              </div>
                             </td>
                             <td className="px-3 py-2.5 text-center"><span className={`font-mono text-sm font-bold ${getScoreColor(s.charge_score)}`}>{s.charge_score}</span></td>
                             <td className="px-3 py-2.5 text-center font-mono text-sm">{s.num_stalls ?? '—'}</td>
@@ -417,6 +422,34 @@ const Portfolio = () => {
                               </div>
                             </td>
                           </tr>
+                          {/* Expanded incentive detail row */}
+                          {expandedSiteId === s.id && (
+                            <tr>
+                              <td colSpan={SITE_COLUMNS.length + 2} className="px-6 py-4 bg-muted/5 border-b border-border">
+                                {siteIncentives[s.id] ? (
+                                  <div className="space-y-3 max-w-3xl">
+                                    <IncentiveBreakdown
+                                      result={siteIncentives[s.id]}
+                                      grossProjectCost={s.total_project_cost ?? (s.num_stalls ?? 8) * 87500}
+                                      stallCount={s.num_stalls ?? 8}
+                                    />
+                                    <OOPRangeBar
+                                      grossCost={s.total_project_cost ?? (s.num_stalls ?? 8) * 87500}
+                                      confirmedTotal={siteIncentives[s.id].confirmedTotal}
+                                      likelyTotal={siteIncentives[s.id].likelyTotal}
+                                      uncertainTotal={siteIncentives[s.id].uncertainTotal}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                    Loading incentive data…
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          )}
+                          </React.Fragment>
                         ))}
                       </tbody>
                       <tfoot>
