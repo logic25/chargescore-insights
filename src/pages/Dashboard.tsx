@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, DollarSign, BarChart3, ChevronDown, Info, Save } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, DollarSign, BarChart3, ChevronDown, Info, Save, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,8 @@ import ParkingImpact from '@/components/dashboard/ParkingImpact';
 import ReportGenerator from '@/components/dashboard/ReportGenerator';
 import ReportGate from '@/components/ReportGate';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import StallRecommendation from '@/components/dashboard/StallRecommendation';
+import type { LocationType } from '@/lib/waterfallCalc';
 
 const GATE_UNLOCKED_KEY = 'chargescore_gate_unlocked';
 
@@ -332,6 +334,28 @@ const Dashboard = () => {
               </Button>
             )}
             {gateUnlocked && (
+              <Button size="sm" variant="outline" onClick={() => {
+                const siteRow = {
+                  name: site.address.split(',')[0],
+                  address: site.address,
+                  stalls: site.teslaStalls,
+                  baseKwhPerStallPerDay: site.kwhPerStallPerDay,
+                  customerPrice: site.pricePerKwh,
+                  electricityCost: site.electricityCostPerKwh,
+                  teslaFee: site.teslaServiceFeePerKwh,
+                  bomPerStall: 62500,
+                  installPerStall: 25000,
+                  incentives: financials.estimatedIncentives,
+                  insurance: site.annualInsurance,
+                  monthlyRent: site.monthlyRent,
+                };
+                navigate(`/portfolio?addSite=${encodeURIComponent(JSON.stringify(siteRow))}`);
+              }}>
+                <Briefcase className="mr-1 h-4 w-4" />
+                Add to Portfolio
+              </Button>
+            )}
+            {gateUnlocked && (
               <ReportGenerator
                 site={site} score={chargeScore} financials={financials}
                 incentives={incentives} parking={parking} demandCharge={demandCharge}
@@ -374,6 +398,23 @@ const Dashboard = () => {
               parcelData={parcelData}
               onParkingEstimate={handleParkingEstimate}
               defaultExpanded
+            />
+
+            {/* Stall Recommendation */}
+            <StallRecommendation
+              dailyTraffic={aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]}
+              evAdoptionRate={evRegistrations > 0 ? Math.min(evRegistrations / 100000, 0.15) : 0.05}
+              totalParkingSpaces={site.totalParkingSpaces}
+              lotSizeSqFt={parcelData.lotArea}
+              nearbyL3Ports={stationMetrics.totalDcfcPortsWithin5Miles}
+              chargeScore={chargeScore.totalScore}
+              state={site.state}
+              locationType={
+                (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 25000 ? 'highway' :
+                (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 10000 ? 'urban_retail' :
+                (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 5000 ? 'suburban_retail' : 'rural'
+              }
+              onUseRecommendation={(stalls) => setSite(prev => ({ ...prev, teslaStalls: stalls }))}
             />
 
             {/* Parking Impact */}
