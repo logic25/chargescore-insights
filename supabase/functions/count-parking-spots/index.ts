@@ -1,0 +1,126 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const { lat, lng, imageUrl } = await req.json();
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Use satellite imagery URL if no image provided
+    const satUrl = imageUrl || `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${lng - 0.001},${lat - 0.001},${lng + 0.001},${lat + 0.001}&bboxSR=4326&size=1024,1024&imageSR=4326&format=png&f=image`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: `You are a parking lot analyst. You will be shown a satellite/aerial image of a property. Your job is to count the total number of visible parking spots (marked stalls) in the image. 
+
+Rules:
+- Count only clearly visible painted parking stalls
+- Include all sections of the lot visible in the image
+- If spots are partially obscured by vehicles, still count them if the stall lines are visible
+- Do NOT count driveways, loading zones, or unmarked areas
+- If you cannot see clear parking stalls, estimate based on the paved area using 1 spot per 350 sq ft
+
+Return ONLY a JSON object with these fields:
+- count: number (total parking spots)
+- confidence: "high" | "medium" | "low"
+- notes: string (brief description of what you see)`
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Count the parking spots visible in this satellite image of the property at coordinates ${lat}, ${lng}. Return JSON only.`
+              },
+              {
+                type: "image_url",
+                image_url: { url: satUrl }
+              }
+            ]
+          }
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "report_parking_count",
+              description: "Report the counted parking spots from the satellite image",
+              parameters: {
+                type: "object",
+                properties: {
+                  count: { type: "number", description: "Total number of parking spots counted" },
+                  confidence: { type: "string", enum: ["high", "medium", "low"], description: "Confidence level of the count" },
+                  notes: { type: "string", description: "Brief description of what was observed" }
+                },
+                required: ["count", "confidence", "notes"],
+                additionalProperties: false
+              }
+            }
+          }
+        ],
+        tool_choice: { type: "function", function: { name: "report_parking_count" } }
+      }),
+    });
+
+    if (!response.ok) {
+      const status = response.status;
+      if (status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const errText = await response.text();
+      console.error("AI gateway error:", status, errText);
+      throw new Error(`AI gateway error: ${status}`);
+    }
+
+    const data = await response.json();
+    
+    // Extract from tool call response
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall?.function?.arguments) {
+      const result = JSON.parse(toolCall.function.arguments);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fallback: try to parse content as JSON
+    const content = data.choices?.[0]?.message?.content || "";
+    const jsonMatch = content.match(/\{[\s\S]*?\}/);
+    if (jsonMatch) {
+      const result = JSON.parse(jsonMatch[0]);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    throw new Error("Could not parse AI response");
+  } catch (e) {
+    console.error("count-parking-spots error:", e);
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
