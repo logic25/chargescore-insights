@@ -1,26 +1,34 @@
 
 
-## Problem
+# Auto-set kWh/stall/day from ChargeScore + Raise Install Cost Default
 
-The satellite image on the dashboard is broken. The `<img>` tag points to a Google Maps Static API URL, but the request is failing (referrer restriction or API not enabled). When the image fails, there's no `onError` handler, so the browser just shows the alt text.
+## Changes
 
-## Plan
+### 1. Raise `TESLA_INSTALL_PER_STALL` from $15K to $25K
+In `src/lib/calculations.ts` line 25, change `15_000` → `25_000`. This is the base install cost — NYC sites in the seed data already override to $35K.
 
-**Fix `src/components/dashboard/SiteAerial.tsx`:**
+### 2. Auto-set `kwhPerStallPerDay` based on ChargeScore grade
+In `src/pages/Dashboard.tsx`, after the `chargeScore` is computed (~line 204), add an effect that maps the score to the user's tiers:
 
-1. Add an `onError` handler on the `<img>` tag that switches to a fallback state when the Google Static Map image fails to load.
-2. The fallback will show:
-   - An embedded Leaflet/OpenStreetMap satellite tile map as the primary fallback (using the same Leaflet library already installed), OR
-   - A cleaner placeholder with a map icon and coordinates if Leaflet is too heavy for this component.
+| ChargeScore | Grade | kWh/stall/day |
+|---|---|---|
+| ≥ 80 | A / B+ | 400 (Very High) |
+| ≥ 70 | B | 300 (High) |
+| ≥ 50 | C+ / C | 250 (Medium) |
+| < 50 | D / F | 100 (Low) |
 
-**Recommended approach** — Use an OpenStreetMap static image as fallback:
-- On `<img onError>`, swap `src` to an OpenStreetMap-based static image tile (e.g., from `tile.openstreetmap.org`) or show the "Satellite view unavailable" placeholder with proper styling instead of broken alt text.
-- This requires no additional dependencies.
+This replaces the current hardcoded default of 250. The user can still manually override it via the slider — the auto-set only fires when the score changes (not when the user drags the slider).
 
-**Specifically:**
-- Add `useState` for `imageError`
-- Add `onError={() => setImageError(true)}` to the `<img>`
-- When `imageError` is true, render the fallback placeholder (styled nicely with a Map icon) instead of the broken image
+Implementation: add a `useEffect` watching `chargeScore.totalScore` that calls `setSite(prev => ({ ...prev, kwhPerStallPerDay: mappedValue }))`. Track a `manualKwhOverride` flag so once the user touches the slider, auto-set stops.
 
-This is a quick fix that ensures users never see broken image alt text.
+### 3. Update `projectRevenue` in `scoring.ts` to match
+Update the kWh mapping in `projectRevenue` (lines 451-458) to use the same tiers: 400/300/250/100 aligned with the score thresholds above, so the revenue projection card stays consistent.
+
+### 4. Price per kWh — no change
+Keep as manual user input (already is). No auto-setting for now.
+
+### Summary of defaults after this change
+- **Install cost**: $25K/stall (was $15K)
+- **kWh/stall/day**: auto-set from ChargeScore (was fixed 250)
+- **Price/kWh**: user-set (unchanged)
 
