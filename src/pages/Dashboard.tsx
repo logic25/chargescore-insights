@@ -141,7 +141,19 @@ const Dashboard = () => {
     fetchPopDensity(censusTractFips).then(setPopDensity);
   }, [censusTractFips]);
   useEffect(() => { fetchNearbyAmenities(site.lat, site.lng).then(setAmenitiesCount); }, [site.lat, site.lng]);
-  useEffect(() => { fetchAadt(site.lat, site.lng).then(setAadtData); }, [site.lat, site.lng]);
+  useEffect(() => {
+    fetchAadt(site.lat, site.lng, 500, site.state, site.address).then((result) => {
+      setAadtData(result);
+      // Auto-select traffic level based on AADT data
+      if (result.aadt) {
+        const vpd = result.aadt;
+        if (vpd >= 25000) setTrafficLevel('highway');
+        else if (vpd >= 10000) setTrafficLevel('main');
+        else if (vpd >= 3000) setTrafficLevel('side');
+        else setTrafficLevel('residential');
+      }
+    });
+  }, [site.lat, site.lng, site.state, site.address]);
   useEffect(() => { fetchParcelInfo(site.lat, site.lng, site.state).then(setParcelData); }, [site.lat, site.lng, site.state]);
   useEffect(() => { fetchNearestHighway(site.lat, site.lng).then(setHighwayProximity); }, [site.lat, site.lng]);
 
