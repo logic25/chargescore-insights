@@ -283,15 +283,27 @@ export function computeStallRecommendation(inputs: StallSizerInputs): StallRecom
   const estimatedEVTraffic = inputs.dailyTraffic * inputs.evAdoptionRate;
   const chargingDemand = estimatedEVTraffic * captureRate;
 
-  const recommend = (utilizationFactor: number) => {
+  const ratioFloors = PARKING_RATIO_FLOORS[inputs.locationType];
+
+  // Score boost: high chargeScore means more demand signal
+  const scoreMultiplier = inputs.chargeScore !== null ? 1 + Math.max(0, (inputs.chargeScore - 50)) / 100 : 1;
+
+  // Competition adjustment: fewer nearby ports = more opportunity
+  const competitionBoost = inputs.nearbyL3Ports !== null
+    ? (inputs.nearbyL3Ports < 5 ? 1.3 : inputs.nearbyL3Ports < 15 ? 1.1 : 1.0)
+    : 1.0;
+
+  const recommend = (utilizationFactor: number, ratioFloor: number) => {
     const sessionsPerStall = (inputs.operatingHours * 60 / inputs.avgChargeTimeMin) * utilizationFactor;
-    const raw = Math.ceil(chargingDemand / Math.max(sessionsPerStall, 0.01));
+    const demandBased = Math.ceil((chargingDemand * scoreMultiplier * competitionBoost) / Math.max(sessionsPerStall, 0.01));
+    const ratioBased = Math.ceil(parkingSpaces * ratioFloor);
+    const raw = Math.max(demandBased, ratioBased);
     return Math.max(4, Math.ceil(raw / 4) * 4);
   };
 
-  const conservative = recommend(UTILIZATION_FACTORS.conservative);
-  const base = recommend(UTILIZATION_FACTORS.base);
-  const aggressive = recommend(UTILIZATION_FACTORS.aggressive);
+  const conservative = recommend(UTILIZATION_FACTORS.conservative, ratioFloors.conservative);
+  const base = recommend(UTILIZATION_FACTORS.base, ratioFloors.base);
+  const aggressive = recommend(UTILIZATION_FACTORS.aggressive, ratioFloors.aggressive);
 
   // Confidence based on inputs provided
   let filled = 0;
@@ -303,7 +315,7 @@ export function computeStallRecommendation(inputs: StallSizerInputs): StallRecom
   const confidence: 'Low' | 'Medium' | 'High' = filled >= 4 ? 'High' : filled >= 3 ? 'Medium' : 'Low';
 
   const avgKwhPerSession = 30;
-  const dailySessions = chargingDemand;
+  const dailySessions = chargingDemand * scoreMultiplier * competitionBoost;
   const kwhPerStallPerDay = base > 0 ? (dailySessions * avgKwhPerSession) / base : 0;
 
   return {
