@@ -131,8 +131,26 @@ const Portfolio = () => {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'sites');
   const [controls, setControls] = useState<MCType>(DEFAULT_CONTROLS);
+  const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
+  const [siteIncentives, setSiteIncentives] = useState<Record<string, IncentiveResult>>({});
 
   const multiplier = parseFloat(scenario);
+
+  // Fetch incentive programs for an expanded site
+  const handleExpandSite = useCallback(async (site: AnalysisRow) => {
+    if (expandedSiteId === site.id) {
+      setExpandedSiteId(null);
+      return;
+    }
+    setExpandedSiteId(site.id);
+    if (siteIncentives[site.id]) return; // already loaded
+
+    const programs = await fetchIncentivePrograms(null, site.state);
+    const stalls = site.num_stalls ?? 8;
+    const grossCost = site.total_project_cost ?? stalls * 87500;
+    const result = calculateIncentives(programs, stalls, grossCost);
+    setSiteIncentives(prev => ({ ...prev, [site.id]: result }));
+  }, [expandedSiteId, siteIncentives]);
 
   useEffect(() => {
     if (authLoading) return;
