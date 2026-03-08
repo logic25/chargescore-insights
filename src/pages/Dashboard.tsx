@@ -204,6 +204,17 @@ const Dashboard = () => {
     utilityName: utilityInfo.utilityName,
   }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, siteData, hasThreePhasePower, site.state, site.zipCode, utilityInfo]);
 
+  // Auto-set kWh/stall/day based on ChargeScore (unless user manually overrode)
+  useEffect(() => {
+    if (manualKwhOverride) return;
+    const score = chargeScore.totalScore;
+    let autoKwh = 250;
+    if (score >= 80) autoKwh = 400;
+    else if (score >= 70) autoKwh = 300;
+    else if (score < 50) autoKwh = 100;
+    setSite(prev => prev.kwhPerStallPerDay === autoKwh ? prev : { ...prev, kwhPerStallPerDay: autoKwh });
+  }, [chargeScore.totalScore, manualKwhOverride]);
+
   const revenueProjection: RevenueProjection = useMemo(() => projectRevenue({
     chargeScore: chargeScore.totalScore,
     numStalls: site.teslaStalls,
