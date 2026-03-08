@@ -35,6 +35,11 @@ import ReportGate from '@/components/ReportGate';
 import StallHint from '@/components/dashboard/StallHint';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { computeStallRecommendation } from '@/lib/waterfallCalc';
+import { fetchIncentivePrograms, calculateIncentives, resolveUtilityTerritory, type IncentiveResult, type IncentiveProgram } from '@/lib/incentiveCalc';
+import IncentiveTeaser from '@/components/incentives/IncentiveTeaser';
+import IncentiveSummary from '@/components/incentives/IncentiveSummary';
+import IncentiveBreakdown from '@/components/incentives/IncentiveBreakdown';
+import OOPRangeBar from '@/components/incentives/OOPRangeBar';
 
 const GATE_UNLOCKED_KEY = 'chargescore_gate_unlocked';
 
@@ -242,6 +247,19 @@ const Dashboard = () => {
   const financials = useMemo(() => calculateFinancials(site, incentives), [site, incentives]);
   const parking = useMemo(() => calculateParkingImpact(site), [site]);
   const demandCharge = useMemo(() => calculateDemandCharge(site), [site]);
+
+  // === New Incentive Engine (confidence-tiered) ===
+  const [incentivePrograms, setIncentivePrograms] = useState<IncentiveProgram[]>([]);
+  const utilityTerritory = useMemo(() => resolveUtilityTerritory(utilityInfo.utilityName, site.state), [utilityInfo.utilityName, site.state]);
+
+  useEffect(() => {
+    fetchIncentivePrograms(utilityTerritory, site.state).then(setIncentivePrograms);
+  }, [utilityTerritory, site.state]);
+
+  const incentiveResult: IncentiveResult = useMemo(
+    () => calculateIncentives(incentivePrograms, site.teslaStalls, financials.totalProjectCost),
+    [incentivePrograms, site.teslaStalls, financials.totalProjectCost]
+  );
 
   // Stall recommendation for hint
   const stallRecommendation = useMemo(() => computeStallRecommendation({
@@ -518,32 +536,53 @@ const Dashboard = () => {
           </TooltipProvider>
         </div>
 
-        {/* INCENTIVE TEASER — visible to everyone, above the gate */}
-        {!showFullAnalysis && incentives.length > 0 && (
-          <div className="rounded-xl border border-success/30 bg-success/5 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
-                <DollarSign className="h-5 w-5 text-success" />
+        {/* INCENTIVE ENGINE — tier-aware display */}
+        {(() => {
+          const activeEnginePrograms = incentiveResult.programs.filter(p => p.programStatus !== 'expired');
+          const hasPrograms = activeEnginePrograms.length > 0;
+          const isFree = !profile?.role || profile.role === 'free';
+          const isPlusOrPro = profile?.role === 'plus' || profile?.role === 'pro';
+
+          // Unauthenticated / preview: IncentiveTeaser only
+          if (!showFullAnalysis && hasPrograms) {
+            return (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-success/30 bg-success/5 px-6 py-4">
+                <IncentiveTeaser
+                  programCount={activeEnginePrograms.length}
+                  rangeLow={incentiveResult.confirmedTotal}
+                  rangeHigh={incentiveResult.confirmedTotal + incentiveResult.likelyTotal}
+                />
+                <Button
+                  size="sm"
+                  className="bg-success hover:bg-success/90 text-success-foreground whitespace-nowrap"
+                  onClick={() => { if (!user) navigate('/auth'); else handleGateUnlock(); }}
+                >
+                  <Lock className="mr-1.5 h-3.5 w-3.5" />
+                  Sign Up to See Details
+                </Button>
               </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">
-                  {incentives.filter(i => i.eligible !== false && !i.isAlternative).length} incentive programs available
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Est. <span className="font-bold text-success">{fmt(financials.estimatedIncentives)}</span> in incentives — your out-of-pocket could be as low as <span className="font-bold text-success">{financials.netInvestment <= 0 ? '$0' : fmt(financials.netInvestment)}</span>
-                </p>
+            );
+          }
+
+          // Authenticated free user: IncentiveSummary (names + OOP range, no amounts)
+          if (showFullAnalysis && isFree && hasPrograms) {
+            return (
+              <IncentiveSummary result={incentiveResult} grossProjectCost={financials.totalProjectCost} />
+            );
+          }
+
+          // Plus / Pro: Full IncentiveBreakdown + OOPRangeBar
+          if (showFullAnalysis && isPlusOrPro && hasPrograms) {
+            return (
+              <div className="space-y-3">
+                <IncentiveBreakdown result={incentiveResult} grossProjectCost={financials.totalProjectCost} stallCount={site.teslaStalls} />
+                <OOPRangeBar grossCost={financials.totalProjectCost} confirmedTotal={incentiveResult.confirmedTotal} likelyTotal={incentiveResult.likelyTotal} uncertainTotal={incentiveResult.uncertainTotal} />
               </div>
-            </div>
-            <Button
-              size="sm"
-              className="bg-success hover:bg-success/90 text-success-foreground whitespace-nowrap"
-              onClick={() => { if (!user) navigate('/auth'); else handleGateUnlock(); }}
-            >
-              <Lock className="mr-1.5 h-3.5 w-3.5" />
-              Sign Up to See Details
-            </Button>
-          </div>
-        )}
+            );
+          }
+
+          return null;
+        })()}
 
         {/* GATED CONTENT */}
         <div className={blurClass}>
@@ -560,9 +599,9 @@ const Dashboard = () => {
               isDAC: siteData.isDAC,
               isOnCorridor: siteData.isOnCorridor,
             }} incentiveTeaser={{
-              programCount: incentives.filter(i => i.eligible !== false && !i.isAlternative).length,
-              totalEstimate: financials.estimatedIncentives,
-              outOfPocket: financials.netInvestment,
+              programCount: incentiveResult.programs.filter(p => p.programStatus !== 'expired').length,
+              totalEstimate: incentiveResult.confirmedTotal + incentiveResult.likelyTotal,
+              outOfPocket: incentiveResult.oopFloor,
             }} />
           )}
           {activePanel === 'npv' && (
