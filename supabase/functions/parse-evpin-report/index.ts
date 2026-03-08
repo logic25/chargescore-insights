@@ -20,166 +20,6 @@ interface EvpinExtracted {
   raw: Record<string, string>;
 }
 
-    purchasingPowerPct: null,
-    evRegistrations: null,
-    chargingDemandScore: null,
-    siteName: null,
-    address: null,
-    raw,
-  };
-
-  // Total Score: "4.6/5" or "Total Score 4.6" patterns
-  const scoreMatch = text.match(/(?:total\s*score|overall\s*score|evpin\s*score)[:\s]*(\d+\.?\d*)\s*(?:\/\s*5)?/i)
-    || text.match(/(\d+\.?\d*)\s*\/\s*5\s*(?:total|overall|score)/i)
-    || text.match(/(\d+\.?\d*)\s*out\s*of\s*5/i);
-  if (scoreMatch) {
-    result.totalScore = parseFloat(scoreMatch[1]);
-    raw.totalScore = scoreMatch[0];
-  }
-
-  // AADT
-  const aadtMatch = text.match(/(?:AADT|annual\s*average\s*daily\s*traffic|daily\s*traffic)[:\s]*([\d,]+)/i);
-  if (aadtMatch) {
-    result.aadt = parseInt(aadtMatch[1].replace(/,/g, ""));
-    raw.aadt = aadtMatch[0];
-  }
-
-  // EV Adoption %
-  const adoptionMatch = text.match(/(?:ev\s*adoption|adoption\s*rate)[:\s]*([\d.]+)\s*%/i);
-  if (adoptionMatch) {
-    result.evAdoptionPct = parseFloat(adoptionMatch[1]);
-    raw.evAdoptionPct = adoptionMatch[0];
-  }
-
-  // L3 ports
-  const l3Match = text.match(/(\d+)\s*(?:L3|level\s*3|DCFC|DC\s*fast)\s*(?:ports?|chargers?|stations?)/i)
-    || text.match(/(?:L3|level\s*3|DCFC)\s*(?:ports?|chargers?)[:\s]*(\d+)/i);
-  if (l3Match) {
-    result.l3Ports = parseInt(l3Match[1]);
-    raw.l3Ports = l3Match[0];
-  }
-
-  // Crime rate
-  const crimeMatch = text.match(/([\d.]+)x\s*(?:the\s*)?national\s*(?:average|avg)/i);
-  if (crimeMatch) {
-    result.crimeRate = crimeMatch[1] + "x national avg";
-    raw.crimeRate = crimeMatch[0];
-  }
-
-  // Purchasing power
-  const ppMatch = text.match(/(?:purchasing\s*power|afford)[:\s]*([\d.]+)\s*%/i);
-  if (ppMatch) {
-    result.purchasingPowerPct = parseFloat(ppMatch[1]);
-    raw.purchasingPowerPct = ppMatch[0];
-  }
-
-  // EV registrations
-  const regMatch = text.match(/(?:ev\s*registrations?|registered\s*ev)[:\s]*([\d,]+)/i);
-  if (regMatch) {
-    result.evRegistrations = parseInt(regMatch[1].replace(/,/g, ""));
-    raw.evRegistrations = regMatch[0];
-  }
-
-  // Charging demand score
-  const demandMatch = text.match(/(?:charging\s*demand|demand\s*score)[:\s]*([\d.]+)/i);
-  if (demandMatch) {
-    result.chargingDemandScore = parseFloat(demandMatch[1]);
-    raw.chargingDemandScore = demandMatch[0];
-  }
-
-  return result;
-}
-
-async function extractWithAi(text: string): Promise<Partial<EvpinExtracted> | null> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY || text.trim().length < 50) return null;
-
-  const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        {
-          role: "system",
-          content: "Extract EV charging site report fields accurately. If unknown, return null.",
-        },
-        {
-          role: "user",
-          content: `Extract from this EVpin report text:\n\n${text.slice(0, 18000)}`,
-        },
-      ],
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "extract_evpin_fields",
-            description: "Extract EVpin report fields",
-            parameters: {
-              type: "object",
-              properties: {
-                totalScore: { type: ["number", "null"] },
-                aadt: { type: ["number", "null"] },
-                evAdoptionPct: { type: ["number", "null"] },
-                l3Ports: { type: ["number", "null"] },
-                crimeRate: { type: ["string", "null"] },
-                purchasingPowerPct: { type: ["number", "null"] },
-                evRegistrations: { type: ["number", "null"] },
-                chargingDemandScore: { type: ["number", "null"] },
-                siteName: { type: ["string", "null"] },
-                address: { type: ["string", "null"] },
-              },
-              required: [
-                "totalScore",
-                "aadt",
-                "evAdoptionPct",
-                "l3Ports",
-                "crimeRate",
-                "purchasingPowerPct",
-                "evRegistrations",
-                "chargingDemandScore",
-                "siteName",
-                "address",
-              ],
-              additionalProperties: false,
-            },
-          },
-        },
-      ],
-      tool_choice: { type: "function", function: { name: "extract_evpin_fields" } },
-    }),
-  });
-
-  if (!aiResponse.ok) {
-    if (aiResponse.status === 429) {
-      throw new Response(JSON.stringify({ error: "Rate limits exceeded, please try again shortly." }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (aiResponse.status === 402) {
-      throw new Response(JSON.stringify({ error: "AI credits required. Please add workspace usage credits." }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    return null;
-  }
-
-  const aiData = await aiResponse.json();
-  const args = aiData?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-  if (!args) return null;
-
-  try {
-    return JSON.parse(args) as Partial<EvpinExtracted>;
-  } catch {
-    return null;
-  }
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -231,15 +71,13 @@ Deno.serve(async (req) => {
     // Convert PDF to base64 for Gemini vision
     const arrayBuffer = await fileData.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
-    
-    // Base64 encode the PDF
+
     let binary = "";
     for (let i = 0; i < bytes.length; i++) {
       binary += String.fromCharCode(bytes[i]);
     }
     const base64Pdf = btoa(binary);
 
-    // Send PDF directly to Gemini which natively supports PDF input
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "AI key not configured" }), {
@@ -329,8 +167,8 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    console.log("AI response choices:", JSON.stringify(aiData?.choices?.[0]?.message));
-    
+    console.log("AI response:", JSON.stringify(aiData?.choices?.[0]?.message));
+
     const args = aiData?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     let extracted: EvpinExtracted = {
       totalScore: null, aadt: null, evAdoptionPct: null, l3Ports: null,
@@ -354,6 +192,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     if (err instanceof Response) return err;
     const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("parse-evpin-report error:", message);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
