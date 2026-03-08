@@ -35,6 +35,11 @@ import ReportGate from '@/components/ReportGate';
 import StallHint from '@/components/dashboard/StallHint';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { computeStallRecommendation } from '@/lib/waterfallCalc';
+import { fetchIncentivePrograms, calculateIncentives, resolveUtilityTerritory, type IncentiveResult, type IncentiveProgram } from '@/lib/incentiveCalc';
+import IncentiveTeaser from '@/components/incentives/IncentiveTeaser';
+import IncentiveSummary from '@/components/incentives/IncentiveSummary';
+import IncentiveBreakdown from '@/components/incentives/IncentiveBreakdown';
+import OOPRangeBar from '@/components/incentives/OOPRangeBar';
 
 const GATE_UNLOCKED_KEY = 'chargescore_gate_unlocked';
 
