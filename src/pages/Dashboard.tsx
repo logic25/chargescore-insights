@@ -83,6 +83,7 @@ const Dashboard = () => {
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
   const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
   const [activePanel, setActivePanel] = useState<'revenue' | 'investment' | 'npv' | null>('revenue');
+  const [manualKwhOverride, setManualKwhOverride] = useState(false);
 
   // Freemium: count lookup once when full analysis loads
   useEffect(() => {
@@ -202,6 +203,17 @@ const Dashboard = () => {
     zipCode: site.zipCode,
     utilityName: utilityInfo.utilityName,
   }), [trafficLevel, aadtData, evRegistrations, stationMetrics, plannedData, multiFamilyPct, popDensity, nearestAirport, site.propertyType, amenitiesCount, site.totalParkingSpaces, siteData, hasThreePhasePower, site.state, site.zipCode, utilityInfo]);
+
+  // Auto-set kWh/stall/day based on ChargeScore (unless user manually overrode)
+  useEffect(() => {
+    if (manualKwhOverride) return;
+    const score = chargeScore.totalScore;
+    let autoKwh = 250;
+    if (score >= 80) autoKwh = 400;
+    else if (score >= 70) autoKwh = 300;
+    else if (score < 50) autoKwh = 100;
+    setSite(prev => prev.kwhPerStallPerDay === autoKwh ? prev : { ...prev, kwhPerStallPerDay: autoKwh });
+  }, [chargeScore.totalScore, manualKwhOverride]);
 
   const revenueProjection: RevenueProjection = useMemo(() => projectRevenue({
     chargeScore: chargeScore.totalScore,
@@ -509,7 +521,7 @@ const Dashboard = () => {
         {/* GATED CONTENT */}
         <div className={blurClass}>
           {activePanel === 'revenue' && (
-            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} kwhPerStallPerDay={site.kwhPerStallPerDay} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} onUtilizationChange={(v) => setSite(prev => ({ ...prev, kwhPerStallPerDay: v }))} userRole={profile?.role ?? null} />
+            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} kwhPerStallPerDay={site.kwhPerStallPerDay} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} onUtilizationChange={(v) => { setManualKwhOverride(true); setSite(prev => ({ ...prev, kwhPerStallPerDay: v })); }} userRole={profile?.role ?? null} />
           )}
           {activePanel === 'investment' && (
             <ChargeScoreGauge score={chargeScore} siteInsights={{

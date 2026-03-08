@@ -22,7 +22,7 @@ const DCFC_PEAK_KW = 150;
 // Tesla Supercharger for Business constants — Tesla V4 Canvas Program 2025
 const TESLA_SET_PRICE = 250_000;          // Per set of 4: 4x V4 posts + V3.5 cabinet + Starlink/LTE + site controller + commissioning
 const TESLA_STALLS_PER_SET = 4;
-const TESLA_INSTALL_PER_STALL = 15_000;   // Site prep, trenching, electrical (separate from hardware — Tesla provides construction manager)
+const TESLA_INSTALL_PER_STALL = 25_000;   // Site prep, trenching, electrical (separate from hardware — Tesla provides construction manager)
 const TESLA_KWH_PER_STALL_PER_DAY = 250;  // Medium utilization (Source: Tesla ROI Calculator)
 const TESLA_PEAK_KW_PER_STALL = 325;      // V4 max output kW (kept for reference only)
 const TESLA_UTILIZATION_GROWTH = 1.07;     // 7% YoY utilization growth
