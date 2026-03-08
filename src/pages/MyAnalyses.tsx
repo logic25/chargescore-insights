@@ -148,7 +148,6 @@ const MyAnalyses = () => {
             </Button>
             <span className="text-sm text-muted-foreground">{analyses.length} projects</span>
           </div>
-          </div>
         </div>
       </header>
 
