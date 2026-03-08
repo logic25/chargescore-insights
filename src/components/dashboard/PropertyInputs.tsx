@@ -121,14 +121,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground">
-                Lot Size (sq ft)
-                {parcelData?.lotArea && parcelSourceLabel ? (
-                  <span className="text-primary text-xs ml-1"> — {parcelSourceLabel}</span>
-                ) : drawnLotSqFt ? (
-                  <span className="text-primary text-xs ml-1"> — measured</span>
-                ) : null}
-              </Label>
+              <Label className="text-sm text-muted-foreground">Lot Size (sq ft)</Label>
               <Input
                 type="number"
                 className="h-10 font-mono text-sm"
@@ -139,6 +132,13 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
                   setDrawnLotSqFt(null);
                 }}
               />
+              <p className="text-xs text-muted-foreground/60">
+                {parcelData?.lotArea && parcelSourceLabel
+                  ? `📍 ${parcelSourceLabel}`
+                  : drawnLotSqFt
+                    ? '📐 Measured'
+                    : `Est. ${effectiveLotSqFt.toLocaleString()} sqft`}
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground flex items-center gap-1">
