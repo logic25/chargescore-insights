@@ -359,8 +359,7 @@ const Dashboard = () => {
               <ReportGenerator
                 site={site} score={chargeScore} financials={financials}
                 incentives={incentives} parking={parking} demandCharge={demandCharge}
-              />
-            )}
+            )
             )}
           </div>
         </div>
