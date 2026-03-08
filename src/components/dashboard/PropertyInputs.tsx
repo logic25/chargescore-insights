@@ -202,7 +202,15 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-sm text-muted-foreground">Peak Parking Utilization</Label>
+                <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                  Peak Parking Utilization
+                  <Tooltip>
+                    <TooltipTrigger><Info className="h-3.5 w-3.5 text-muted-foreground/50" /></TooltipTrigger>
+                    <TooltipContent className="max-w-[260px] text-sm">
+                      How full the parking lot gets during peak hours. Higher utilization means fewer spots available for EV chargers. Retail centers typically peak at 70-85% on weekends.
+                    </TooltipContent>
+                  </Tooltip>
+                </Label>
                 <span className="font-mono text-sm font-bold text-accent">{site.peakUtilization}%</span>
               </div>
               <Slider

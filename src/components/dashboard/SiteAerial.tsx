@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { MapPin, CircleDot, X, Undo2, Trash2, Check } from 'lucide-react';
+import { MapPin, CircleDot, X, Undo2, Trash2, Check, Sparkles, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -21,6 +23,10 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
   const clickHandlerRef = useRef<((e: L.LeafletMouseEvent) => void) | null>(null);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  // AI counter state
+  const [aiCounting, setAiCounting] = useState(false);
+  const [aiResult, setAiResult] = useState<{ count: number; confidence: string; notes: string } | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -47,6 +53,9 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
     });
     L.marker([lat, lng], { icon }).addTo(map);
 
+    // Reset AI result on location change
+    setAiResult(null);
+
     return () => { map.remove(); mapRef.current = null; };
   }, [lat, lng]);
 
@@ -61,10 +70,8 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
     }
 
     if (countMode) {
-      // Keep dragging enabled for panning
       map.dragging.enable();
 
-      // Track drag vs click via mousedown/mouseup distance
       const container = map.getContainer();
 
       const onMouseDown = (e: MouseEvent) => {
@@ -83,7 +90,6 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
       container.addEventListener('mouseup', onMouseUp);
 
       const handler = (e: L.LeafletMouseEvent) => {
-        // Only place a spot if this was a click, not a drag
         if (!isDraggingRef.current) {
           setSpots(prev => [...prev, e.latlng]);
           setConfirmed(false);
@@ -147,11 +153,45 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
 
   const toggleCount = useCallback(() => {
     if (countMode && !confirmed) {
-      // Exiting without confirming — clear
       handleClear();
     }
     setCountMode(prev => !prev);
   }, [countMode, confirmed, handleClear]);
+
+  // AI auto-count
+  const handleAiCount = useCallback(async () => {
+    setAiCounting(true);
+    setAiResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('count-parking-spots', {
+        body: { lat, lng },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setAiResult(data);
+      if (data?.count > 0) {
+        onSpotsConfirmed?.(data.count);
+        toast.success(`AI detected ${data.count} parking spots (${data.confidence} confidence)`);
+      } else {
+        toast.info('AI could not detect parking spots clearly. Try manual count.');
+      }
+    } catch (e: any) {
+      console.error('AI count error:', e);
+      if (e?.message?.includes('429') || e?.status === 429) {
+        toast.error('Rate limit exceeded. Please wait a moment and try again.');
+      } else if (e?.message?.includes('402') || e?.status === 402) {
+        toast.error('AI credits exhausted. Please add credits in workspace settings.');
+      } else {
+        toast.error('AI counting failed. Try manual count instead.');
+      }
+    } finally {
+      setAiCounting(false);
+    }
+  }, [lat, lng, onSpotsConfirmed]);
+
+  const confidenceColor = aiResult?.confidence === 'high' ? 'bg-green-600/80' : aiResult?.confidence === 'medium' ? 'bg-amber-600/80' : 'bg-red-600/80';
 
   return (
     <div className="overflow-hidden h-full">
@@ -187,11 +227,20 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
             </>
           )}
           {!countMode && (
-            <button type="button" onClick={toggleCount}
-              className="flex items-center gap-1 rounded px-2.5 py-1.5 text-[10px] font-semibold backdrop-blur-sm transition-colors bg-black/60 text-white hover:bg-black/80">
-              <CircleDot className="h-3 w-3" />
-              {confirmed ? `${spots.length} Spots ✓` : 'Count Spots'}
-            </button>
+            <>
+              {/* AI Auto Count button */}
+              <button type="button" onClick={handleAiCount} disabled={aiCounting}
+                className="flex items-center gap-1 rounded px-2.5 py-1.5 text-[10px] font-semibold backdrop-blur-sm transition-colors bg-primary/90 text-white hover:bg-primary disabled:opacity-60">
+                {aiCounting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                {aiCounting ? 'Counting…' : 'AI Count'}
+              </button>
+              {/* Manual Count button */}
+              <button type="button" onClick={toggleCount}
+                className="flex items-center gap-1 rounded px-2.5 py-1.5 text-[10px] font-semibold backdrop-blur-sm transition-colors bg-black/60 text-white hover:bg-black/80">
+                <CircleDot className="h-3 w-3" />
+                {confirmed ? `${spots.length} Spots ✓` : 'Manual Count'}
+              </button>
+            </>
           )}
           {countMode && (
             <button type="button" onClick={toggleCount}
@@ -212,8 +261,21 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
           </div>
         )}
 
-        {/* Confirmed count badge (shown when not in count mode) */}
-        {!countMode && confirmed && spots.length > 0 && (
+        {/* AI result badge */}
+        {!countMode && aiResult && aiResult.count > 0 && (
+          <div className={`absolute bottom-2 right-2 z-[1000] rounded-lg ${confidenceColor} px-3 py-2 backdrop-blur-sm`}>
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3 text-white" />
+              <span className="text-[10px] text-white/80">AI Count</span>
+            </div>
+            <div className="font-mono text-xl font-bold text-white">{aiResult.count} spots</div>
+            <div className="text-[10px] text-white/70">{aiResult.confidence} confidence</div>
+            {aiResult.notes && <div className="text-[9px] text-white/50 max-w-[180px] truncate mt-0.5">{aiResult.notes}</div>}
+          </div>
+        )}
+
+        {/* Confirmed count badge (shown when not in count mode, manual) */}
+        {!countMode && confirmed && spots.length > 0 && !aiResult && (
           <div className="absolute bottom-2 right-2 z-[1000] rounded-lg bg-green-700/80 px-3 py-2 backdrop-blur-sm">
             <div className="text-[10px] text-white/80">Confirmed Count</div>
             <div className="font-mono text-xl font-bold text-white">{spots.length} spots</div>
@@ -225,6 +287,17 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
           <div className="absolute bottom-2 right-2 z-[1000] rounded-lg bg-black/70 px-3 py-2 backdrop-blur-sm">
             <div className="font-mono text-2xl font-bold text-primary">{spots.length}</div>
             <div className="text-[10px] text-white/70">spots counted</div>
+          </div>
+        )}
+
+        {/* AI counting spinner overlay */}
+        {aiCounting && (
+          <div className="absolute inset-0 z-[999] flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+            <div className="rounded-xl bg-black/80 px-6 py-4 text-center backdrop-blur-sm">
+              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+              <p className="text-sm font-medium text-white mt-2">AI analyzing satellite imagery…</p>
+              <p className="text-[10px] text-white/60 mt-1">Counting parking spots</p>
+            </div>
           </div>
         )}
       </div>
