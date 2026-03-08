@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, DollarSign, BarChart3, ChevronDown, Info, Save, Briefcase } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, DollarSign, BarChart3, ChevronDown, Info, Save, Briefcase, Lock, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
@@ -31,9 +32,9 @@ import FinancialProjection from '@/components/dashboard/FinancialProjection';
 import ParkingImpact from '@/components/dashboard/ParkingImpact';
 import ReportGenerator from '@/components/dashboard/ReportGenerator';
 import ReportGate from '@/components/ReportGate';
+import StallHint from '@/components/dashboard/StallHint';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import StallRecommendation from '@/components/dashboard/StallRecommendation';
-import type { LocationType } from '@/lib/waterfallCalc';
+import { computeStallRecommendation } from '@/lib/waterfallCalc';
 
 const GATE_UNLOCKED_KEY = 'chargescore_gate_unlocked';
 
@@ -46,7 +47,9 @@ const Dashboard = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile, canDoLookup, incrementLookup, isAtLeast } = useProfile();
   const [saving, setSaving] = useState(false);
+  const [lookupCounted, setLookupCounted] = useState(false);
 
   const [site, setSite] = useState<SiteAnalysis>({
     address: searchParams.get('address') || '123 Main St, New York, NY',
@@ -80,6 +83,15 @@ const Dashboard = () => {
   const [gateUnlocked, setGateUnlocked] = useState(() => localStorage.getItem(GATE_UNLOCKED_KEY) === 'true');
   const [confirmedSpotCount, setConfirmedSpotCount] = useState<number | null>(null);
   const [activePanel, setActivePanel] = useState<'revenue' | 'investment' | 'npv' | null>('revenue');
+
+  // Freemium: count lookup once when full analysis loads
+  useEffect(() => {
+    if (!user || lookupCounted || !profile) return;
+    if (profile.role === 'free' && gateUnlocked) {
+      incrementLookup();
+      setLookupCounted(true);
+    }
+  }, [user, profile, gateUnlocked, lookupCounted]);
 
   const handleGateUnlock = useCallback(() => {
     localStorage.setItem(GATE_UNLOCKED_KEY, 'true');
@@ -138,7 +150,6 @@ const Dashboard = () => {
     const nearestDcfc = allDcfc.length > 0
       ? allDcfc.reduce((min, s) => s.distanceMiles < min.distanceMiles ? s : min)
       : null;
-    // Filter to actual 5-mile radius for scoring (stations may be fetched at 10mi for map)
     const dcfcWithin5 = allDcfc.filter(s => s.distanceMiles <= 5);
     const totalDcfcPorts5mi = dcfcWithin5.reduce((sum, s) => sum + s.numPorts, 0);
     return {
@@ -208,6 +219,28 @@ const Dashboard = () => {
   const parking = useMemo(() => calculateParkingImpact(site), [site]);
   const demandCharge = useMemo(() => calculateDemandCharge(site), [site]);
 
+  // Stall recommendation for hint
+  const stallRecommendation = useMemo(() => computeStallRecommendation({
+    siteName: '',
+    address: '',
+    lat: null,
+    lng: null,
+    state: site.state,
+    totalParkingSpaces: site.totalParkingSpaces,
+    lotSizeSqFt: parcelData.lotArea,
+    dailyTraffic: aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel],
+    evAdoptionRate: evRegistrations > 0 ? Math.min(evRegistrations / 100000, 0.15) : 0.05,
+    avgChargeTimeMin: 25,
+    operatingHours: 16,
+    locationType:
+      (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 25000 ? 'highway' :
+      (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 10000 ? 'urban_retail' :
+      (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 5000 ? 'suburban_retail' : 'rural',
+    evpinScore: null,
+    chargeScore: chargeScore.totalScore,
+    nearbyL3Ports: stationMetrics.totalDcfcPortsWithin5Miles,
+  }), [site.state, site.totalParkingSpaces, parcelData.lotArea, aadtData, trafficLevel, evRegistrations, chargeScore.totalScore, stationMetrics]);
+
   const handleSaveProject = async () => {
     if (!user) {
       toast.error('Sign in to save projects');
@@ -267,6 +300,17 @@ const Dashboard = () => {
     }
   };
 
+  const handleAddToPortfolio = async () => {
+    if (!user) {
+      toast.error('Sign in first');
+      navigate('/auth');
+      return;
+    }
+    // Save first, then navigate to portfolio
+    await handleSaveProject();
+    navigate('/portfolio');
+  };
+
   useEffect(() => {
     if (chargeScore.totalScore > 0) {
       void logAnalysis({
@@ -285,7 +329,9 @@ const Dashboard = () => {
 
   useEffect(() => { document.documentElement.classList.remove('dark'); }, []);
 
-  const blurClass = gateUnlocked ? '' : 'blur-md pointer-events-none select-none';
+  const showFullAnalysis = gateUnlocked && (user ? canDoLookup || isAtLeast('plus') : false);
+  const atLookupLimit = profile?.role === 'free' && !canDoLookup;
+  const blurClass = showFullAnalysis ? '' : 'blur-md pointer-events-none select-none';
   const monthlyProfit = financials.annualNetRevenue / 12;
 
   return (
@@ -294,7 +340,21 @@ const Dashboard = () => {
         <ReportGate chargeScore={chargeScore.totalScore} onUnlock={handleGateUnlock} />
       )}
 
-      {/* Compact Header with ChargeScore */}
+      {/* Lookup limit banner */}
+      {atLookupLimit && gateUnlocked && (
+        <div className="bg-accent/10 border-b border-accent/30 px-6 py-3 text-center">
+          <p className="text-sm text-foreground">
+            <Crown className="inline h-4 w-4 mr-1 text-accent" />
+            You've used all {profile?.lookups_limit} free analyses.{' '}
+            <button onClick={() => navigate('/pricing')} className="font-semibold text-primary underline">
+              Upgrade to ChargeScore Plus
+            </button>{' '}
+            for unlimited reports, revenue projections, and downloadable PDFs.
+          </p>
+        </div>
+      )}
+
+      {/* Header */}
       <header className="border-b border-border bg-card sticky top-0 z-[2000]">
         <div className="flex h-12 items-center justify-between px-6">
           <div className="flex items-center gap-3">
@@ -333,29 +393,13 @@ const Dashboard = () => {
                 {saving ? 'Saving…' : 'Save Project'}
               </Button>
             )}
-            {gateUnlocked && (
-              <Button size="sm" variant="outline" onClick={() => {
-                const siteRow = {
-                  name: site.address.split(',')[0],
-                  address: site.address,
-                  stalls: site.teslaStalls,
-                  baseKwhPerStallPerDay: site.kwhPerStallPerDay,
-                  customerPrice: site.pricePerKwh,
-                  electricityCost: site.electricityCostPerKwh,
-                  teslaFee: site.teslaServiceFeePerKwh,
-                  bomPerStall: 62500,
-                  installPerStall: 25000,
-                  incentives: financials.estimatedIncentives,
-                  insurance: site.annualInsurance,
-                  monthlyRent: site.monthlyRent,
-                };
-                navigate(`/portfolio?addSite=${encodeURIComponent(JSON.stringify(siteRow))}`);
-              }}>
+            {gateUnlocked && isAtLeast('pro') && (
+              <Button size="sm" variant="outline" onClick={handleAddToPortfolio}>
                 <Briefcase className="mr-1 h-4 w-4" />
                 Add to Portfolio
               </Button>
             )}
-            {gateUnlocked && (
+            {gateUnlocked && isAtLeast('plus') && (
               <ReportGenerator
                 site={site} score={chargeScore} financials={financials}
                 incentives={incentives} parking={parking} demandCharge={demandCharge}
@@ -366,9 +410,8 @@ const Dashboard = () => {
       </header>
 
       <main className="mx-auto max-w-[1920px] px-6 py-4 space-y-3">
-        {/* ═══ ROW 1: Map (left) + Sidebar (right) ═══ */}
+        {/* ROW 1: Map + Sidebar */}
         <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr]">
-          {/* Left: Map with tabs */}
           <div className="min-h-0 self-stretch">
             <Tabs defaultValue="satellite" className="border border-border rounded-xl overflow-hidden bg-card h-full flex flex-col">
               <div className="flex items-center justify-between px-4 py-2 border-b border-border">
@@ -386,10 +429,7 @@ const Dashboard = () => {
             </Tabs>
           </div>
 
-          {/* Right: Property Inputs + Parking Impact (no ChargeScore card) */}
           <div className="space-y-3 min-h-0">
-
-            {/* Property Inputs — expanded by default */}
             <PropertyInputs
               site={site} onChange={setSite}
               trafficLevel={trafficLevel} onTrafficLevelChange={setTrafficLevel}
@@ -400,25 +440,12 @@ const Dashboard = () => {
               defaultExpanded
             />
 
-            {/* Stall Recommendation */}
-            <StallRecommendation
-              dailyTraffic={aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]}
-              evAdoptionRate={evRegistrations > 0 ? Math.min(evRegistrations / 100000, 0.15) : 0.05}
-              totalParkingSpaces={site.totalParkingSpaces}
-              lotSizeSqFt={parcelData.lotArea}
-              nearbyL3Ports={stationMetrics.totalDcfcPortsWithin5Miles}
-              chargeScore={chargeScore.totalScore}
-              state={site.state}
-              spotsConfirmed={confirmedSpotCount !== null}
-              locationType={
-                (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 25000 ? 'highway' :
-                (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 10000 ? 'urban_retail' :
-                (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 5000 ? 'suburban_retail' : 'rural'
-              }
-              onUseRecommendation={(stalls) => setSite(prev => ({ ...prev, teslaStalls: stalls }))}
+            {/* Stall Hint (replaces full StallRecommendation) */}
+            <StallHint
+              recommendedStalls={stallRecommendation.base}
+              userRole={profile?.role ?? null}
             />
 
-            {/* Parking Impact */}
             <ParkingImpact
               totalSpaces={site.totalParkingSpaces}
               stalls={site.teslaStalls}
@@ -429,7 +456,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* ═══ ROW 2: Clickable Metrics Strip ═══ */}
+        {/* ROW 2: Metrics Strip */}
         <div className="rounded-xl border border-border bg-card">
           <TooltipProvider>
           <div className="grid grid-cols-3">
@@ -453,7 +480,7 @@ const Dashboard = () => {
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-[300px] text-xs leading-relaxed">
                         <p className="font-semibold mb-1">Net Present Value (NPV)</p>
-                        <p>Your total {site.npvYears}-year profit expressed in today's dollars. We discount future cash flows at 8% — the typical opportunity cost of capital (what you'd earn investing that money elsewhere, e.g. S&P 500 average). A positive NPV means this investment outperforms the alternative.</p>
+                        <p>Your total {site.npvYears}-year profit expressed in today's dollars. We discount future cash flows at 8%.</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -467,7 +494,7 @@ const Dashboard = () => {
           </TooltipProvider>
         </div>
 
-        {/* ═══ GATED CONTENT: Expandable Detail Panel ═══ */}
+        {/* GATED CONTENT */}
         <div className={blurClass}>
           {activePanel === 'revenue' && (
             <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} kwhPerStallPerDay={site.kwhPerStallPerDay} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} onUtilizationChange={(v) => setSite(prev => ({ ...prev, kwhPerStallPerDay: v }))} />
@@ -487,6 +514,18 @@ const Dashboard = () => {
             <FinancialProjection financials={financials} npvYears={site.npvYears} onNpvYearsChange={(v) => setSite(prev => ({ ...prev, npvYears: v }))} />
           )}
         </div>
+
+        {/* High-scoring CTA for free users */}
+        {chargeScore.totalScore >= 70 && (!user || profile?.role === 'free') && gateUnlocked && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-6 text-center">
+            <p className="text-sm font-medium text-foreground">
+              🎯 This site scores in the <span className="text-primary font-bold">top 15%</span>. Want a free consultation about EV charging?
+            </p>
+            <Button className="mt-3" onClick={() => navigate(`/contact?address=${encodeURIComponent(site.address)}&score=${chargeScore.totalScore}&lat=${site.lat}&lng=${site.lng}`)}>
+              Get Started — Free Consultation
+            </Button>
+          </div>
+        )}
       </main>
     </div>
   );

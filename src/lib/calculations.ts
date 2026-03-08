@@ -1002,3 +1002,20 @@ function inferNrelCategory(type: string): 'federal' | 'state' | 'utility' | 'oth
   if (t.includes('federal')) return 'federal';
   return 'other';
 }
+
+// ── Clean helper exports for waterfallCalc.ts ──────────────────────────────
+
+/** Price - Electricity - Tesla Service Fee */
+export function computeMarginPerKwh(customerPrice: number, electricityCost: number, teslaServiceFee: number): number {
+  return customerPrice - electricityCost - teslaServiceFee;
+}
+
+/** Stalls × kWh/stall/day × margin × 365 */
+export function computeAnnualGrossRevenue(stalls: number, kwhPerStallPerDay: number, marginPerKwh: number): number {
+  return stalls * kwhPerStallPerDay * marginPerKwh * 365;
+}
+
+/** Gross revenue - insurance - rent */
+export function computeAnnualNOI(grossRevenue: number, insurance: number, monthlyRent: number): number {
+  return grossRevenue - insurance - (monthlyRent * 12);
+}

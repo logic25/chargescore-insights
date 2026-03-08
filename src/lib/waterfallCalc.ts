@@ -1,4 +1,5 @@
 // ── Types ──────────────────────────────────────────────────────────────────
+import { computeMarginPerKwh, computeAnnualGrossRevenue, computeAnnualNOI } from './calculations';
 
 export interface MasterControls {
   hurdleRate: number;        // e.g. 0.10
@@ -80,34 +81,16 @@ export const DEFAULT_CONTROLS: MasterControls = {
   msPromoteAtExit: 0.35,
 };
 
-export const PRELOADED_SITES: Omit<SiteRow, 'id'>[] = [
-  { name: "Dutch Broadway", address: "Elmont, NY", stalls: 8, baseKwhPerStallPerDay: 400, customerPrice: 0.45, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 281000, insurance: 5000, monthlyRent: 0 },
-  { name: "Hewlett", address: "Hewlett, NY", stalls: 8, baseKwhPerStallPerDay: 400, customerPrice: 0.45, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 281000, insurance: 5000, monthlyRent: 0 },
-  { name: "Merrick Road", address: "Merrick, NY", stalls: 8, baseKwhPerStallPerDay: 250, customerPrice: 0.45, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 281000, insurance: 5000, monthlyRent: 0 },
-  { name: "Lindenhurst", address: "Lindenhurst, NY", stalls: 8, baseKwhPerStallPerDay: 350, customerPrice: 0.45, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 281000, insurance: 5000, monthlyRent: 0 },
-  { name: "St Petersburg", address: "St Petersburg, FL", stalls: 8, baseKwhPerStallPerDay: 350, customerPrice: 0.40, electricityCost: 0.147, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 200000, insurance: 5000, monthlyRent: 0 },
-  { name: "Penns Grove", address: "Penns Grove, NJ", stalls: 4, baseKwhPerStallPerDay: 200, customerPrice: 0.42, electricityCost: 0.116, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 150000, insurance: 5000, monthlyRent: 0 },
-  { name: "Worcester", address: "Worcester, MA", stalls: 4, baseKwhPerStallPerDay: 250, customerPrice: 0.48, electricityCost: 0.136, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 150000, insurance: 5000, monthlyRent: 0 },
-  { name: "New Bedford", address: "New Bedford, MA", stalls: 4, baseKwhPerStallPerDay: 250, customerPrice: 0.48, electricityCost: 0.136, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 150000, insurance: 5000, monthlyRent: 0 },
-  { name: "Greenfield", address: "Greenfield, MA", stalls: 4, baseKwhPerStallPerDay: 200, customerPrice: 0.48, electricityCost: 0.136, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 150000, insurance: 5000, monthlyRent: 0 },
-  { name: "86th St", address: "Brooklyn, NY", stalls: 8, baseKwhPerStallPerDay: 400, customerPrice: 0.47, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 281000, insurance: 5000, monthlyRent: 0 },
-  { name: "Farmers Blvd", address: "Queens, NY", stalls: 8, baseKwhPerStallPerDay: 400, customerPrice: 0.47, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 305000, insurance: 5000, monthlyRent: 0 },
-  { name: "Cross Bay", address: "Queens, NY", stalls: 8, baseKwhPerStallPerDay: 400, customerPrice: 0.47, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 305000, insurance: 5000, monthlyRent: 0 },
-  { name: "Francis Lewis", address: "Queens, NY", stalls: 8, baseKwhPerStallPerDay: 400, customerPrice: 0.47, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 297000, insurance: 5000, monthlyRent: 0 },
-  { name: "Linden Blvd", address: "Queens, NY", stalls: 8, baseKwhPerStallPerDay: 400, customerPrice: 0.47, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 297000, insurance: 5000, monthlyRent: 0 },
-  { name: "Eastchester", address: "Bronx, NY", stalls: 8, baseKwhPerStallPerDay: 400, customerPrice: 0.47, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 297000, insurance: 5000, monthlyRent: 0 },
-  { name: "Avenue U", address: "Brooklyn, NY", stalls: 8, baseKwhPerStallPerDay: 400, customerPrice: 0.47, electricityCost: 0.223, teslaFee: 0.10, bomPerStall: 62500, installPerStall: 25000, incentives: 313000, insurance: 5000, monthlyRent: 0 },
-];
-
 // ── Calculations ───────────────────────────────────────────────────────────
 
 export function computeSite(site: SiteRow, controls: MasterControls): ComputedSite {
   const effectiveKwhPerDay = site.baseKwhPerStallPerDay * controls.kwhMultiplier;
-  const marginPerKwh = site.customerPrice - site.electricityCost - site.teslaFee;
+  // Use shared calculation functions from calculations.ts
+  const marginPerKwh = computeMarginPerKwh(site.customerPrice, site.electricityCost, site.teslaFee);
   const totalProjectCost = (site.bomPerStall + site.installPerStall) * site.stalls;
   const outOfPocket = Math.max(0, totalProjectCost - site.incentives);
-  const annualRevenue = site.stalls * effectiveKwhPerDay * marginPerKwh * 365;
-  const annualNOI = annualRevenue - site.insurance - (site.monthlyRent * 12);
+  const grossRevenue = computeAnnualGrossRevenue(site.stalls, effectiveKwhPerDay, marginPerKwh);
+  const annualNOI = computeAnnualNOI(grossRevenue, site.insurance, site.monthlyRent);
   const ownerAnnualTier1 = annualNOI * controls.tier1OwnerSplit;
   const msAnnualTier1 = annualNOI * (1 - controls.tier1OwnerSplit);
   const cocReturn = outOfPocket > 0 ? ownerAnnualTier1 / outOfPocket : null;
@@ -149,17 +132,14 @@ export function computeWaterfall(
     let tier2NOI: number, ownerTier2: number, msTier2: number;
 
     if (remainingToTarget > 0) {
-      // Still in Tier 1
       tier1NOI = Math.min(portfolioNOI, remainingToTarget / controls.tier1OwnerSplit);
       tier1NOI = Math.min(tier1NOI, portfolioNOI);
       ownerTier1 = tier1NOI * controls.tier1OwnerSplit;
       msTier1 = tier1NOI * tier1MSSplit;
-
       tier2NOI = portfolioNOI - tier1NOI;
       ownerTier2 = tier2NOI * controls.tier2OwnerSplit;
       msTier2 = tier2NOI * tier2MSSplit;
     } else {
-      // Owner already made whole
       tier1NOI = 0;
       ownerTier1 = 0;
       msTier1 = 0;
@@ -238,7 +218,6 @@ const UTILIZATION_FACTORS = {
   aggressive: 0.50,
 };
 
-// Minimum % of parking to allocate to EV charging based on lot size
 const PARKING_RATIO_FLOORS: Record<LocationType, { conservative: number; base: number; aggressive: number }> = {
   highway: { conservative: 0.04, base: 0.06, aggressive: 0.10 },
   urban_retail: { conservative: 0.03, base: 0.05, aggressive: 0.08 },
@@ -255,9 +234,9 @@ export interface StallSizerInputs {
   totalParkingSpaces: number | null;
   lotSizeSqFt: number | null;
   dailyTraffic: number;
-  evAdoptionRate: number;    // e.g. 0.05
-  avgChargeTimeMin: number;  // default 25
-  operatingHours: number;    // default 16
+  evAdoptionRate: number;
+  avgChargeTimeMin: number;
+  operatingHours: number;
   locationType: LocationType;
   evpinScore: number | null;
   chargeScore: number | null;
@@ -285,10 +264,8 @@ export function computeStallRecommendation(inputs: StallSizerInputs): StallRecom
 
   const ratioFloors = PARKING_RATIO_FLOORS[inputs.locationType];
 
-  // Score boost: high chargeScore means more demand signal
   const scoreMultiplier = inputs.chargeScore !== null ? 1 + Math.max(0, (inputs.chargeScore - 50)) / 100 : 1;
 
-  // Competition adjustment: fewer nearby ports = more opportunity
   const competitionBoost = inputs.nearbyL3Ports !== null
     ? (inputs.nearbyL3Ports < 5 ? 1.3 : inputs.nearbyL3Ports < 15 ? 1.1 : 1.0)
     : 1.0;
@@ -305,7 +282,6 @@ export function computeStallRecommendation(inputs: StallSizerInputs): StallRecom
   const base = recommend(UTILIZATION_FACTORS.base, ratioFloors.base);
   const aggressive = recommend(UTILIZATION_FACTORS.aggressive, ratioFloors.aggressive);
 
-  // Confidence based on inputs provided
   let filled = 0;
   if (inputs.totalParkingSpaces || inputs.lotSizeSqFt) filled++;
   if (inputs.dailyTraffic > 0) filled++;
