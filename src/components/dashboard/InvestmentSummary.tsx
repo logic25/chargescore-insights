@@ -283,19 +283,16 @@ const InvestmentSummary = ({ financials, incentives, stalls, userRole }: Props) 
                 )}
                 {isFree ? (
                   <>
-                    {/* Free users see program names only, no amounts */}
-                    {eligibleByLayer.map(({ layer, label, items }) => (
-                      <div key={layer} className="space-y-1">
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground/50 ml-2 font-medium">{label}</p>
-                        {items.map(inc => (
-                          <div key={inc.id} className="flex items-center gap-2 rounded-lg px-3 py-2 bg-muted/20">
-                            <EligibilityBadge eligible={inc.eligible} />
-                            <span className="text-sm text-foreground truncate">{inc.isAlternative ? `or: ${inc.name}` : inc.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                    <UpgradeHint feature="Full incentive amounts & how to apply" />
+                    {/* Free users: teaser only — count + total, no program names */}
+                    <div className="rounded-lg border border-success/20 bg-success/5 px-4 py-3 text-center space-y-2">
+                      <p className="text-sm text-foreground">
+                        <span className="font-bold text-success">{allEligible.length} program{allEligible.length !== 1 ? 's' : ''}</span> available — est. <span className="font-bold text-success">{fmt(financials.estimatedIncentives)}</span> in incentives
+                      </p>
+                      {isFullyIncentivized && (
+                        <p className="text-xs text-success font-semibold">This site could be fully incentivized — $0 out-of-pocket!</p>
+                      )}
+                    </div>
+                    <UpgradeHint feature="See program names, amounts & how to apply" />
                   </>
                 ) : (
                   <>

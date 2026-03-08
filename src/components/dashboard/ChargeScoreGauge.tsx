@@ -14,12 +14,21 @@ export interface SiteInsights {
   isOnCorridor: boolean;
 }
 
+export interface IncentiveTeaser {
+  programCount: number;
+  totalEstimate: number;
+  outOfPocket: number;
+}
+
 interface ChargeScoreGaugeProps {
   score: ChargeScoreResult;
   siteInsights?: SiteInsights;
+  incentiveTeaser?: IncentiveTeaser;
 }
 
-const ChargeScoreGauge = ({ score, siteInsights }: ChargeScoreGaugeProps) => {
+const fmt = (n: number) => n < 0 ? `-$${Math.abs(Math.round(n)).toLocaleString()}` : `$${Math.round(n).toLocaleString()}`;
+
+const ChargeScoreGauge = ({ score, siteInsights, incentiveTeaser }: ChargeScoreGaugeProps) => {
   const [displayScore, setDisplayScore] = useState(0);
 
   useEffect(() => {
@@ -164,6 +173,26 @@ const ChargeScoreGauge = ({ score, siteInsights }: ChargeScoreGaugeProps) => {
               NEVI Corridor
             </span>
           )}
+        </div>
+      )}
+
+      {/* Incentive Teaser */}
+      {incentiveTeaser && incentiveTeaser.programCount > 0 && (
+        <div className="mt-5 rounded-xl border border-success/20 bg-success/5 px-4 py-3 flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-success/10 flex-shrink-0">
+            <Zap className="h-4 w-4 text-success" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-foreground">
+              {incentiveTeaser.programCount} incentive program{incentiveTeaser.programCount !== 1 ? 's' : ''} available
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Est. <span className="font-bold text-success">{fmt(incentiveTeaser.totalEstimate)}</span> in incentives
+              {incentiveTeaser.outOfPocket <= 0 && (
+                <span> — <span className="font-bold text-success">$0 out-of-pocket</span></span>
+              )}
+            </p>
+          </div>
         </div>
       )}
 
