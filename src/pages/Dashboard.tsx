@@ -334,10 +334,33 @@ const Dashboard = () => {
               </Button>
             )}
             {gateUnlocked && (
+              <Button size="sm" variant="outline" onClick={() => {
+                const siteRow = {
+                  name: site.address.split(',')[0],
+                  address: site.address,
+                  stalls: site.teslaStalls,
+                  baseKwhPerStallPerDay: site.kwhPerStallPerDay,
+                  customerPrice: site.pricePerKwh,
+                  electricityCost: site.electricityCostPerKwh,
+                  teslaFee: site.teslaServiceFeePerKwh,
+                  bomPerStall: 62500,
+                  installPerStall: 25000,
+                  incentives: financials.estimatedIncentives,
+                  insurance: site.annualInsurance,
+                  monthlyRent: site.monthlyRent,
+                };
+                navigate(`/portfolio?addSite=${encodeURIComponent(JSON.stringify(siteRow))}`);
+              }}>
+                <Briefcase className="mr-1 h-4 w-4" />
+                Add to Portfolio
+              </Button>
+            )}
+            {gateUnlocked && (
               <ReportGenerator
                 site={site} score={chargeScore} financials={financials}
                 incentives={incentives} parking={parking} demandCharge={demandCharge}
               />
+            )}
             )}
           </div>
         </div>
