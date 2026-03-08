@@ -186,7 +186,7 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
       if (uploadError) throw uploadError;
 
       // Save doc record
-      await supabase.from("site_documents").insert([{
+      const { data: insertedDoc } = await supabase.from("site_documents").insert([{
         user_id: user.id,
         site_name: inputs.siteName,
         address: inputs.address,
@@ -194,13 +194,20 @@ export default function StallSizer({ onAddToPortfolio }: Props) {
         file_path: filePath,
         doc_type: "evpin_report" as const,
         extracted_data: {} as any,
-      }]);
+      }]).select('id').single();
 
       // Try to parse
       const { data: parseData } = await supabase.functions.invoke("parse-evpin-report", { body: { filePath } });
       if (parseData?.extracted?.totalScore) {
         set("evpinScore", parseData.extracted.totalScore);
-        // Update the doc record with extracted data
+        // Sync extracted data back to the doc record so Documents tab sees it
+        if (insertedDoc?.id) {
+          await supabase.from("site_documents").update({
+            extracted_data: parseData.extracted as any,
+            site_name: inputs.siteName || parseData.extracted.siteName || "",
+            address: inputs.address || parseData.extracted.address || "",
+          }).eq("id", insertedDoc.id);
+        }
         toast({ title: "EVpin Score extracted", description: `Score: ${parseData.extracted.totalScore}/5` });
       } else {
         toast({ title: "Report uploaded", description: "Could not auto-extract score. Enter manually." });
