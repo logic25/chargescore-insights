@@ -13,6 +13,7 @@ interface StallRecommendationProps {
   chargeScore: number | null;
   state: string;
   locationType: LocationType;
+  spotsConfirmed: boolean;
   onUseRecommendation?: (stalls: number) => void;
 }
 
@@ -25,6 +26,7 @@ export default function StallRecommendation({
   chargeScore,
   state,
   locationType,
+  spotsConfirmed,
   onUseRecommendation,
 }: StallRecommendationProps) {
   const recommendation = useMemo(() => computeStallRecommendation({
@@ -83,9 +85,15 @@ export default function StallRecommendation({
           ))}
         </div>
 
+        {!spotsConfirmed && (
+          <p className="mt-2 text-[10px] text-amber-500/80 italic">
+            ⚠ Parking spots estimated from lot area — confirm via aerial or site visit for accuracy
+          </p>
+        )}
+
         <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
           <span>~{Math.round(recommendation.dailySessions)} sessions/day</span>
-          <span>~{Math.round(recommendation.kwhPerStallPerDay)} kWh/stall/day</span>
+          <span>250 kWh/stall/day baseline</span>
           <span className={`font-medium ${
             recommendation.confidence === 'High' ? 'text-primary' :
             recommendation.confidence === 'Medium' ? 'text-accent' : 'text-muted-foreground'

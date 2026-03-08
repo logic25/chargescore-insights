@@ -409,6 +409,7 @@ const Dashboard = () => {
               nearbyL3Ports={stationMetrics.totalDcfcPortsWithin5Miles}
               chargeScore={chargeScore.totalScore}
               state={site.state}
+              spotsConfirmed={confirmedSpotCount !== null}
               locationType={
                 (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 25000 ? 'highway' :
                 (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 10000 ? 'urban_retail' :
