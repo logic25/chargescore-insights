@@ -101,6 +101,60 @@ export type Database = {
         }
         Relationships: []
       }
+      incentive_programs: {
+        Row: {
+          administrator: string | null
+          amount_cap: number | null
+          amount_flat: number | null
+          amount_per_port: number | null
+          application_url: string | null
+          confidence: string
+          expiration_date: string | null
+          id: string
+          notes: string | null
+          program_name: string
+          program_status: string | null
+          stacking_allowed: boolean | null
+          state: string | null
+          updated_at: string | null
+          utility_territory: string | null
+        }
+        Insert: {
+          administrator?: string | null
+          amount_cap?: number | null
+          amount_flat?: number | null
+          amount_per_port?: number | null
+          application_url?: string | null
+          confidence: string
+          expiration_date?: string | null
+          id?: string
+          notes?: string | null
+          program_name: string
+          program_status?: string | null
+          stacking_allowed?: boolean | null
+          state?: string | null
+          updated_at?: string | null
+          utility_territory?: string | null
+        }
+        Update: {
+          administrator?: string | null
+          amount_cap?: number | null
+          amount_flat?: number | null
+          amount_per_port?: number | null
+          application_url?: string | null
+          confidence?: string
+          expiration_date?: string | null
+          id?: string
+          notes?: string | null
+          program_name?: string
+          program_status?: string | null
+          stacking_allowed?: boolean | null
+          state?: string | null
+          updated_at?: string | null
+          utility_territory?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           address: string
