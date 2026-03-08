@@ -401,6 +401,23 @@ const Dashboard = () => {
               defaultExpanded
             />
 
+            {/* Stall Recommendation */}
+            <StallRecommendation
+              dailyTraffic={aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]}
+              evAdoptionRate={evRegistrations > 0 ? Math.min(evRegistrations / 100000, 0.15) : 0.05}
+              totalParkingSpaces={site.totalParkingSpaces}
+              lotSizeSqFt={parcelData.lotArea}
+              nearbyL3Ports={stationMetrics.totalDcfcPortsWithin5Miles}
+              chargeScore={chargeScore.totalScore}
+              state={site.state}
+              locationType={
+                (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 25000 ? 'highway' :
+                (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 10000 ? 'urban_retail' :
+                (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 5000 ? 'suburban_retail' : 'rural'
+              }
+              onUseRecommendation={(stalls) => setSite(prev => ({ ...prev, teslaStalls: stalls }))}
+            />
+
             {/* Parking Impact */}
             <ParkingImpact
               totalSpaces={site.totalParkingSpaces}

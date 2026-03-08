@@ -22,11 +22,25 @@ import type { MasterControls as MCType, SiteRow } from "@/lib/waterfallCalc";
 
 export default function PortfolioBuilder() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("waterfall");
   const [controls, setControls] = useState<MCType>(DEFAULT_CONTROLS);
   const [sites, setSites] = useState<SiteRow[]>(
     PRELOADED_SITES.map(s => ({ ...s, id: crypto.randomUUID() }))
   );
+
+  // Accept addSite from Dashboard
+  useEffect(() => {
+    const addSiteParam = searchParams.get('addSite');
+    if (addSiteParam) {
+      try {
+        const siteData = JSON.parse(decodeURIComponent(addSiteParam));
+        setSites(prev => [...prev, { ...siteData, id: crypto.randomUUID() }]);
+        toast.success(`Added "${siteData.name}" to portfolio`);
+      } catch { /* ignore parse errors */ }
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
 
   const computedSites = useMemo(() => sites.map(s => computeSite(s, controls)), [sites, controls]);
   const totalOOP = useMemo(() => computedSites.reduce((s, c) => s + c.outOfPocket, 0), [computedSites]);
