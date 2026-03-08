@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 import PortfolioSidebar from "@/components/portfolio/PortfolioSidebar";
 import MasterControls from "@/components/portfolio/MasterControls";
 import SiteTable from "@/components/portfolio/SiteTable";
