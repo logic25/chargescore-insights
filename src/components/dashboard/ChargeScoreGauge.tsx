@@ -23,9 +23,12 @@ export interface IncentiveTeaser {
 interface ChargeScoreGaugeProps {
   score: ChargeScoreResult;
   siteInsights?: SiteInsights;
+  incentiveTeaser?: IncentiveTeaser;
 }
 
-const ChargeScoreGauge = ({ score, siteInsights }: ChargeScoreGaugeProps) => {
+const fmt = (n: number) => n < 0 ? `-$${Math.abs(Math.round(n)).toLocaleString()}` : `$${Math.round(n).toLocaleString()}`;
+
+const ChargeScoreGauge = ({ score, siteInsights, incentiveTeaser }: ChargeScoreGaugeProps) => {
   const [displayScore, setDisplayScore] = useState(0);
 
   useEffect(() => {
