@@ -336,7 +336,7 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
                 </Tooltip>
               </Label>
               <div className="h-10 flex items-center rounded-md border border-border bg-muted/30 px-3">
-                <span className="font-mono text-sm text-muted-foreground">${site.teslaServiceFeePerKwh}/kWh</span>
+                <span className="font-mono text-sm text-muted-foreground">${site.teslaServiceFeePerKwh.toFixed(2)}/kWh</span>
               </div>
             </div>
           </div>
