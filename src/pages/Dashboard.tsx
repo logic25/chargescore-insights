@@ -497,7 +497,7 @@ const Dashboard = () => {
         {/* GATED CONTENT */}
         <div className={blurClass}>
           {activePanel === 'revenue' && (
-            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} kwhPerStallPerDay={site.kwhPerStallPerDay} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} onUtilizationChange={(v) => setSite(prev => ({ ...prev, kwhPerStallPerDay: v }))} />
+            <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} kwhPerStallPerDay={site.kwhPerStallPerDay} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} onUtilizationChange={(v) => setSite(prev => ({ ...prev, kwhPerStallPerDay: v }))} userRole={profile?.role ?? null} />
           )}
           {activePanel === 'investment' && (
             <ChargeScoreGauge score={chargeScore} siteInsights={{

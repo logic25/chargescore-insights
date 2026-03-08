@@ -217,7 +217,17 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
           {/* Row 3: Electrical Service + State + Stalls */}
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground">Electrical Service</Label>
+              <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                Electrical Service
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-xs">
+                    Setting this to your actual service type helps estimate electrical upgrade costs. Known-insufficient service (200A or 400A at 208V) adds $75K–$150K for 5+ stalls.
+                  </TooltipContent>
+                </Tooltip>
+              </Label>
               <Select value={site.electricalService} onValueChange={(v) => update({ electricalService: v as ElectricalService })}>
                 <SelectTrigger className="h-10 text-sm">
                   <SelectValue />
@@ -228,6 +238,9 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
                   ))}
                 </SelectContent>
               </Select>
+              {site.electricalService === 'unknown' && site.teslaStalls > 4 && (
+                <p className="text-[10px] text-amber-600">⚠ Unknown service — upgrade cost not included. Set this to get accurate project costs.</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">State</Label>
