@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Zap, ArrowLeft, TrendingUp, Sliders, Trash2, ExternalLink, BarChart3, FileText, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
