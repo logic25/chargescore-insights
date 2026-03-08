@@ -26,6 +26,7 @@ export default function StallRecommendation({
   chargeScore,
   state,
   locationType,
+  spotsConfirmed,
   onUseRecommendation,
 }: StallRecommendationProps) {
   const recommendation = useMemo(() => computeStallRecommendation({
