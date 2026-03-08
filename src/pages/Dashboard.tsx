@@ -559,6 +559,10 @@ const Dashboard = () => {
               utilityName: utilityInfo.utilityName,
               isDAC: siteData.isDAC,
               isOnCorridor: siteData.isOnCorridor,
+            }} incentiveTeaser={{
+              programCount: incentives.filter(i => i.eligible !== false && !i.isAlternative).length,
+              totalEstimate: financials.estimatedIncentives,
+              outOfPocket: financials.netInvestment,
             }} />
           )}
           {activePanel === 'npv' && (
