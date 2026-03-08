@@ -356,7 +356,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ extracted, textLength: text.length }), {
+    return new Response(JSON.stringify({ extracted }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
