@@ -27,13 +27,6 @@ import type { MasterControls as MCType, SiteRow } from '@/lib/waterfallCalc';
 import { fetchIncentivePrograms, calculateIncentives, resolveUtilityTerritory, type IncentiveResult, type IncentiveProgram } from '@/lib/incentiveCalc';
 import IncentiveBreakdown from '@/components/incentives/IncentiveBreakdown';
 import OOPRangeBar from '@/components/incentives/OOPRangeBar';
-import {
-  DEFAULT_CONTROLS,
-  computeSite,
-  computeWaterfall,
-  computeExit,
-} from '@/lib/waterfallCalc';
-import type { MasterControls as MCType, SiteRow } from '@/lib/waterfallCalc';
 
 interface AnalysisRow {
   id: string;
