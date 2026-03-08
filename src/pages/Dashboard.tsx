@@ -32,6 +32,8 @@ import ParkingImpact from '@/components/dashboard/ParkingImpact';
 import ReportGenerator from '@/components/dashboard/ReportGenerator';
 import ReportGate from '@/components/ReportGate';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import StallRecommendation from '@/components/dashboard/StallRecommendation';
+import type { LocationType } from '@/lib/waterfallCalc';
 
 const GATE_UNLOCKED_KEY = 'chargescore_gate_unlocked';
 
