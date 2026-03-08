@@ -176,6 +176,26 @@ const ChargeScoreGauge = ({ score, siteInsights, incentiveTeaser }: ChargeScoreG
         </div>
       )}
 
+      {/* Incentive Teaser */}
+      {incentiveTeaser && incentiveTeaser.programCount > 0 && (
+        <div className="mt-5 rounded-xl border border-success/20 bg-success/5 px-4 py-3 flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-success/10 flex-shrink-0">
+            <Zap className="h-4 w-4 text-success" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-foreground">
+              {incentiveTeaser.programCount} incentive program{incentiveTeaser.programCount !== 1 ? 's' : ''} available
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Est. <span className="font-bold text-success">{fmt(incentiveTeaser.totalEstimate)}</span> in incentives
+              {incentiveTeaser.outOfPocket <= 0 && (
+                <span> — <span className="font-bold text-success">$0 out-of-pocket</span></span>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
       <p className="mt-5 text-sm text-muted-foreground leading-relaxed">{score.recommendation}</p>
     </motion.div>
   );
