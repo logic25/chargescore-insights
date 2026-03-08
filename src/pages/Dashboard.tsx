@@ -248,6 +248,19 @@ const Dashboard = () => {
   const parking = useMemo(() => calculateParkingImpact(site), [site]);
   const demandCharge = useMemo(() => calculateDemandCharge(site), [site]);
 
+  // === New Incentive Engine (confidence-tiered) ===
+  const [incentivePrograms, setIncentivePrograms] = useState<IncentiveProgram[]>([]);
+  const utilityTerritory = useMemo(() => resolveUtilityTerritory(utilityInfo.utilityName, site.state), [utilityInfo.utilityName, site.state]);
+
+  useEffect(() => {
+    fetchIncentivePrograms(utilityTerritory, site.state).then(setIncentivePrograms);
+  }, [utilityTerritory, site.state]);
+
+  const incentiveResult: IncentiveResult = useMemo(
+    () => calculateIncentives(incentivePrograms, site.teslaStalls, financials.totalProjectCost),
+    [incentivePrograms, site.teslaStalls, financials.totalProjectCost]
+  );
+
   // Stall recommendation for hint
   const stallRecommendation = useMemo(() => computeStallRecommendation({
     siteName: '',
