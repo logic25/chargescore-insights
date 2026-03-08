@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, Sliders, Trash2, ExternalLink, BarChart3, FileText, Settings } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, Sliders, Trash2, ExternalLink, BarChart3, FileText, Settings, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,6 +17,16 @@ import WaterfallCharts from '@/components/portfolio/WaterfallCharts';
 import StallSizer from '@/components/portfolio/StallSizer';
 import DocumentsManager from '@/components/portfolio/DocumentsManager';
 import { seedPortfolioIfEmpty } from '@/lib/seedPortfolio';
+import {
+  DEFAULT_CONTROLS,
+  computeSite,
+  computeWaterfall,
+  computeExit,
+} from '@/lib/waterfallCalc';
+import type { MasterControls as MCType, SiteRow } from '@/lib/waterfallCalc';
+import { fetchIncentivePrograms, calculateIncentives, resolveUtilityTerritory, type IncentiveResult, type IncentiveProgram } from '@/lib/incentiveCalc';
+import IncentiveBreakdown from '@/components/incentives/IncentiveBreakdown';
+import OOPRangeBar from '@/components/incentives/OOPRangeBar';
 import {
   DEFAULT_CONTROLS,
   computeSite,
