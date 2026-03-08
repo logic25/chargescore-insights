@@ -142,7 +142,12 @@ const MyAnalyses = () => {
             <Button variant="outline" size="sm" onClick={() => navigate('/portfolio')}>
               Portfolio View
             </Button>
+            <Button variant="outline" size="sm" onClick={handleSeedPortfolio} disabled={seeding}>
+              <Database className="mr-1 h-3.5 w-3.5" />
+              {seeding ? 'Seeding…' : 'Seed Portfolio Sites'}
+            </Button>
             <span className="text-sm text-muted-foreground">{analyses.length} projects</span>
+          </div>
           </div>
         </div>
       </header>
