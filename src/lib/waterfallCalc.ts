@@ -226,16 +226,24 @@ export function computeExit(
 export type LocationType = 'highway' | 'urban_retail' | 'suburban_retail' | 'rural';
 
 const CAPTURE_RATES: Record<LocationType, number> = {
-  highway: 0.08,
-  urban_retail: 0.03,
-  suburban_retail: 0.05,
-  rural: 0.10,
+  highway: 0.12,
+  urban_retail: 0.06,
+  suburban_retail: 0.08,
+  rural: 0.15,
 };
 
 const UTILIZATION_FACTORS = {
   conservative: 0.25,
   base: 0.35,
   aggressive: 0.50,
+};
+
+// Minimum % of parking to allocate to EV charging based on lot size
+const PARKING_RATIO_FLOORS: Record<LocationType, { conservative: number; base: number; aggressive: number }> = {
+  highway: { conservative: 0.04, base: 0.06, aggressive: 0.10 },
+  urban_retail: { conservative: 0.03, base: 0.05, aggressive: 0.08 },
+  suburban_retail: { conservative: 0.03, base: 0.05, aggressive: 0.08 },
+  rural: { conservative: 0.02, base: 0.04, aggressive: 0.06 },
 };
 
 export interface StallSizerInputs {
