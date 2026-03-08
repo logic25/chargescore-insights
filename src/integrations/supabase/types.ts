@@ -101,6 +101,99 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          address: string
+          chargescore: number | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          message: string | null
+          organization_id: string | null
+          property_role: string | null
+          scout_id: string | null
+          source: string
+          status: string
+        }
+        Insert: {
+          address: string
+          chargescore?: number | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          message?: string | null
+          organization_id?: string | null
+          property_role?: string | null
+          scout_id?: string | null
+          source?: string
+          status?: string
+        }
+        Update: {
+          address?: string
+          chargescore?: number | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          message?: string | null
+          organization_id?: string | null
+          property_role?: string | null
+          scout_id?: string | null
+          source?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          lookups_limit: number
+          lookups_used: number
+          organization_id: string | null
+          role: string
+          subscription_status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          lookups_limit?: number
+          lookups_used?: number
+          organization_id?: string | null
+          role?: string
+          subscription_status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          lookups_limit?: number
+          lookups_used?: number
+          organization_id?: string | null
+          role?: string
+          subscription_status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_documents: {
         Row: {
           address: string
