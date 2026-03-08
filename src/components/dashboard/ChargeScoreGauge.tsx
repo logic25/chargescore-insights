@@ -14,6 +14,12 @@ export interface SiteInsights {
   isOnCorridor: boolean;
 }
 
+export interface IncentiveTeaser {
+  programCount: number;
+  totalEstimate: number;
+  outOfPocket: number;
+}
+
 interface ChargeScoreGaugeProps {
   score: ChargeScoreResult;
   siteInsights?: SiteInsights;

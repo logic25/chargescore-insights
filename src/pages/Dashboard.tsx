@@ -518,6 +518,33 @@ const Dashboard = () => {
           </TooltipProvider>
         </div>
 
+        {/* INCENTIVE TEASER — visible to everyone, above the gate */}
+        {!showFullAnalysis && incentives.length > 0 && (
+          <div className="rounded-xl border border-success/30 bg-success/5 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
+                <DollarSign className="h-5 w-5 text-success" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">
+                  {incentives.filter(i => i.eligible !== false && !i.isAlternative).length} incentive programs available
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Est. <span className="font-bold text-success">{fmt(financials.estimatedIncentives)}</span> in incentives — your out-of-pocket could be as low as <span className="font-bold text-success">{financials.netInvestment <= 0 ? '$0' : fmt(financials.netInvestment)}</span>
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              className="bg-success hover:bg-success/90 text-success-foreground whitespace-nowrap"
+              onClick={() => { if (!user) navigate('/auth'); else handleGateUnlock(); }}
+            >
+              <Lock className="mr-1.5 h-3.5 w-3.5" />
+              Sign Up to See Details
+            </Button>
+          </div>
+        )}
+
         {/* GATED CONTENT */}
         <div className={blurClass}>
           {activePanel === 'revenue' && (
