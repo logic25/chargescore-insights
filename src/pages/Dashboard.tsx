@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, DollarSign, BarChart3, ChevronDown, Info, Save } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, DollarSign, BarChart3, ChevronDown, Info, Save, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
