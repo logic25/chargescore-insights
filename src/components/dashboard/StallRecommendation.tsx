@@ -13,6 +13,7 @@ interface StallRecommendationProps {
   chargeScore: number | null;
   state: string;
   locationType: LocationType;
+  spotsConfirmed: boolean;
   onUseRecommendation?: (stalls: number) => void;
 }
 
