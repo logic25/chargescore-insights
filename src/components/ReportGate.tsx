@@ -9,7 +9,7 @@ interface Props {
   onUnlock: () => void;
 }
 
-const LEADS_KEY = 'chargescore_leads';
+const LEADS_KEY = 'chargerank_leads';
 
 function storeLead(data: { email: string; name?: string; phone?: string; timestamp: string }) {
   try {
