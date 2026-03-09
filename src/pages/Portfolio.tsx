@@ -524,7 +524,19 @@ const Portfolio = () => {
                               </div>
                             </td>
                             <td className="px-3 py-2.5 text-center"><span className={`font-mono text-sm font-bold ${getScoreColor(s.charge_score)}`}>{s.charge_score}</span></td>
-                            <td className="px-3 py-2.5 text-center font-mono text-sm">{s.num_stalls ?? '—'}</td>
+                            <td className="px-3 py-2.5 text-center" onClick={e => e.stopPropagation()}>
+                              <Input
+                                type="number"
+                                step={4}
+                                min={4}
+                                value={s.num_stalls ?? ''}
+                                onChange={e => {
+                                  const val = parseInt(e.target.value);
+                                  if (!isNaN(val) && val > 0) handleInlineStallUpdate(s.id, val);
+                                }}
+                                className="h-7 w-16 text-center text-sm font-mono bg-muted/30 border-border/50 mx-auto"
+                              />
+                            </td>
                             <td className="px-3 py-2.5 text-right font-mono text-sm">{fmt(s.total_project_cost)}</td>
                             <td className="px-3 py-2.5 text-right font-mono text-sm text-success">{fmt(s.estimated_incentives)}</td>
                             <td className="px-3 py-2.5 text-right font-mono text-sm">{fmt(s.net_investment)}</td>
