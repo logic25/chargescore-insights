@@ -469,6 +469,9 @@ const Portfolio = () => {
                   <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleLoadPartnerSites}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Load 16 Partner Sites
                   </Button>
+                  <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleRefreshPartnerSites}>
+                    <Settings className="h-3.5 w-3.5 mr-1" /> Refresh Partner Sites
+                  </Button>
                   <div className="flex items-center gap-2 border border-border rounded-lg px-3 py-1.5">
                     <span className="text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap">Split</span>
                     <Slider
