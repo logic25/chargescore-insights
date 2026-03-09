@@ -190,7 +190,7 @@ const LandingPage = () => {
             {[
               { value: `${Math.max(getAnalysisCount(), 0)}`, label: 'Sites Analyzed' },
               { value: '$12M', label: 'Incentives Found' },
-              { value: '73', label: 'Avg ChargeScore' },
+              { value: '73', label: 'Avg ChargeRank' },
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <p className="font-mono text-3xl font-bold text-foreground">{stat.value}</p>
