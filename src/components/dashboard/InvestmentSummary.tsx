@@ -3,6 +3,7 @@ import { Info, ChevronDown, ChevronRight, ExternalLink, Check, X, AlertTriangle,
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { FinancialProjection, Incentive } from '@/types/chargeRank';
 import type { UserRole } from '@/hooks/useProfile';
+import FinancialDisclaimer from './FinancialDisclaimer';
 
 interface Props {
   financials: FinancialProjection;
