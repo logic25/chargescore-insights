@@ -80,7 +80,7 @@ const TierMatrix = () => {
             Start free. Upgrade when you're ready to transact.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-            Free gives you enough to know if a site is worth pursuing. Plus and Pro give you everything you need to execute.
+            Free gives you enough to know if a site is worth pursuing. Buy reports when you need them, or subscribe for the full toolkit.
           </p>
         </motion.div>
 
