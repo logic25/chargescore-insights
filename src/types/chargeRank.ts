@@ -166,6 +166,8 @@ export interface Incentive {
   verified?: string;       // YYYY-MM when last verified
   programStatus?: 'active' | 'accepting' | 'waitlist' | 'closed' | 'expired';
   sourceUrl?: string;      // link to official program page for verification
+  warning?: string;        // deadline or eligibility warning shown in UI
+  confidence?: 'confirmed' | 'likely' | 'uncertain';
 }
 
 export interface ChargeRankBreakdown {
