@@ -201,4 +201,4 @@ const ChargeRankGauge = ({ score, siteInsights, incentiveTeaser }: ChargeRankGau
   );
 };
 
-export default ChargeScoreGauge;
+export default ChargeRankGauge;
