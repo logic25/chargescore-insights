@@ -68,7 +68,8 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
   const [fetching, setFetching] = useState(false);
   const [evpinUploading, setEvpinUploading] = useState(false);
   const evpinFileRef = useRef<HTMLInputElement>(null);
-  
+  const [parkingOverrides, setParkingOverrides] = useState<Record<string, number>>({});
+
   const set = <K extends keyof StallSizerInputs>(key: K, value: StallSizerInputs[K]) => setInputs(prev => ({ ...prev, [key]: value }));
 
   const recommendation = computeStallRecommendation(inputs);
