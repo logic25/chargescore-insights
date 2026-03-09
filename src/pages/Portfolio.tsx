@@ -675,9 +675,10 @@ const Portfolio = () => {
                       *CoC shown as N/A when out-of-pocket investment is $0.
                     </p>
                   )}
-                  {multiplier !== 1 && (
+                  {(multiplier !== 1 || globalSplit !== 70) && (
                     <p className="mt-3 text-xs text-muted-foreground text-center">
-                      Showing {scenario}x scenario — NOI, distributions, CoC, and NPV are scaled by {multiplier}×
+                      {multiplier !== 1 && `Showing ${scenario}x scenario. `}
+                      Owner/MS split: {globalSplit}/{100 - globalSplit} — Owner/mo, MS/mo, and CoC reflect this split applied to NOI.
                     </p>
                   )}
                 </>
