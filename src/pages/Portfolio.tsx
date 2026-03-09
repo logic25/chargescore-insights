@@ -600,9 +600,8 @@ const Portfolio = () => {
                                   <TooltipTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-7 w-7"
                                       onClick={() => {
+                                        setSizerPrefill({ address: s.address, lat: (s as any).lat, lng: (s as any).lng, state: s.state, id: s.id });
                                         setActiveTab('sizer');
-                                        // Pre-fill will happen via the address in the Stall Sizer
-                                        toast.success(`Switch to Stall Sizer and enter "${s.address.split(',')[0]}" address`);
                                       }}>
                                       <Ruler className="h-3.5 w-3.5" />
                                     </Button>
