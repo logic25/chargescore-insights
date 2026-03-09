@@ -41,7 +41,7 @@ import IncentiveSummary from '@/components/incentives/IncentiveSummary';
 import IncentiveBreakdown from '@/components/incentives/IncentiveBreakdown';
 import OOPRangeBar from '@/components/incentives/OOPRangeBar';
 
-const GATE_UNLOCKED_KEY = 'chargescore_gate_unlocked';
+const GATE_UNLOCKED_KEY = 'chargerank_gate_unlocked';
 
 const fmt = (n: number) => {
   if (!isFinite(n)) return '—';
