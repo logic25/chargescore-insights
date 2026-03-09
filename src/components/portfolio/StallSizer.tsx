@@ -265,6 +265,7 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
                   onSelect={handleAddressSelect}
                   placeholder="Search address to auto-fill site data..."
                   className="[&_input]:h-8 [&_input]:text-sm [&_input]:bg-amber/10 [&_input]:text-primary [&_svg]:h-3.5 [&_svg]:w-3.5"
+                  defaultValue={inputs.address}
                 />
                 {fetching && (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
