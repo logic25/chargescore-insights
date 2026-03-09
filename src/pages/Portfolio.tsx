@@ -295,6 +295,104 @@ const Portfolio = () => {
     }
   }, [user]);
 
+  const handleUpdateSiteFromSizer = useCallback(async (siteId: string, updates: { stalls: number; kwhPerStallPerDay: number }) => {
+    const site = analyses.find(s => s.id === siteId);
+    if (!site) return;
+
+    const stalls = updates.stalls;
+    const kwhPerStallPerDay = updates.kwhPerStallPerDay;
+    const pricePerKwh = site.price_per_kwh ?? 0.45;
+    const electricityCost = site.electricity_cost ?? 0.223;
+    const teslaFee = 0.10;
+    const margin = pricePerKwh - electricityCost - teslaFee;
+    const installPerStall = site.total_project_cost && site.num_stalls
+      ? Math.round(site.total_project_cost / site.num_stalls - 62500)
+      : 25000;
+    const totalCost = (62500 + installPerStall) * stalls;
+    const incentivesPerStall = site.estimated_incentives && site.num_stalls
+      ? site.estimated_incentives / site.num_stalls
+      : 35000;
+    const incentives = incentivesPerStall * stalls;
+    const netInv = Math.max(0, totalCost - incentives);
+    const insurance = site.annual_insurance ?? 5000;
+    const rent = site.monthly_rent ?? 0;
+    const annualRev = stalls * kwhPerStallPerDay * margin * 365;
+    const noi = annualRev - insurance - (rent * 12);
+    const ownerPct = (site.owner_split_pct ?? 70) / 100;
+    const ownerMonthly = (noi * ownerPct) / 12;
+    const msMonthly = (noi * (1 - ownerPct)) / 12;
+    const coc = netInv > 0 ? (noi * ownerPct / netInv) * 100 : null;
+
+    const { error } = await supabase.from('analyses').update({
+      num_stalls: stalls,
+      kwh_per_stall_per_day: kwhPerStallPerDay,
+      total_project_cost: totalCost,
+      estimated_incentives: incentives,
+      net_investment: netInv,
+      noi,
+      margin_kwh: margin,
+      owner_monthly: ownerMonthly,
+      ms_monthly: msMonthly,
+      coc,
+    }).eq('id', siteId);
+
+    if (error) {
+      toast.error('Failed to update site');
+    } else {
+      toast.success('Site stalls updated from Stall Sizer');
+      await fetchSites();
+      setActiveTab('sites');
+    }
+  }, [analyses]);
+
+  const handleInlineStallUpdate = useCallback(async (siteId: string, newStalls: number) => {
+    const site = analyses.find(s => s.id === siteId);
+    if (!site) return;
+
+    const stalls = Math.max(4, Math.ceil(newStalls / 4) * 4);
+    const kwhPerStallPerDay = site.kwh_per_stall_per_day ?? 250;
+    const pricePerKwh = site.price_per_kwh ?? 0.45;
+    const electricityCost = site.electricity_cost ?? 0.223;
+    const teslaFee = 0.10;
+    const margin = pricePerKwh - electricityCost - teslaFee;
+    const installPerStall = site.total_project_cost && site.num_stalls
+      ? Math.round(site.total_project_cost / site.num_stalls - 62500)
+      : 25000;
+    const totalCost = (62500 + installPerStall) * stalls;
+    const incentivesPerStall = site.estimated_incentives && site.num_stalls
+      ? site.estimated_incentives / site.num_stalls
+      : 35000;
+    const incentives = incentivesPerStall * stalls;
+    const netInv = Math.max(0, totalCost - incentives);
+    const insurance = site.annual_insurance ?? 5000;
+    const rent = site.monthly_rent ?? 0;
+    const annualRev = stalls * kwhPerStallPerDay * margin * 365;
+    const noi = annualRev - insurance - (rent * 12);
+    const ownerPct = (site.owner_split_pct ?? 70) / 100;
+    const ownerMonthly = (noi * ownerPct) / 12;
+    const msMonthly = (noi * (1 - ownerPct)) / 12;
+    const coc = netInv > 0 ? (noi * ownerPct / netInv) * 100 : null;
+
+    const { error } = await supabase.from('analyses').update({
+      num_stalls: stalls,
+      total_project_cost: totalCost,
+      estimated_incentives: incentives,
+      net_investment: netInv,
+      noi,
+      margin_kwh: margin,
+      owner_monthly: ownerMonthly,
+      ms_monthly: msMonthly,
+      coc,
+    }).eq('id', siteId);
+
+    if (!error) {
+      setAnalyses(prev => prev.map(s => s.id === siteId ? {
+        ...s, num_stalls: stalls, total_project_cost: totalCost, estimated_incentives: incentives,
+        net_investment: netInv, noi, margin_kwh: margin, owner_monthly: ownerMonthly, ms_monthly: msMonthly, coc,
+      } : s));
+    }
+  }, [analyses]);
+
   const hasNaCoc = ranked.some((site) => formatCoc(site) === 'N/A*');
 
   if (authLoading || loading) {
