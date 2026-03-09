@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Info, AlertTriangle, CheckCircle2, Zap, MapPin } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import type { ChargeScoreResult, ScoreFactor } from '@/lib/scoring';
+import type { ChargeRankResult, ScoreFactor } from '@/lib/scoring';
 
 export interface SiteInsights {
   floodZone: string | null;
