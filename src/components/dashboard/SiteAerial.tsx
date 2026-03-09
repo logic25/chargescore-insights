@@ -8,6 +8,8 @@ import 'leaflet/dist/leaflet.css';
 interface SiteAerialProps {
   lat: number;
   lng: number;
+  lotSizeSqFt?: number | null;
+  address?: string;
   onSpotsCounted?: (count: number) => void;
   onSpotsConfirmed?: (count: number) => void;
 }
@@ -48,7 +50,7 @@ function generateSpotGrid(center: L.LatLng, count: number, map: L.Map): L.LatLng
   return points;
 }
 
-const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialProps) => {
+const SiteAerial = ({ lat, lng, lotSizeSqFt, address, onSpotsCounted, onSpotsConfirmed }: SiteAerialProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const [countMode, setCountMode] = useState(false);
@@ -257,7 +259,7 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
     setSpots([]);
     try {
       const { data, error } = await supabase.functions.invoke('count-parking-spots', {
-        body: { lat, lng },
+        body: { lat, lng, lotSizeSqFt: lotSizeSqFt ?? undefined, address: address ?? undefined },
       });
 
       if (error) throw error;

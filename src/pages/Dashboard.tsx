@@ -497,7 +497,7 @@ const Dashboard = () => {
                 </TabsList>
               </div>
               <TabsContent value="satellite" className="mt-0 flex-1 min-h-0">
-                <SiteAerial lat={site.lat} lng={site.lng} onSpotsCounted={handleSpotsCounted} onSpotsConfirmed={handleSpotsConfirmed} />
+                <SiteAerial lat={site.lat} lng={site.lng} lotSizeSqFt={parcelData.lotArea} address={site.address} onSpotsCounted={handleSpotsCounted} onSpotsConfirmed={handleSpotsConfirmed} />
               </TabsContent>
               <TabsContent value="competition" className="mt-0 flex-1 min-h-0">
                 <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} radius={stationRadius} onRadiusChange={setStationRadius} />
