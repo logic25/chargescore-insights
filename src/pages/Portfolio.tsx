@@ -183,6 +183,12 @@ const Portfolio = () => {
     toast.success('Site removed');
   };
 
+  const handleLoadPartnerSites = async () => {
+    if (!user) return;
+    const success = await forceSeedPortfolio(user.id);
+    if (success) await fetchSites();
+  };
+
   // --- Sites tab data ---
   const scaled = useMemo(() => analyses.map(s => ({
     ...s,
