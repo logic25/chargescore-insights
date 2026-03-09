@@ -12,7 +12,7 @@ const faqs = [
   },
   {
     q: 'What changes after I sign up?',
-    a: 'The free tier shows your ChargeScore and total incentive count. Signing up and upgrading to Plus unlocks confidence tiers (Confirmed / Likely / Uncertain), your full OOP range, and a 5-year revenue model. Pro adds the portfolio tracker for multi-site operators.',
+    a: 'The free tier shows your ChargeRank and total incentive count. Signing up and upgrading to Plus unlocks confidence tiers (Confirmed / Likely / Uncertain), your full OOP range, and a 5-year revenue model. Pro adds the portfolio tracker for multi-site operators.',
   },
   {
     q: 'How is this different from just calling an EV installer?',
