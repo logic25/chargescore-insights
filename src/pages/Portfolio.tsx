@@ -134,6 +134,7 @@ const Portfolio = () => {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'sites');
   const [controls, setControls] = useState<MCType>(DEFAULT_CONTROLS);
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
+  const [globalSplit, setGlobalSplit] = useState(70); // Owner % (0-100)
   const [siteIncentives, setSiteIncentives] = useState<Record<string, IncentiveResult>>({});
 
   const multiplier = parseFloat(scenario);
