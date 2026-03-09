@@ -424,6 +424,9 @@ export function calculateChargeRankV2(inputs: ScoringInputs): ChargeRankResult {
   return { totalScore, grade, factors, recommendation };
 }
 
+/** @deprecated Use calculateChargeRankV2 */
+export const calculateChargeScoreV2 = calculateChargeRankV2;
+
 // --- Revenue Projection ---
 
 export interface RevenueProjection {

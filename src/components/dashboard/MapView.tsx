@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import type { NearbyStation } from '@/types/chargeScore';
+import type { NearbyStation } from '@/types/chargeRank';
 
 interface MapViewProps {
   lat: number;

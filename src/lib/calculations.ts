@@ -247,7 +247,7 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
 
   const projectYears = site.npvYears || DEFAULT_PROJECT_YEARS;
   const cumulativeCashFlow: number[] = [];
-  const yearByYear: import('@/types/chargeScore').YearByYearRow[] = [];
+  const yearByYear: import('@/types/chargeRank').YearByYearRow[] = [];
   let npv15Year = -netInvestment;
   let paybackYears = Infinity;
   let cumOwner = -netInvestment;

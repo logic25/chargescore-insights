@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Info, ChevronDown, ChevronRight, ExternalLink, Check, X, AlertTriangle, Lock, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import type { FinancialProjection, Incentive } from '@/types/chargeScore';
+import type { FinancialProjection, Incentive } from '@/types/chargeRank';
 import type { UserRole } from '@/hooks/useProfile';
 
 interface Props {

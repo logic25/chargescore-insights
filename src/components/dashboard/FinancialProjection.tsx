@@ -1,7 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Zap } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { FinancialProjection as FP } from '@/types/chargeScore';
+import type { FinancialProjection as FP } from '@/types/chargeRank';
 
 interface Props {
   financials: FP;

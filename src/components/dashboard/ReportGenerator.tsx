@@ -9,7 +9,7 @@ import { getSatelliteImageUrl } from '@/lib/api/googleMaps';
 
 interface Props {
   site: SiteAnalysis;
-  score: ChargeScoreResult;
+  score: ChargeRankResult;
   financials: FinancialProjection;
   incentives: Incentive[];
   parking: ParkingAnalysis;

@@ -1,4 +1,4 @@
-import type { NearbyStation } from '@/types/chargeScore';
+import type { NearbyStation } from '@/types/chargeRank';
 import { haversineDistance } from '@/lib/geo';
 
 const NREL_API_KEY = 'ttwrfmgTXzqUEZctNUcKtCbN2gnJhnST68fj6Oe9';

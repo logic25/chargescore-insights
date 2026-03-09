@@ -25,7 +25,7 @@ import { logAnalysis } from '@/lib/analytics';
 import SiteAerial from '@/components/dashboard/SiteAerial';
 import MapView from '@/components/dashboard/MapView';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import ChargeScoreGauge from '@/components/dashboard/ChargeScoreGauge';
+import ChargeRankGauge from '@/components/dashboard/ChargeRankGauge';
 import PropertyInputs, { type TrafficLevel, TRAFFIC_LEVEL_VPD } from '@/components/dashboard/PropertyInputs';
 import InvestmentSummary from '@/components/dashboard/InvestmentSummary';
 import FinancialProjection from '@/components/dashboard/FinancialProjection';
