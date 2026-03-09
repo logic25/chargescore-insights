@@ -18,7 +18,7 @@ import { fetchSiteData, type SiteDataResult } from '@/lib/api/siteData';
 import { fetchUtilityInfo, type UtilityInfo } from '@/lib/api/utilityInfo';
 import { fetchNearestHighway, type HighwayProximity } from '@/lib/api/highway';
 import { calculateFinancials, calculateParkingImpact, calculateDemandCharge, getIncentives } from '@/lib/calculations';
-import { calculateChargeScoreV2, projectRevenue, type ChargeScoreResult, type RevenueProjection } from '@/lib/scoring';
+import { calculateChargeRankV2, projectRevenue, type ChargeRankResult, type RevenueProjection } from '@/lib/scoring';
 import { findNearestAirport } from '@/data/airports';
 import { getEstimatedEvRegistrations, extractCountyFromAddress } from '@/data/evRegistrations';
 import { logAnalysis } from '@/lib/analytics';
