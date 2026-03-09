@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
-import type { SiteAnalysis, FinancialProjection, Incentive, ParkingAnalysis, DemandChargeAnalysis } from '@/types/chargeScore';
-import type { ChargeScoreResult } from '@/lib/scoring';
+import type { SiteAnalysis, FinancialProjection, Incentive, ParkingAnalysis, DemandChargeAnalysis } from '@/types/chargeRank';
+import type { ChargeRankResult } from '@/lib/scoring';
 import { calculateFinancials, getIncentives } from '@/lib/calculations';
 import { getSatelliteImageUrl } from '@/lib/api/googleMaps';
 
