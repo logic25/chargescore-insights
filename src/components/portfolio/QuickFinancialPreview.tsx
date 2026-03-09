@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fmt, fmtPct } from "@/lib/waterfallCalc";
+import FinancialDisclaimer from "@/components/dashboard/FinancialDisclaimer";
 
 interface Props {
   stalls: number;
