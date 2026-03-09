@@ -129,7 +129,7 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
       const usableLotSqFt = lotSizeSqFt ? Math.max(lotSizeSqFt - bldgArea, lotSizeSqFt * 0.3) : null;
       const totalParkingSpaces = usableLotSqFt ? Math.floor(usableLotSqFt / 350) : null;
 
-      // Calculate ChargeScore
+      // Calculate ChargeRank
       const nearestDcfc = stations.filter(s => s.chargerType === 'DCFC' || s.chargerType === 'Tesla');
       const nearestDcfcMiles = nearestDcfc.length > 0 ? nearestDcfc[0].distanceMiles : null;
       const dcfcWithin5 = nearestDcfc.length;
