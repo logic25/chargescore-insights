@@ -20,8 +20,8 @@ export interface IncentiveTeaser {
   outOfPocket: number;
 }
 
-interface ChargeScoreGaugeProps {
-  score: ChargeScoreResult;
+interface ChargeRankGaugeProps {
+  score: ChargeRankResult;
   siteInsights?: SiteInsights;
   incentiveTeaser?: IncentiveTeaser;
 }
