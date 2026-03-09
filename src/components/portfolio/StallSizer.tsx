@@ -19,7 +19,10 @@ import { fetchAadt } from "@/lib/api/traffic";
 import { fetchNearbyStations } from "@/lib/api/stations";
 import { fetchParcelInfo } from "@/lib/api/parcel";
 import { fetchSiteData } from "@/lib/api/siteData";
-import { fetchCensusTractFips, fetchPopDensity } from "@/lib/api/census";
+import { fetchCensusTractFips, fetchPopDensity, fetchMultiFamilyPct } from "@/lib/api/census";
+import { fetchNearbyAmenities } from "@/lib/api/amenities";
+import { fetchPlannedStations } from "@/lib/api/plannedStations";
+import { findNearestAirport } from "@/data/airports";
 import { getEstimatedEvRegistrations, extractCountyFromAddress } from "@/data/evRegistrations";
 import { calculateChargeRankV2 } from "@/lib/scoring";
 
