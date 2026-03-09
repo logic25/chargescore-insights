@@ -1,6 +1,5 @@
 import { haversineDistance } from '@/lib/geo';
-
-const NREL_API_KEY = 'ttwrfmgTXzqUEZctNUcKtCbN2gnJhnST68fj6Oe9';
+import { nrelFetch } from './nrelProxy';
 
 export interface PlannedStationData {
   plannedCount: number;
@@ -10,8 +9,7 @@ export interface PlannedStationData {
 
 export async function fetchPlannedStations(lat: number, lng: number, radiusMiles: number = 5): Promise<PlannedStationData> {
   try {
-    const params = new URLSearchParams({
-      api_key: NREL_API_KEY,
+    const data = await nrelFetch('alt-fuel-stations/v1.json', {
       fuel_type: 'ELEC',
       ev_charging_level: 'dc_fast',
       status: 'P',
@@ -21,12 +19,7 @@ export async function fetchPlannedStations(lat: number, lng: number, radiusMiles
       limit: '200',
     });
 
-    const res = await fetch(`https://developer.nrel.gov/api/alt-fuel-stations/v1.json?${params}`);
-    if (!res.ok) throw new Error(`NLR API error: ${res.status}`);
-    const data = await res.json();
     const rawStations = data.fuel_stations || [];
-
-    // Calculate real distances and filter to actual radius
     const stations = rawStations
       .map((s: any) => ({
         ...s,

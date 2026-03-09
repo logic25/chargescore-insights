@@ -1,24 +1,17 @@
 import type { NearbyStation } from '@/types/chargeRank';
 import { haversineDistance } from '@/lib/geo';
-
-const NREL_API_KEY = 'ttwrfmgTXzqUEZctNUcKtCbN2gnJhnST68fj6Oe9';
-const NREL_BASE = 'https://developer.nrel.gov/api/alt-fuel-stations/v1/nearest.json';
+import { nrelFetch } from './nrelProxy';
 
 export async function fetchNearbyStations(lat: number, lng: number, radiusMiles: number = 10): Promise<NearbyStation[]> {
-  const params = new URLSearchParams({
-    api_key: NREL_API_KEY,
-    fuel_type: 'ELEC',
-    latitude: lat.toString(),
-    longitude: lng.toString(),
-    radius: radiusMiles.toString(),
-    status: 'E',
-    limit: '200',
-  });
-
   try {
-    const res = await fetch(`${NREL_BASE}?${params}`);
-    if (!res.ok) throw new Error(`NREL API error: ${res.status}`);
-    const data = await res.json();
+    const data = await nrelFetch('alt-fuel-stations/v1/nearest.json', {
+      fuel_type: 'ELEC',
+      latitude: lat.toString(),
+      longitude: lng.toString(),
+      radius: radiusMiles.toString(),
+      status: 'E',
+      limit: '200',
+    });
 
     return (data.fuel_stations || [])
       .map((s: any) => {

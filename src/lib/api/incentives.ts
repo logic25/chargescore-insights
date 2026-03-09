@@ -1,4 +1,4 @@
-const NREL_API_KEY = 'ttwrfmgTXzqUEZctNUcKtCbN2gnJhnST68fj6Oe9';
+import { nrelFetch } from './nrelProxy';
 
 export interface NrelIncentive {
   id: number;
@@ -15,7 +15,6 @@ export interface NrelIncentive {
   estimatedBenefit?: string | null;
 }
 
-// Keywords that indicate a program is relevant to commercial EV charging infrastructure
 const EVSE_KEYWORDS = [
   'charging', 'charger', 'evse', 'electric vehicle supply',
   'infrastructure', 'station', 'make-ready', 'make ready',
@@ -23,7 +22,6 @@ const EVSE_KEYWORDS = [
   'dcfc', 'fast charge', 'level 2', 'level 3',
 ];
 
-// Keywords that indicate a program is NOT relevant
 const EXCLUDE_KEYWORDS = [
   'fleet requirement', 'zev sales', 'zev production', 'emission standard',
   'hov lane', 'high occupancy', 'license plate', 'registration fee',
@@ -34,7 +32,6 @@ const EXCLUDE_KEYWORDS = [
   'public agency', 'local government', 'zev rebate',
 ];
 
-// Known utility names in NREL program titles — used to detect utility-specific programs
 const KNOWN_UTILITY_NAMES = [
   'con edison', 'coned', 'consolidated edison',
   'national grid',
@@ -64,7 +61,6 @@ function isUtilitySpecificProgram(title: string): boolean {
   return KNOWN_UTILITY_NAMES.some(name => lower.includes(name));
 }
 
-// Alias map: canonical utility name -> all known variations
 const UTILITY_ALIASES: Record<string, string[]> = {
   'long island power authority': ['long island', 'lipa', 'pseg long island', 'pseg li'],
   'consolidated edison': ['con edison', 'coned', 'con ed'],
@@ -82,20 +78,13 @@ const UTILITY_ALIASES: Record<string, string[]> = {
 function utilityMatchesSite(programTitle: string, siteUtilityName: string): boolean {
   const title = programTitle.toLowerCase();
   const utility = siteUtilityName.toLowerCase();
-
-  // Direct containment
   if (title.includes(utility)) return true;
-
-  // Check alias map: find which utility the site belongs to, then check if program matches
   for (const [canonical, aliases] of Object.entries(UTILITY_ALIASES)) {
     const siteIsThisUtility = utility.includes(canonical) || aliases.some(a => utility.includes(a));
     if (siteIsThisUtility) {
-      // Does the program title match this same utility?
       return title.includes(canonical) || aliases.some(a => title.includes(a));
     }
   }
-
-  // Fallback: check if significant words overlap
   const utilityWords = utility.split(/\s+/).filter(w => w.length > 3);
   const matchCount = utilityWords.filter(w => title.includes(w)).length;
   return matchCount >= 2;
@@ -104,19 +93,14 @@ function utilityMatchesSite(programTitle: string, siteUtilityName: string): bool
 function isRelevantToEVCharging(item: any): boolean {
   const text = `${item.title ?? ''} ${item.plaintext ?? ''} ${item.text ?? ''}`.toLowerCase();
   const title = (item.title ?? '').toLowerCase();
-
-  // Exclude planning-only NEVI records (not direct install funding opportunities)
   if (title.includes('nevi') && title.includes('planning')) return false;
   if (EXCLUDE_KEYWORDS.some(kw => text.includes(kw))) return false;
   if (!EVSE_KEYWORDS.some(kw => text.includes(kw))) return false;
-
   const techs: string[] = item.technologies || [];
   if (techs.length > 0 && !techs.includes('ELEC') && !techs.includes('PHEV') && !techs.includes('HEV')) return false;
-
   const cats: any[] = item.categories || [];
   const catCodes = cats.map((c: any) => c.code);
   if (item.type === 'Laws and Regulations' && !catCodes.includes('STATION')) return false;
-
   return true;
 }
 
@@ -148,10 +132,8 @@ function municipalityMatchesSite(programTitle: string, siteAddress?: string | nu
 function parseEstimatedBenefit(text: string): string | null {
   const money = text.match(/\$\s?\d[\d,]*(?:\s*(?:-|to)\s*\$\s?\d[\d,]*)?(?:\s*(?:per|\/)\s*(?:port|charger|station|project|year|kw|kwh))?/i);
   if (money?.[0]) return money[0].replace(/\s+/g, ' ').trim();
-
   const percent = text.match(/\b\d{1,3}\s?%\b/);
   if (percent?.[0]) return percent[0].replace(/\s+/g, ' ').trim();
-
   return null;
 }
 
@@ -165,37 +147,27 @@ function inferProgramCategory(type: string): 'federal' | 'state' | 'utility' | '
 
 export async function fetchStateIncentives(opts: FetchIncentivesOptions): Promise<NrelIncentive[]> {
   try {
-    const params = new URLSearchParams({
-      api_key: NREL_API_KEY,
+    const data = await nrelFetch('transportation-incentives-laws/v1.json', {
       jurisdiction: opts.stateCode,
       limit: '200',
     });
-    const res = await fetch(`https://developer.nrel.gov/api/transportation-incentives-laws/v1.json?${params}`);
-    if (!res.ok) throw new Error(`NREL Incentives API error: ${res.status}`);
-    const data = await res.json();
 
     return (data.result || [])
       .filter((r: any) => {
         const isIncentiveType = r.type === 'State Incentives' || r.type === 'Incentives' || r.type === 'Utility / Private Incentives';
         const isRelevantLaw = r.type === 'Laws and Regulations' && isRelevantToEVCharging(r);
         if (!isIncentiveType && !isRelevantLaw) return false;
-
         if (!isRelevantToEVCharging(r)) return false;
         if (r.status === 'repealed' || r.status === 'expired') return false;
-
         if (r.utility_id != null && opts.utilityCompanyId) {
           if (String(r.utility_id) !== String(opts.utilityCompanyId)) return false;
         }
-
         const title = r.title || '';
         if (isUtilitySpecificProgram(title)) {
           if (!opts.utilityName) return false;
           if (!utilityMatchesSite(title, opts.utilityName)) return false;
         }
-
-        // Municipal incentives (e.g. "Village of Greenport") must match site address
         if (!municipalityMatchesSite(title, opts.siteAddress)) return false;
-
         return true;
       })
       .map((r: any) => {
