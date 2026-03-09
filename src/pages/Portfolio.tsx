@@ -702,6 +702,7 @@ const Portfolio = () => {
                 onAddToPortfolio={handleAddFromSizer}
                 onUpdateSite={handleUpdateSiteFromSizer}
                 existingSites={analyses.map(a => ({ id: a.id, name: a.address.split(',')[0], address: a.address }))}
+                prefillSite={sizerPrefill}
               />
             </TabsContent>
 
