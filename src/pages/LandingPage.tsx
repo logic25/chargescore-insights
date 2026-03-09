@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, DollarSign, BarChart3, ChevronRight, LogIn, LogOut } from 'lucide-react';
+import { Zap, DollarSign, BarChart3, ChevronRight, LogIn, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
