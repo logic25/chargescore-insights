@@ -168,7 +168,20 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
     }
   }, []);
 
-  const handleAddToPortfolio = () => {
+  // Auto-fill when a site is passed from the portfolio via the ruler button
+  React.useEffect(() => {
+    if (prefillSite && prefillSite.id !== lastPrefillId) {
+      setLastPrefillId(prefillSite.id);
+      setSelectedSiteId(prefillSite.id);
+      handleAddressSelect({
+        formatted: prefillSite.address,
+        lat: prefillSite.lat,
+        lng: prefillSite.lng,
+        stateCode: prefillSite.state,
+      });
+    }
+  }, [prefillSite, lastPrefillId, handleAddressSelect]);
+
     const stalls = recommendation.base;
     const site: Omit<SiteRow, 'id'> = {
       name: inputs.siteName || "New Site",
