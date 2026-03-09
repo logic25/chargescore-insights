@@ -21,7 +21,7 @@ import { fetchParcelInfo } from "@/lib/api/parcel";
 import { fetchSiteData } from "@/lib/api/siteData";
 import { fetchCensusTractFips, fetchPopDensity } from "@/lib/api/census";
 import { getEstimatedEvRegistrations, extractCountyFromAddress } from "@/data/evRegistrations";
-import { calculateChargeScoreV2 } from "@/lib/scoring";
+import { calculateChargeRankV2 } from "@/lib/scoring";
 
 interface ExistingSite {
   id: string;
