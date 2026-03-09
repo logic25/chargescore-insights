@@ -95,6 +95,12 @@ const ProgramCard = ({ program, stallCount }: { program: IncentiveProgram; stall
         )}
       </div>
 
+      {!isExpired && program.confidence === 'unverified' && (
+        <p className="text-[10px] text-amber-600/70 italic leading-relaxed">
+          Data from AFDC — not manually verified by ChargeRank
+        </p>
+      )}
+
       {!isExpired && program.applicationUrl && (
         <a
           href={program.applicationUrl}
