@@ -359,10 +359,16 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
                   <TooltipContent className="max-w-[260px] text-sm">All-in electricity cost including demand charges and fees.</TooltipContent>
                 </Tooltip>
               </Label>
-              <Input type="number" step="0.01" className="h-10 font-mono text-sm"
+              <Input type="number" step="0.01" min="0.01" max="0.80" className="h-10 font-mono text-sm"
                 value={site.electricityCostPerKwh}
-                onChange={(e) => update({ electricityCostPerKwh: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value) || 0;
+                  validateAndUpdate('electricityCostPerKwh', val, { electricityCostPerKwh: val });
+                }}
               />
+              {warnings.electricityCostPerKwh && (
+                <p className="text-[10px] text-amber-600">⚠ {warnings.electricityCostPerKwh}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground flex items-center gap-1">
