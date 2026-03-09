@@ -8,6 +8,8 @@ import 'leaflet/dist/leaflet.css';
 interface SiteAerialProps {
   lat: number;
   lng: number;
+  lotSizeSqFt?: number | null;
+  address?: string;
   onSpotsCounted?: (count: number) => void;
   onSpotsConfirmed?: (count: number) => void;
 }
