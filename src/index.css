@@ -4,41 +4,52 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 25% 15%;
+    /* Neutral warm-white background — never pure white, never blue-tinted */
+    --background: 210 18% 97%;
+    --foreground: 222 35% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 15%;
+    --card-foreground: 222 35% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 15%;
+    --popover-foreground: 222 35% 13%;
 
-    --primary: 163 72% 40%;
+    /* Emerald — primary actions, CTAs, KPI positives */
+    --primary: 160 65% 38%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 25% 93%;
-    --secondary-foreground: 220 25% 15%;
+    --secondary: 210 22% 92%;
+    --secondary-foreground: 222 35% 13%;
 
-    --muted: 210 20% 95%;
-    --muted-foreground: 215 14% 45%;
+    --muted: 210 18% 94%;
+    --muted-foreground: 215 14% 46%;
 
-    --accent: 38 92% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* Amber — warnings, uncertain tiers, risk signals */
+    --accent: 38 92% 48%;
+    --accent-foreground: 222 35% 10%;
 
     --destructive: 4 72% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 60% 38%;
+    --success: 152 58% 36%;
     --success-foreground: 0 0% 100%;
 
     --expense: 4 72% 50%;
     --expense-foreground: 4 72% 50%;
 
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 163 72% 40%;
+    --border: 214 18% 87%;
+    --input: 214 18% 87%;
+    --ring: 160 65% 38%;
 
     --radius: 0.75rem;
+
+    /* Navy — nav, footer, hero anchors, authority surfaces */
+    --navy: 222 42% 11%;
+    --navy-foreground: 210 40% 96%;
+    --navy-deep: 224 48% 7%;
+    --navy-card: 222 36% 17%;
+    --navy-muted: 222 30% 25%;
+    --amber: 38 92% 48%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -47,54 +58,49 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 163 72% 40%;
-
-    --navy: 220 25% 15%;
-    --navy-foreground: 210 40% 98%;
-    --navy-deep: 222 30% 10%;
-    --navy-card: 220 20% 20%;
-    --amber: 38 92% 50%;
+    --sidebar-ring: 160 65% 38%;
   }
 
   .dark {
-    --background: 220 20% 10%;
-    --foreground: 210 40% 96%;
+    --background: 222 30% 9%;
+    --foreground: 210 40% 95%;
 
-    --card: 220 18% 14%;
-    --card-foreground: 210 40% 96%;
+    --card: 222 26% 13%;
+    --card-foreground: 210 40% 95%;
 
-    --popover: 220 18% 14%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 222 26% 13%;
+    --popover-foreground: 210 40% 95%;
 
-    --primary: 163 72% 44%;
-    --primary-foreground: 220 20% 10%;
+    --primary: 160 65% 42%;
+    --primary-foreground: 222 30% 9%;
 
-    --secondary: 220 18% 18%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 222 22% 17%;
+    --secondary-foreground: 210 40% 95%;
 
-    --muted: 220 18% 18%;
-    --muted-foreground: 215 15% 55%;
+    --muted: 222 22% 17%;
+    --muted-foreground: 215 15% 54%;
 
     --accent: 38 92% 50%;
-    --accent-foreground: 220 20% 10%;
+    --accent-foreground: 222 30% 9%;
 
     --destructive: 4 72% 55%;
-    --destructive-foreground: 210 40% 96%;
+    --destructive-foreground: 210 40% 95%;
 
-    --success: 152 60% 42%;
+    --success: 152 58% 40%;
     --success-foreground: 0 0% 100%;
 
     --expense: 4 72% 55%;
     --expense-foreground: 4 72% 55%;
 
-    --border: 220 18% 22%;
-    --input: 220 18% 22%;
-    --ring: 163 72% 44%;
+    --border: 222 22% 20%;
+    --input: 222 22% 20%;
+    --ring: 160 65% 42%;
 
-    --navy: 220 20% 10%;
-    --navy-foreground: 210 40% 96%;
-    --navy-deep: 222 30% 7%;
-    --navy-card: 220 18% 14%;
+    --navy: 222 30% 9%;
+    --navy-foreground: 210 40% 95%;
+    --navy-deep: 224 38% 6%;
+    --navy-card: 222 26% 13%;
+    --navy-muted: 222 22% 20%;
     --amber: 38 92% 50%;
   }
 }
