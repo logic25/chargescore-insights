@@ -141,10 +141,16 @@ const IncentiveBreakdown = ({ result, grossProjectCost, stallCount }: Props) => 
           <span className="text-muted-foreground">Confirmed + Likely</span>
           <span className="font-mono font-bold text-success">{fmt(result.confirmedTotal + result.likelyTotal)}</span>
         </div>
-        {result.uncertainTotal > 0 && (
+      {result.uncertainTotal > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Uncertain (not included in estimate)</span>
             <span className="font-mono font-bold text-muted-foreground">{fmtK(result.uncertainRange.low)} – {fmtK(result.uncertainRange.high)}</span>
+          </div>
+        )}
+        {result.unverifiedTotal > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Unverified AFDC (not included)</span>
+            <span className="font-mono font-bold text-amber-600/70">{fmtK(result.unverifiedTotal)}</span>
           </div>
         )}
         <div className="border-t border-border/50 pt-2 flex justify-between text-sm">

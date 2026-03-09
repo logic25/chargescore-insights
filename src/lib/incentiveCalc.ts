@@ -27,6 +27,7 @@ export interface IncentiveResult {
   confirmedTotal: number;
   likelyTotal: number;
   uncertainTotal: number;
+  unverifiedTotal: number;
   oopFloor: number;       // grossCost - (confirmed + likely)
   oopCeiling: number;     // grossCost - confirmed only
   fullCoveragePossible: boolean;
