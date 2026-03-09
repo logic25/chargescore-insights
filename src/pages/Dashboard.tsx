@@ -444,6 +444,12 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:block truncate max-w-[400px]">{site.address}</span>
+            {!user && (
+              <Button size="sm" variant="outline" onClick={() => navigate('/auth')}>
+                <Lock className="mr-1 h-4 w-4" />
+                Sign In
+              </Button>
+            )}
             {gateUnlocked && user && (
               <Button size="sm" variant="default" onClick={handleSaveProject} disabled={saving}>
                 <Save className="mr-1 h-4 w-4" />
