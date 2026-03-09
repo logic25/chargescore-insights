@@ -296,6 +296,19 @@ const Dashboard = () => {
     nearbyL3Ports: stationMetrics.totalDcfcPortsWithin5Miles,
   }), [site.state, site.totalParkingSpaces, parcelData.lotArea, aadtData, trafficLevel, evRegistrations, sizerLocationType, chargeScore.totalScore, stationMetrics]);
 
+  // When AI/manual parking count is confirmed, auto-update stall count & kWh to match recommendation
+  useEffect(() => {
+    if (confirmedSpotCount && confirmedSpotCount > 0 && stallRecommendation.base > 0) {
+      setSite(prev => ({
+        ...prev,
+        teslaStalls: stallRecommendation.base,
+        ...(stallRecommendation.kwhPerStallPerDay > 0 && !manualKwhOverride
+          ? { kwhPerStallPerDay: Math.round(stallRecommendation.kwhPerStallPerDay) }
+          : {}),
+      }));
+    }
+  }, [confirmedSpotCount, stallRecommendation.base, stallRecommendation.kwhPerStallPerDay, manualKwhOverride]);
+
   const handleSaveProject = async () => {
     if (!user) {
       toast.error('Sign in to save projects');
