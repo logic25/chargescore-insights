@@ -30,6 +30,7 @@ const tiers = [
   {
     name: 'Plus',
     price: '$49',
+    launchPricing: true,
     period: '/month',
     cta: 'Upgrade to Plus',
     ctaAction: '/contact',
