@@ -435,6 +435,9 @@ const InvestmentSummary = ({ financials, incentives, stalls, userRole }: Props) 
             )}
           </div>
         </div>
+        <div className="px-5 pb-4">
+          <FinancialDisclaimer compact />
+        </div>
       </div>
     </div>
   );

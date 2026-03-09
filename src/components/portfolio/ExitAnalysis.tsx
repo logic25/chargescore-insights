@@ -40,6 +40,9 @@ export default function ExitAnalysisCard({ exit, controls, totalOOP }: Props) {
           <Row label="Owner ROI" value={totalOOP > 0 ? fmtPct(exit.ownerTotalReturn / totalOOP - 1) : 'N/A'} />
           <Row label="Owner Multiple" value={totalOOP > 0 ? fmtMult(exit.ownerTotalReturn / totalOOP) : 'N/A'} accent />
         </div>
+        <div className="mt-3">
+          <FinancialDisclaimer compact />
+        </div>
       </CardContent>
     </Card>
   );

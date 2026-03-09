@@ -106,6 +106,7 @@ export default function WaterfallTable({ rows }: Props) {
           </TableBody>
         </Table>
       </div>
+      <FinancialDisclaimer compact />
     </div>
   );
 }
