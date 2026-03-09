@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
+import type { SiteAnalysis, NearbyStation } from '@/types/chargeRank';
 import { fetchNearbyStations } from '@/lib/api/stations';
 import { fetchStateIncentives, type NrelIncentive } from '@/lib/api/incentives';
 import { fetchPlannedStations, type PlannedStationData } from '@/lib/api/plannedStations';
