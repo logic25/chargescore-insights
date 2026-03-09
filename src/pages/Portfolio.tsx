@@ -324,6 +324,16 @@ const Portfolio = () => {
     const msMonthly = (noi * (1 - ownerPct)) / 12;
     const coc = netInv > 0 ? (noi * ownerPct / netInv) * 100 : null;
 
+    let npv = -netInv;
+    for (let y = 1; y <= 15; y++) {
+      const growth = Math.pow(1.07, y - 1);
+      const feeEsc = Math.pow(1.03, y - 1);
+      const yearKwh = stalls * kwhPerStallPerDay * growth * 365;
+      const yearNoi = yearKwh * pricePerKwh - yearKwh * electricityCost - yearKwh * teslaFee * feeEsc - insurance;
+      npv += yearNoi / Math.pow(1.08, y);
+    }
+    npv = Math.round(npv);
+
     const { error } = await supabase.from('analyses').update({
       num_stalls: stalls,
       kwh_per_stall_per_day: kwhPerStallPerDay,
@@ -331,6 +341,7 @@ const Portfolio = () => {
       estimated_incentives: incentives,
       net_investment: netInv,
       noi,
+      npv,
       margin_kwh: margin,
       owner_monthly: ownerMonthly,
       ms_monthly: msMonthly,
