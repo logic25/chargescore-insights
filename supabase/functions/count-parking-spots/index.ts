@@ -9,12 +9,18 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { lat, lng, imageUrl } = await req.json();
+    const { lat, lng, imageUrl, lotSizeSqFt, address } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Use satellite imagery URL if no image provided
-    const satUrl = imageUrl || `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${lng - 0.001},${lat - 0.001},${lng + 0.001},${lat + 0.001}&bboxSR=4326&size=1024,1024&imageSR=4326&format=png&f=image`;
+    // Use satellite imagery URL if no image provided — tighter bbox for property focus
+    const span = 0.0007; // ~75m radius — focuses on subject property
+    const satUrl = imageUrl || `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${lng - span},${lat - span},${lng + span},${lat + span}&bboxSR=4326&size=1024,1024&imageSR=4326&format=png&f=image`;
+
+    const propertyContext = [
+      address ? `Property address: ${address}` : '',
+      lotSizeSqFt ? `Known lot size: ~${Math.round(lotSizeSqFt).toLocaleString()} sq ft` : '',
+    ].filter(Boolean).join('. ');
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -27,26 +33,30 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a parking lot analyst. You will be shown a satellite/aerial image of a property. Your job is to count the total number of visible parking spots (marked stalls) in the image. 
+            content: `You are a parking lot analyst. You will be shown a satellite/aerial image centered on a specific property. Your job is to count the parking spots that belong ONLY to the subject property.
 
-Rules:
-- Count only clearly visible painted parking stalls
-- Include all sections of the lot visible in the image
+CRITICAL RULES:
+- The blue marker pin in the center of the image marks the subject property
+- Count ONLY parking spots that belong to the subject property's lot — the lot where the pin is located
+- DO NOT count spots on neighboring properties, adjacent businesses, or across streets
+- Look for property boundaries: fences, walls, curb lines, different pavement colors, landscaping strips, sidewalks, and roads that separate lots
+- If the property is a shopping center or strip mall, count all spots within that shopping center's connected lot
+- Count only clearly visible painted parking stalls within the property boundary
 - If spots are partially obscured by vehicles, still count them if the stall lines are visible
 - Do NOT count driveways, loading zones, or unmarked areas
 - If you cannot see clear parking stalls, estimate based on the paved area using 1 spot per 350 sq ft
 
 Return ONLY a JSON object with these fields:
-- count: number (total parking spots)
+- count: number (total parking spots on the SUBJECT property only)
 - confidence: "high" | "medium" | "low"
-- notes: string (brief description of what you see)`
+- notes: string (brief description of what you see and how you identified the property boundary)`
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: `Count the parking spots visible in this satellite image of the property at coordinates ${lat}, ${lng}. Return JSON only.`
+                text: `Count the parking spots for ONLY the subject property at coordinates ${lat}, ${lng}. The blue pin marks the property. ${propertyContext ? propertyContext + '.' : ''} Do NOT count spots on neighboring properties. Return JSON only.`
               },
               {
                 type: "image_url",
