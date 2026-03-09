@@ -63,7 +63,7 @@ const Auth = () => {
               {isSignUp ? 'Create Account' : 'Welcome Back'}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {isSignUp ? 'Sign up to save your site analyses' : 'Sign in to your ChargeScore account'}
+              {isSignUp ? 'Sign up to save your site analyses' : 'Sign in to your ChargeRank account'}
             </p>
           </div>
 

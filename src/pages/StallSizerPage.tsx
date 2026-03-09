@@ -10,7 +10,7 @@ export default function StallSizerPage() {
   const navigate = useNavigate();
 
   const handleAddToPortfolio = (_site: Omit<SiteRow, 'id'>) => {
-    toast.info('Portfolio builder is available on ChargeScore Pro');
+    toast.info('Portfolio builder is available on ChargeRank Pro');
     navigate('/pricing');
   };
 
