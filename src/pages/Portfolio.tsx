@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, Sliders, Trash2, ExternalLink, BarChart3, FileText, Settings, ChevronDown, Plus } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, Sliders, Trash2, ExternalLink, BarChart3, FileText, Settings, ChevronDown, Plus, Ruler } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -133,6 +134,7 @@ const Portfolio = () => {
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'sites');
   const [controls, setControls] = useState<MCType>(DEFAULT_CONTROLS);
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
+  const [globalSplit, setGlobalSplit] = useState(70); // Owner % (0-100)
   const [siteIncentives, setSiteIncentives] = useState<Record<string, IncentiveResult>>({});
 
   const multiplier = parseFloat(scenario);
@@ -206,15 +208,24 @@ const Portfolio = () => {
     if (success) await fetchSites();
   };
 
-  // --- Sites tab data ---
-  const scaled = useMemo(() => analyses.map(s => ({
-    ...s,
-    noi: s.noi != null ? s.noi * multiplier : null,
-    owner_monthly: s.owner_monthly != null ? s.owner_monthly * multiplier : null,
-    ms_monthly: s.ms_monthly != null ? s.ms_monthly * multiplier : null,
-    npv: s.npv != null ? s.npv * multiplier : null,
-    coc: s.coc != null ? s.coc * multiplier : null,
-  })), [analyses, multiplier]);
+  // --- Sites tab data --- recalculate owner/ms splits live from globalSplit
+  const scaled = useMemo(() => analyses.map(s => {
+    const noi = s.noi != null ? s.noi * multiplier : null;
+    const ownerPct = globalSplit / 100;
+    const ownerMonthly = noi != null ? (noi * ownerPct) / 12 : null;
+    const msMonthly = noi != null ? (noi * (1 - ownerPct)) / 12 : null;
+    const netInv = s.net_investment ?? 0;
+    const coc = noi != null && netInv > 0 ? (noi * ownerPct / netInv) * 100 : null;
+    return {
+      ...s,
+      noi,
+      owner_monthly: ownerMonthly,
+      ms_monthly: msMonthly,
+      npv: s.npv != null ? s.npv * multiplier : null,
+      coc,
+      owner_split_pct: globalSplit,
+    };
+  }), [analyses, multiplier, globalSplit]);
 
   const totals = useMemo(() => {
     const sum = (key: keyof AnalysisRow) => scaled.reduce((acc, s) => acc + ((s[key] as number) ?? 0), 0);
@@ -449,6 +460,18 @@ const Portfolio = () => {
                   <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleLoadPartnerSites}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Load 16 Partner Sites
                   </Button>
+                  <div className="flex items-center gap-2 border border-border rounded-lg px-3 py-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap">Split</span>
+                    <Slider
+                      value={[globalSplit]}
+                      onValueChange={([v]) => setGlobalSplit(v)}
+                      min={50}
+                      max={95}
+                      step={5}
+                      className="w-24"
+                    />
+                    <span className="font-mono text-xs font-bold text-foreground whitespace-nowrap">{globalSplit}/{100 - globalSplit}</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <Sliders className="h-4 w-4 text-muted-foreground" />
                     <Select value={scenario} onValueChange={setScenario}>
@@ -572,6 +595,19 @@ const Portfolio = () => {
                             <td className="px-3 py-2.5 text-right font-mono text-sm">{s.margin_kwh != null ? `$${s.margin_kwh.toFixed(2)}` : '—'}</td>
                             <td className="px-3 py-2.5 text-center" onClick={e => e.stopPropagation()}>
                               <div className="flex items-center justify-center gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7"
+                                      onClick={() => {
+                                        setActiveTab('sizer');
+                                        // Pre-fill will happen via the address in the Stall Sizer
+                                        toast.success(`Switch to Stall Sizer and enter "${s.address.split(',')[0]}" address`);
+                                      }}>
+                                      <Ruler className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="text-xs">Size stalls for this site</TooltipContent>
+                                </Tooltip>
                                 <Button variant="ghost" size="icon" className="h-7 w-7"
                                   onClick={() => navigate(`/dashboard?address=${encodeURIComponent(s.address)}&lat=${(s as any).lat}&lng=${(s as any).lng}&state=${s.state}`)}>
                                   <ExternalLink className="h-3.5 w-3.5" />
@@ -639,9 +675,10 @@ const Portfolio = () => {
                       *CoC shown as N/A when out-of-pocket investment is $0.
                     </p>
                   )}
-                  {multiplier !== 1 && (
+                  {(multiplier !== 1 || globalSplit !== 70) && (
                     <p className="mt-3 text-xs text-muted-foreground text-center">
-                      Showing {scenario}x scenario — NOI, distributions, CoC, and NPV are scaled by {multiplier}×
+                      {multiplier !== 1 && `Showing ${scenario}x scenario. `}
+                      Owner/MS split: {globalSplit}/{100 - globalSplit} — Owner/mo, MS/mo, and CoC reflect this split applied to NOI.
                     </p>
                   )}
                 </>
