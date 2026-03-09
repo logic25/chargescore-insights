@@ -101,10 +101,8 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
     .filter(i => i.eligible && !i.isAlternative)
     .reduce((sum, i) => sum + (i.computedAmount ?? 0), 0);
 
-  // Include federal 30C only if eligible (true or null/unknown — NOT false)
-  const federal30c = incentives.find(i => i.id === 'federal-30c');
-  const federalAmount = (federal30c && federal30c.eligible !== false) ? federal30c.computedAmount : 0;
-  const selectedTotal = totalIncentiveAmount + federalAmount;
+  // 30C excluded from totals — deadline June 30 2026 is unreachable for new DCFC projects
+  const selectedTotal = totalIncentiveAmount;
 
   const estimatedIncentives = Math.min(selectedTotal, totalProjectCost);
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
