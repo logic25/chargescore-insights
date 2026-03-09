@@ -389,11 +389,11 @@ const Portfolio = () => {
                             onClick={() => handleExpandSite(s)}
                           >
                             <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{i + 1}</td>
-                            <td className="px-3 py-2.5 max-w-[220px]">
+                            <td className="px-3 py-2.5 max-w-[280px]">
                               <div className="flex items-center gap-1.5">
                                 <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform flex-shrink-0 ${expandedSiteId === s.id ? 'rotate-180' : ''}`} />
-                                <div>
-                                  <p className="text-sm font-medium text-foreground truncate">{s.address}</p>
+                                <div className="min-w-0 overflow-hidden">
+                                  <p className="text-sm font-medium text-foreground truncate max-w-[240px]" title={s.address}>{s.address}</p>
                                   <p className="text-[10px] text-muted-foreground">{s.state} · {s.owner_split_pct ?? 70}/{100 - (s.owner_split_pct ?? 70)} split</p>
                                 </div>
                               </div>
