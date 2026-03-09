@@ -160,6 +160,7 @@ const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property addr
         const request: any = {
           input,
           includedRegionCodes: ['us'],
+          includedPrimaryTypes: ['street_address', 'subpremise', 'premise', 'route'],
           language: 'en',
         };
         if (sessionTokenRef.current) {
