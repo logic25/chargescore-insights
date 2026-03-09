@@ -391,10 +391,39 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
             </div>
           )}
 
-          <div className="mt-4">
+          <div className="mt-4 flex items-center gap-3 flex-wrap">
             <Button onClick={handleAddToPortfolio} className="bg-accent text-accent-foreground hover:bg-accent/90">
-              <Plus className="h-4 w-4 mr-1.5" /> Add to Portfolio
+              <Plus className="h-4 w-4 mr-1.5" /> Add New to Portfolio
             </Button>
+
+            {onUpdateSite && existingSites.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Select value={selectedSiteId ?? ''} onValueChange={v => setSelectedSiteId(v || null)}>
+                  <SelectTrigger className="h-9 w-[220px] text-xs">
+                    <SelectValue placeholder="Select existing site…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {existingSites.map(s => (
+                      <SelectItem key={s.id} value={s.id} className="text-xs">{s.name} — {s.address.split(',').slice(0,2).join(',')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="secondary"
+                  disabled={!selectedSiteId}
+                  onClick={() => {
+                    if (!selectedSiteId) return;
+                    onUpdateSite(selectedSiteId, {
+                      stalls: recommendation.base,
+                      kwhPerStallPerDay: Math.round(recommendation.kwhPerStallPerDay) || 200,
+                    });
+                    toast({ title: "Site updated", description: `Set ${recommendation.base} stalls, ${Math.round(recommendation.kwhPerStallPerDay) || 200} kWh/stall/day` });
+                  }}
+                >
+                  <Zap className="h-4 w-4 mr-1.5" /> Update Site Stalls
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
