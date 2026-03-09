@@ -19,7 +19,10 @@ import { fetchAadt } from "@/lib/api/traffic";
 import { fetchNearbyStations } from "@/lib/api/stations";
 import { fetchParcelInfo } from "@/lib/api/parcel";
 import { fetchSiteData } from "@/lib/api/siteData";
-import { fetchCensusTractFips, fetchPopDensity } from "@/lib/api/census";
+import { fetchCensusTractFips, fetchPopDensity, fetchMultiFamilyPct } from "@/lib/api/census";
+import { fetchNearbyAmenities } from "@/lib/api/amenities";
+import { fetchPlannedStations } from "@/lib/api/plannedStations";
+import { findNearestAirport } from "@/data/airports";
 import { getEstimatedEvRegistrations, extractCountyFromAddress } from "@/data/evRegistrations";
 import { calculateChargeRankV2 } from "@/lib/scoring";
 
@@ -92,22 +95,34 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
     setFetching(true);
 
     try {
-      // Run all API lookups in parallel
-      const [aadtResult, stations, parcel, siteData, tractFips] = await Promise.all([
+      // Run all API lookups in parallel (match Dashboard's data sources)
+      const [aadtResult, stations, parcel, siteData, tractFips, plannedData, amenitiesCount] = await Promise.all([
         fetchAadt(lat, lng, 500, stateCode, formatted),
         fetchNearbyStations(lat, lng, 5),
         fetchParcelInfo(lat, lng, stateCode),
         fetchSiteData(lat, lng),
         fetchCensusTractFips(lat, lng),
+        fetchPlannedStations(lat, lng, 5),
+        fetchNearbyAmenities(lat, lng),
       ]);
 
       // Count nearby L3 (DCFC + Tesla) ports
-      const l3Ports = stations.filter(s => s.chargerType === 'DCFC' || s.chargerType === 'Tesla').length;
+      const allDcfc = stations.filter(s => s.chargerType === 'DCFC' || s.chargerType === 'Tesla');
+      const l3Ports = allDcfc.length;
+      const nearestDcfcMiles = allDcfc.length > 0
+        ? allDcfc.reduce((min, s) => s.distanceMiles < min.distanceMiles ? s : min).distanceMiles
+        : null;
+      const dcfcWithin5 = allDcfc.filter(s => s.distanceMiles <= 5);
+      const totalDcfcPorts5mi = dcfcWithin5.reduce((sum, s) => sum + s.numPorts, 0);
 
-      // Get population density for location type inference
+      // Get population density & multi-family % for scoring parity
       let popDensity: number | null = null;
+      let multiFamilyPct: number | null = null;
       if (tractFips) {
-        popDensity = await fetchPopDensity(tractFips);
+        [popDensity, multiFamilyPct] = await Promise.all([
+          fetchPopDensity(tractFips),
+          fetchMultiFamilyPct(tractFips),
+        ]);
       }
 
       // Infer location type from density
@@ -120,38 +135,35 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
       // EV adoption rate from state registration data
       const county = extractCountyFromAddress(formatted);
       const evRegs = getEstimatedEvRegistrations(stateCode, county);
-      // Rough adoption rate: higher registrations = higher adoption
       const adoptionRate = Math.min(0.15, Math.max(0.03, evRegs / 100000));
 
-      // Lot size / parking from parcel — subtract building footprint if available
+      // Airport proximity
+      const nearestAirport = findNearestAirport(lat, lng);
+
+      // Lot size / parking from parcel
       const lotSizeSqFt = parcel.lotArea ?? null;
       const bldgArea = parcel.bldgArea ?? 0;
       const usableLotSqFt = lotSizeSqFt ? Math.max(lotSizeSqFt - bldgArea, lotSizeSqFt * 0.3) : null;
       const totalParkingSpaces = usableLotSqFt ? Math.floor(usableLotSqFt / 350) : null;
 
-      // Calculate ChargeRank
-      const nearestDcfc = stations.filter(s => s.chargerType === 'DCFC' || s.chargerType === 'Tesla');
-      const nearestDcfcMiles = nearestDcfc.length > 0 ? nearestDcfc[0].distanceMiles : null;
-      const dcfcWithin5 = nearestDcfc.length;
-      const totalPorts = nearestDcfc.reduce((sum, s) => sum + s.numPorts, 0);
-
+      // Calculate ChargeRank with ALL the same inputs as Dashboard
       const scoreResult = calculateChargeRankV2({
         aadtVpd: aadtResult.aadt,
         evRegistrations: evRegs,
         nearestDcfcMiles,
-        dcfcWithin5Miles: dcfcWithin5,
-        plannedDcfcWithin5Miles: 0,
-        nearestPlannedDcfcMiles: null,
-        totalDcfcPortsWithin5Miles: totalPorts,
-        totalPlannedDcfcPortsWithin5Miles: 0,
-        multiFamilyPct: null,
+        dcfcWithin5Miles: dcfcWithin5.length,
+        plannedDcfcWithin5Miles: plannedData.plannedCount,
+        nearestPlannedDcfcMiles: plannedData.nearestPlannedMiles,
+        totalDcfcPortsWithin5Miles: totalDcfcPorts5mi,
+        totalPlannedDcfcPortsWithin5Miles: plannedData.totalPlannedPorts,
+        multiFamilyPct,
         popDensity,
-        nearestMajorAirportMiles: null,
+        nearestMajorAirportMiles: nearestAirport.distance,
         isOnAltFuelCorridor: siteData.isOnCorridor,
-        propertyType: 'other',
-        amenitiesNearby: 0,
+        propertyType: 'shopping-center',
+        amenitiesNearby: amenitiesCount,
         totalParkingSpots: totalParkingSpaces ?? 100,
-        peakUtilization: 0.7,
+        peakUtilization: 0.65,
         isDisadvantagedCommunity: siteData.isDAC,
         hasThreePhasePower: null,
         state: stateCode,
