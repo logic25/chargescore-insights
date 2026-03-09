@@ -176,7 +176,7 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
 
       // Allow clicking markers to delete them in edit/count mode
       if (isActive) {
-        marker.setStyle({ cursor: 'pointer' });
+        map.getContainer().style.cursor = 'crosshair';
         marker.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
           setSpots(prev => prev.filter((_, idx) => idx !== i));
