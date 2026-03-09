@@ -185,7 +185,7 @@ const Dashboard = () => {
     return site.electricalService.includes('480v');
   }, [site.electricalService]);
 
-  const chargeScore: ChargeScoreResult = useMemo(() => calculateChargeScoreV2({
+  const chargeScore: ChargeRankResult = useMemo(() => calculateChargeRankV2({
     aadtVpd: aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel],
     evRegistrations,
     nearestDcfcMiles: stationMetrics.nearestDcfcMiles,
