@@ -68,7 +68,7 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
   const [fetching, setFetching] = useState(false);
   const [evpinUploading, setEvpinUploading] = useState(false);
   const evpinFileRef = useRef<HTMLInputElement>(null);
-  const [lastPrefillId, setLastPrefillId] = useState<string | null>(null);
+  
   const set = <K extends keyof StallSizerInputs>(key: K, value: StallSizerInputs[K]) => setInputs(prev => ({ ...prev, [key]: value }));
 
   const recommendation = computeStallRecommendation(inputs);
@@ -170,33 +170,30 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
 
   // Auto-fill when a site is passed from the portfolio via the ruler button
   React.useEffect(() => {
-    if (prefillSite && prefillSite.id !== lastPrefillId) {
-      setLastPrefillId(prefillSite.id);
-      setSelectedSiteId(prefillSite.id);
-      handleAddressSelect({
-        formatted: prefillSite.address,
-        lat: prefillSite.lat,
-        lng: prefillSite.lng,
-        stateCode: prefillSite.state,
-      }).then(() => {
-        // After fetch completes, override with known portfolio data if available
-        // Parcel APIs often return the wrong tax lot — portfolio data is ground truth
-        setInputs(prev => {
-          let updated = { ...prev };
-          // Use the portfolio's stored ChargeScore (computed from full dashboard data)
-          // instead of the Stall Sizer's re-computed score which may have weak API signals
-          if (prefillSite.chargeScore && prefillSite.chargeScore > 0) {
-            updated.chargeScore = prefillSite.chargeScore;
-          }
-          if (prefillSite.numStalls && prefillSite.numStalls > 0) {
-            const estimatedParking = Math.max(prefillSite.numStalls * 10, 50);
-            updated.totalParkingSpaces = Math.max(updated.totalParkingSpaces ?? 0, estimatedParking);
-          }
-          return updated;
-        });
+    if (!prefillSite) return;
+
+    setSelectedSiteId(prefillSite.id);
+    handleAddressSelect({
+      formatted: prefillSite.address,
+      lat: prefillSite.lat,
+      lng: prefillSite.lng,
+      stateCode: prefillSite.state,
+    }).then(() => {
+      // After fetch completes, override with known portfolio data if available
+      // Parcel APIs often return the wrong tax lot — portfolio data is ground truth
+      setInputs(prev => {
+        let updated = { ...prev };
+        if (prefillSite.chargeScore && prefillSite.chargeScore > 0) {
+          updated.chargeScore = prefillSite.chargeScore;
+        }
+        if (prefillSite.numStalls && prefillSite.numStalls > 0) {
+          const estimatedParking = Math.max(prefillSite.numStalls * 10, 50);
+          updated.totalParkingSpaces = Math.max(updated.totalParkingSpaces ?? 0, estimatedParking);
+        }
+        return updated;
       });
-    }
-  }, [prefillSite, lastPrefillId, handleAddressSelect]);
+    });
+  }, [prefillSite, handleAddressSelect]);
 
   const handleAddToPortfolio = () => {
     const stalls = recommendation.base;
