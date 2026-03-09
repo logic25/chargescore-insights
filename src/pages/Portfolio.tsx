@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, Sliders, Trash2, ExternalLink, BarChart3, FileText, Settings, ChevronDown } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, Sliders, Trash2, ExternalLink, BarChart3, FileText, Settings, ChevronDown, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,7 +16,7 @@ import ExitAnalysisCard from '@/components/portfolio/ExitAnalysis';
 import WaterfallCharts from '@/components/portfolio/WaterfallCharts';
 import StallSizer from '@/components/portfolio/StallSizer';
 import DocumentsManager from '@/components/portfolio/DocumentsManager';
-import { seedPortfolioIfEmpty } from '@/lib/seedPortfolio';
+import { seedPortfolioIfEmpty, forceSeedPortfolio } from '@/lib/seedPortfolio';
 import {
   DEFAULT_CONTROLS,
   computeSite,
@@ -183,6 +183,12 @@ const Portfolio = () => {
     toast.success('Site removed');
   };
 
+  const handleLoadPartnerSites = async () => {
+    if (!user) return;
+    const success = await forceSeedPortfolio(user.id);
+    if (success) await fetchSites();
+  };
+
   // --- Sites tab data ---
   const scaled = useMemo(() => analyses.map(s => ({
     ...s,
@@ -301,17 +307,22 @@ const Portfolio = () => {
             </div>
             <div className="flex items-center gap-3">
               {activeTab === 'sites' && (
-                <div className="flex items-center gap-2">
-                  <Sliders className="h-4 w-4 text-muted-foreground" />
-                  <Select value={scenario} onValueChange={setScenario}>
-                    <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {SCENARIO_OPTIONS.map(o => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <>
+                  <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleLoadPartnerSites}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Load 16 Partner Sites
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Sliders className="h-4 w-4 text-muted-foreground" />
+                    <Select value={scenario} onValueChange={setScenario}>
+                      <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {SCENARIO_OPTIONS.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
               )}
             </div>
           </div>
