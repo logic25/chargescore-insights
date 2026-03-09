@@ -441,7 +441,7 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
   const confidenceColor = aiResult?.confidence === 'high' ? 'bg-green-600/80' : aiResult?.confidence === 'medium' ? 'bg-amber-600/80' : 'bg-red-600/80';
 
   const isEditing = countMode || editMode;
-  const showDrawBoundaryButton = !parcelGeometry && !drawnBoundary && !isEditing && !drawingBoundary;
+  const showDrawBoundaryButton = !drawnBoundary && !isEditing && !drawingBoundary;
 
   return (
     <div className="overflow-hidden h-full">
