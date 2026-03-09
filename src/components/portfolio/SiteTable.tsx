@@ -155,7 +155,7 @@ export default function SiteTable({ sites, controls, onSitesChange }: Props) {
               <TableRow key={c.id} className="hover:bg-muted/30">
                 <EditCell value={c.name} onChange={v => updateSite(i, 'name', v)} className="min-w-[100px]" />
                 <EditCell value={c.address} onChange={v => updateSite(i, 'address', v)} className="min-w-[100px]" />
-                <EditCell value={c.stalls} onChange={v => updateSite(i, 'stalls', v)} type="number" step={4} />
+                <EditCell value={c.stalls} onChange={v => updateSite(i, 'stalls', v)} onBlur={() => roundStalls(i)} type="number" step={4} />
                 <EditCell value={c.baseKwhPerStallPerDay} onChange={v => updateSite(i, 'baseKwhPerStallPerDay', v)} type="number" />
                 <FormulaCell>{c.effectiveKwhPerDay.toFixed(0)}</FormulaCell>
                 <EditCell value={c.customerPrice} onChange={v => updateSite(i, 'customerPrice', v)} type="number" step={0.01} />
