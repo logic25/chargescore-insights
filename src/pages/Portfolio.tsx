@@ -18,7 +18,7 @@ import ExitAnalysisCard from '@/components/portfolio/ExitAnalysis';
 import WaterfallCharts from '@/components/portfolio/WaterfallCharts';
 import StallSizer from '@/components/portfolio/StallSizer';
 import DocumentsManager from '@/components/portfolio/DocumentsManager';
-import { seedPortfolioIfEmpty, forceSeedPortfolio } from '@/lib/seedPortfolio';
+import { seedPortfolioIfEmpty, forceSeedPortfolio, refreshPartnerSites } from '@/lib/seedPortfolio';
 import {
   DEFAULT_CONTROLS,
   computeSite,
@@ -208,6 +208,12 @@ const Portfolio = () => {
   const handleLoadPartnerSites = async () => {
     if (!user) return;
     const success = await forceSeedPortfolio(user.id);
+    if (success) await fetchSites();
+  };
+
+  const handleRefreshPartnerSites = async () => {
+    if (!user) return;
+    const success = await refreshPartnerSites(user.id);
     if (success) await fetchSites();
   };
 
@@ -462,6 +468,9 @@ const Portfolio = () => {
                 <>
                   <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleLoadPartnerSites}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Load 16 Partner Sites
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleRefreshPartnerSites}>
+                    <Settings className="h-3.5 w-3.5 mr-1" /> Refresh Partner Sites
                   </Button>
                   <div className="flex items-center gap-2 border border-border rounded-lg px-3 py-1.5">
                     <span className="text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap">Split</span>
