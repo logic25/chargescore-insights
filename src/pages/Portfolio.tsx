@@ -595,6 +595,19 @@ const Portfolio = () => {
                             <td className="px-3 py-2.5 text-right font-mono text-sm">{s.margin_kwh != null ? `$${s.margin_kwh.toFixed(2)}` : '—'}</td>
                             <td className="px-3 py-2.5 text-center" onClick={e => e.stopPropagation()}>
                               <div className="flex items-center justify-center gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7"
+                                      onClick={() => {
+                                        setActiveTab('sizer');
+                                        // Pre-fill will happen via the address in the Stall Sizer
+                                        toast.success(`Switch to Stall Sizer and enter "${s.address.split(',')[0]}" address`);
+                                      }}>
+                                      <Ruler className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="text-xs">Size stalls for this site</TooltipContent>
+                                </Tooltip>
                                 <Button variant="ghost" size="icon" className="h-7 w-7"
                                   onClick={() => navigate(`/dashboard?address=${encodeURIComponent(s.address)}&lat=${(s as any).lat}&lng=${(s as any).lng}&state=${s.state}`)}>
                                   <ExternalLink className="h-3.5 w-3.5" />
