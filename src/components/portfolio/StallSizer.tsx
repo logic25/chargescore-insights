@@ -33,7 +33,7 @@ interface Props {
   onAddToPortfolio: (site: Omit<SiteRow, 'id'>) => void;
   onUpdateSite?: (id: string, updates: { stalls: number; kwhPerStallPerDay: number }) => void;
   existingSites?: ExistingSite[];
-  prefillSite?: { address: string; lat: number; lng: number; state: string; id: string } | null;
+  prefillSite?: { address: string; lat: number; lng: number; state: string; id: string; numStalls?: number | null } | null;
 }
 
 const DEFAULT_INPUTS: StallSizerInputs = {
@@ -178,6 +178,17 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
         lat: prefillSite.lat,
         lng: prefillSite.lng,
         stateCode: prefillSite.state,
+      }).then(() => {
+        // After fetch completes, override with known portfolio data if available
+        // Parcel APIs often return the wrong tax lot — portfolio data is ground truth
+        if (prefillSite.numStalls && prefillSite.numStalls > 0) {
+          // Estimate parking from stalls (stalls are typically 5-10% of total parking)
+          const estimatedParking = Math.max(prefillSite.numStalls * 10, 50);
+          setInputs(prev => ({
+            ...prev,
+            totalParkingSpaces: Math.max(prev.totalParkingSpaces ?? 0, estimatedParking),
+          }));
+        }
       });
     }
   }, [prefillSite, lastPrefillId, handleAddressSelect]);
