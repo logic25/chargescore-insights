@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-const ANALYSIS_COUNT_KEY = 'chargescore_analysis_count';
+const ANALYSIS_COUNT_KEY = 'chargerank_analysis_count';
 const ML_READINESS_THRESHOLD = 500;
 
 export async function logAnalysis(data: {
