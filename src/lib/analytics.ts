@@ -43,7 +43,7 @@ export function getMlReadiness() {
 }
 
 export function exportAnalysesCSV(): string {
-  const data = JSON.parse(localStorage.getItem('chargescore_analyses') || '[]');
+  const data = JSON.parse(localStorage.getItem('chargerank_analyses') || '[]');
   if (data.length === 0) return '';
   const headers = Object.keys(data[0]);
   const rows = data.map((row: any) => headers.map(h => {

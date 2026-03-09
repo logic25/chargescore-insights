@@ -16,7 +16,7 @@ const faqs = [
   },
   {
     q: 'How is this different from just calling an EV installer?',
-    a: 'Installers quote based on what they sell. ChargeScore is hardware-agnostic — it evaluates your site objectively and shows you what to expect before any vendor conversation. Use it to negotiate from a position of knowledge, not dependency.',
+    a: 'Installers quote based on what they sell. ChargeRank is hardware-agnostic — it evaluates your site objectively and shows you what to expect before any vendor conversation. Use it to negotiate from a position of knowledge, not dependency.',
   },
   {
     q: 'Is my data shared with third parties?',

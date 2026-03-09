@@ -525,7 +525,7 @@ const ReportGenerator = (props: Props) => {
     setGenerating(true);
     try {
       const pdf = await generateReport(props);
-      const filename = `ChargeScore_${props.site.address.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      const filename = `ChargeRank_${props.site.address.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)}_${new Date().toISOString().slice(0, 10)}.pdf`;
       pdf.save(filename);
     } catch (err) {
       console.error('PDF generation failed:', err);

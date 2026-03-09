@@ -411,7 +411,7 @@ const Dashboard = () => {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <Zap className="h-4 w-4 text-primary" />
-            <span className="font-heading text-sm font-bold">ChargeScore</span>
+            <span className="font-heading text-sm font-bold">ChargeRank</span>
             {/* Inline score badge */}
             <div className="flex items-center gap-1.5 ml-1">
               <div className="relative flex-shrink-0">

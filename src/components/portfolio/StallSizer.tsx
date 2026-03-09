@@ -372,7 +372,7 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
                     </div>
                     <div className="space-y-1">
                       <Tooltip><TooltipTrigger asChild>
-                        <Label className="text-xs flex items-center gap-1 cursor-help">ChargeScore™ <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                        <Label className="text-xs flex items-center gap-1 cursor-help">ChargeRank™ <Info className="h-3 w-3 text-muted-foreground" /></Label>
                       </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Proprietary 0–100 site viability score combining traffic, EV density, competition, incentives, and grid access. Auto-calculated when address is entered.</TooltipContent></Tooltip>
                       <div className={`h-8 flex items-center justify-center rounded-md border text-sm font-mono font-bold ${
                         inputs.chargeScore !== null

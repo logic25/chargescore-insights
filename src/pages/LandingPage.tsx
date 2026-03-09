@@ -239,7 +239,7 @@ const LandingPage = () => {
             <button onClick={() => navigate('/pricing')} className="text-xs text-navy-foreground/70 transition-colors hover:text-navy-foreground">Pricing</button>
             <button onClick={() => navigate('/contact')} className="text-xs text-navy-foreground/70 transition-colors hover:text-navy-foreground">Contact</button>
           </div>
-          <p className="text-xs text-navy-foreground/50">© {new Date().getFullYear()} ChargeScore. All rights reserved.</p>
+          <p className="text-xs text-navy-foreground/50">© {new Date().getFullYear()} ChargeRank. All rights reserved.</p>
         </div>
       </footer>
     </div>
