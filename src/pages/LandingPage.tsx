@@ -131,7 +131,7 @@ const LandingPage = () => {
               {
                 icon: Zap,
                 title: 'Instant Site Score',
-                desc: 'Our ChargeScore™ algorithm evaluates your property for EV charger viability — competition, traffic, electrical capacity, and more.',
+                desc: 'Our ChargeRank™ algorithm evaluates your property for EV charger viability — competition, traffic, electrical capacity, and more.',
               },
               {
                 icon: DollarSign,
