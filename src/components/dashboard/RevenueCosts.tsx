@@ -1,6 +1,7 @@
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { FinancialProjection } from '@/types/chargeRank';
+import FinancialDisclaimer from './FinancialDisclaimer';
 
 interface Props {
   financials: FinancialProjection;
@@ -103,6 +104,10 @@ const RevenueCosts = ({ financials }: Props) => {
           <p className="text-xs text-muted-foreground mt-1">
             Monthly to You: <span className="font-mono font-semibold text-foreground">{fmt(monthlyProfit)}/mo</span>
           </p>
+        </div>
+
+        <div className="mt-3">
+          <FinancialDisclaimer compact />
         </div>
       </div>
     </div>

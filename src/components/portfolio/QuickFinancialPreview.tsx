@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fmt, fmtPct } from "@/lib/waterfallCalc";
+import FinancialDisclaimer from "@/components/dashboard/FinancialDisclaimer";
 
 interface Props {
   stalls: number;
@@ -50,6 +51,9 @@ export default function QuickFinancialPreview({ stalls, kwhPerStallPerDay }: Pro
           <Row label="Annual Revenue" value={fmt(Math.round(annualRevenue))} />
           <Row label="Annual NOI" value={fmt(Math.round(annualNOI))} bold />
           <Row label="Est. CoC (at 70% owner)" value={estimatedCoC !== null ? fmtPct(estimatedCoC) : 'N/A'} bold />
+        </div>
+        <div className="md:col-span-2 mt-2">
+          <FinancialDisclaimer compact />
         </div>
       </CardContent>
     </Card>

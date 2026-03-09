@@ -1,22 +1,20 @@
 /**
  * NREL Utility Rates API — get utility name and commercial rate for a location.
- * Uses the same NREL API key as other calls. No additional key needed.
  */
-
-const NREL_API_KEY = 'ttwrfmgTXzqUEZctNUcKtCbN2gnJhnST68fj6Oe9';
+import { nrelFetch } from './nrelProxy';
 
 export interface UtilityInfo {
   utilityName: string | null;
-  commercialRate: number | null; // $/kWh
-  companyId: string | null;     // NREL utility company_id for incentive matching
+  commercialRate: number | null;
+  companyId: string | null;
 }
 
 export async function fetchUtilityInfo(lat: number, lng: number): Promise<UtilityInfo> {
   try {
-    const url = `https://developer.nrel.gov/api/utility_rates/v3.json?api_key=${NREL_API_KEY}&lat=${lat}&lon=${lng}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`NREL Utility Rates error: ${res.status}`);
-    const data = await res.json();
+    const data = await nrelFetch('utility_rates/v3.json', {
+      lat: lat.toString(),
+      lon: lng.toString(),
+    });
     const outputs = data?.outputs;
     return {
       utilityName: outputs?.utility_name ?? null,

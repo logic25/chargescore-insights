@@ -3,6 +3,7 @@ import { Info, ChevronDown, ChevronRight, ExternalLink, Check, X, AlertTriangle,
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { FinancialProjection, Incentive } from '@/types/chargeRank';
 import type { UserRole } from '@/hooks/useProfile';
+import FinancialDisclaimer from './FinancialDisclaimer';
 
 interface Props {
   financials: FinancialProjection;
@@ -433,6 +434,9 @@ const InvestmentSummary = ({ financials, incentives, stalls, userRole }: Props) 
               </>
             )}
           </div>
+        </div>
+        <div className="px-5 pb-4">
+          <FinancialDisclaimer compact />
         </div>
       </div>
     </div>
