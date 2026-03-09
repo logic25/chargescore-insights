@@ -26,6 +26,7 @@ const tiers = [
     name: 'Plus',
     price: '$49',
     sub: 'per month',
+    launchPricing: true,
     cta: 'Get Plus',
     ctaVariant: 'default' as const,
     highlight: true,
@@ -43,8 +44,9 @@ const tiers = [
   },
   {
     name: 'Pro',
-    price: '$149',
+    price: '$499',
     sub: 'per month',
+    launchPricing: true,
     cta: 'Get Pro',
     ctaVariant: 'outline' as const,
     highlight: false,
@@ -107,6 +109,9 @@ const TierMatrix = () => {
                   <span className="font-mono text-3xl font-extrabold text-foreground">{tier.price}</span>
                   <span className="text-sm text-muted-foreground">{tier.sub}</span>
                 </div>
+                {tier.launchPricing && (
+                  <p className="mt-1 text-xs font-medium text-primary">🔒 Launch pricing — locks in your rate</p>
+                )}
               </div>
               <ul className="mb-6 space-y-2.5">
                 {tier.features.map((f) => (

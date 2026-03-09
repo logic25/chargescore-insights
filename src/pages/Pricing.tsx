@@ -30,6 +30,7 @@ const tiers = [
   {
     name: 'Plus',
     price: '$49',
+    launchPricing: true,
     period: '/month',
     cta: 'Upgrade to Plus',
     ctaAction: '/contact',
@@ -52,8 +53,9 @@ const tiers = [
   },
   {
     name: 'Pro',
-    price: '$299',
+    price: '$499',
     period: '/month',
+    launchPricing: true,
     cta: 'Contact Us',
     ctaAction: '/contact',
     highlight: false,
@@ -124,6 +126,9 @@ export default function Pricing() {
               <div className="mt-2 mb-4">
                 <span className="font-mono text-4xl font-extrabold text-foreground">{tier.price}</span>
                 <span className="text-sm text-muted-foreground">{tier.period}</span>
+                {tier.launchPricing && (
+                  <p className="mt-1 text-xs font-medium text-primary">🔒 Launch pricing — locks in your rate</p>
+                )}
               </div>
 
               <Button
@@ -153,7 +158,7 @@ export default function Pricing() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-10">
-          No credit card required for Free tier. Plus and Pro require a conversation with our team.
+          No credit card required for Free tier. Launch pricing locks in your rate. Plus and Pro billed monthly after onboarding.
         </p>
       </main>
 
