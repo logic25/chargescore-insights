@@ -16,9 +16,9 @@ function storeLead(data: { email: string; name?: string; phone?: string; timesta
     const existing = JSON.parse(localStorage.getItem(LEADS_KEY) || '[]');
     existing.push(data);
     localStorage.setItem(LEADS_KEY, JSON.stringify(existing));
-    console.log('[ChargeScore Lead Captured]', data);
+    console.log('[ChargeRank Lead Captured]', data);
   } catch {
-    console.log('[ChargeScore Lead Captured]', data);
+    console.log('[ChargeRank Lead Captured]', data);
   }
 }
 
