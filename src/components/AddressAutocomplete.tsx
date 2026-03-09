@@ -64,9 +64,14 @@ interface Prediction {
   _isNominatim?: boolean;
 }
 
-const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property address...', className }: Props) => {
+const AddressAutocomplete = ({ onSelect, placeholder = 'Enter your property address...', className, defaultValue }: Props) => {
   const { key: googleMapsKey, loading: keyLoading } = useGoogleMapsKey();
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(defaultValue || '');
+
+  // Sync defaultValue changes (e.g. prefill from portfolio)
+  useEffect(() => {
+    if (defaultValue) setValue(defaultValue);
+  }, [defaultValue]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
