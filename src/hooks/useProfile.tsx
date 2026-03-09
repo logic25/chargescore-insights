@@ -84,7 +84,7 @@ export function useProfile() {
 
   const isAtLeast = (role: UserRole): boolean => {
     if (!profile) return false;
-    const hierarchy: UserRole[] = ['free', 'plus', 'pro'];
+    const hierarchy: UserRole[] = ['free', 'plus', 'pro', 'admin'];
     return hierarchy.indexOf(profile.role) >= hierarchy.indexOf(role);
   };
 
