@@ -396,7 +396,7 @@ const Dashboard = () => {
             <Crown className="inline h-4 w-4 mr-1 text-accent" />
             You've used all {profile?.lookups_limit} free analyses.{' '}
             <button onClick={() => navigate('/pricing')} className="font-semibold text-primary underline">
-              Upgrade to ChargeScore Plus
+              Upgrade to ChargeRank Plus
             </button>{' '}
             for unlimited reports, revenue projections, and downloadable PDFs.
           </p>
