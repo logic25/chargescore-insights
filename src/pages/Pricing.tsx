@@ -17,12 +17,13 @@ const tiers = [
       'Save to My Projects',
       'Incentive program names',
       'Basic stall suggestion',
+      'Buy PDF reports à la carte — $39 each',
     ],
     excluded: [
       'Revenue projections',
       'Incentive amounts & how-to',
       'Stall Sizer tool',
-      'PDF reports',
+      'Incentive status alerts',
       'Portfolio builder',
       'Waterfall model',
     ],
@@ -37,11 +38,14 @@ const tiers = [
     highlight: true,
     features: [
       'Unlimited full analyses',
+      '5 PDF reports/month included',
       'Revenue projections (4/8/12/16 stalls)',
       'Full incentive breakdown',
       'Interactive Stall Sizer',
       'Simple ROI calculator',
-      'Downloadable PDF reports',
+      'Incentive status alerts & deadline reminders',
+      'Quarterly market data refreshes',
+      'Live project dashboard (while subscribed)',
       'Unlimited saved projects',
     ],
     excluded: [
@@ -61,6 +65,7 @@ const tiers = [
     highlight: false,
     features: [
       'Everything in Plus',
+      'Unlimited PDF reports',
       'Multi-site portfolio builder',
       'Waterfall model with LP/GP splits',
       'Scenario modeling',
@@ -100,7 +105,7 @@ export default function Pricing() {
             Simple, transparent pricing
           </h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start free with 5 site analyses. Upgrade when you need deeper insights or portfolio-level tools.
+            Analyze any site for free. Buy reports when you need them, or subscribe for unlimited tools and live monitoring.
           </p>
         </motion.div>
 
@@ -158,7 +163,7 @@ export default function Pricing() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-10">
-          No credit card required for Free tier. Launch pricing locks in your rate. Plus and Pro billed monthly after onboarding.
+          No credit card required for Free tier. Individual reports $39 each. Launch pricing locks in your rate. Plus and Pro billed monthly after onboarding.
         </p>
       </main>
 

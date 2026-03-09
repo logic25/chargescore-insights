@@ -15,10 +15,10 @@ const tiers = [
       { label: 'ChargeRank™ (full)', included: true },
       { label: 'Incentive program count + range', included: true },
       { label: 'Traffic & competition map', included: true },
-      { label: 'Incentive confidence tiers', included: false },
-      { label: 'OOP range breakdown', included: false },
+      { label: 'PDF reports — $39 each', included: true },
       { label: 'Revenue & ROI projection', included: false },
-      { label: 'PDF site report', included: false },
+      { label: 'Incentive alerts & monitoring', included: false },
+      { label: 'Live project dashboard', included: false },
       { label: 'Portfolio tracker', included: false },
     ],
   },
@@ -33,12 +33,12 @@ const tiers = [
     badge: 'Most Popular',
     features: [
       { label: 'ChargeRank™ (full)', included: true },
-      { label: 'Incentive program count + range', included: true },
-      { label: 'Traffic & competition map', included: true },
-      { label: 'Incentive confidence tiers', included: true },
-      { label: 'OOP range breakdown', included: true },
+      { label: '5 PDF reports/month included', included: true },
       { label: 'Revenue & ROI projection', included: true },
-      { label: 'PDF site report', included: true },
+      { label: 'Full incentive breakdown', included: true },
+      { label: 'Incentive alerts & deadline reminders', included: true },
+      { label: 'Quarterly market data refreshes', included: true },
+      { label: 'Live project dashboard', included: true },
       { label: 'Portfolio tracker', included: false },
     ],
   },
@@ -51,14 +51,14 @@ const tiers = [
     ctaVariant: 'outline' as const,
     highlight: false,
     features: [
-      { label: 'ChargeRank™ (full)', included: true },
-      { label: 'Incentive program count + range', included: true },
-      { label: 'Traffic & competition map', included: true },
-      { label: 'Incentive confidence tiers', included: true },
-      { label: 'OOP range breakdown', included: true },
-      { label: 'Revenue & ROI projection', included: true },
-      { label: 'PDF site report', included: true },
-      { label: 'Portfolio tracker', included: true },
+      { label: 'Everything in Plus', included: true },
+      { label: 'Unlimited PDF reports', included: true },
+      { label: 'Multi-site portfolio builder', included: true },
+      { label: 'Waterfall model & LP/GP splits', included: true },
+      { label: 'Exit analysis & valuation', included: true },
+      { label: 'Documents management', included: true },
+      { label: 'Lead inbox (coming soon)', included: true },
+      { label: 'Scout pipeline (coming soon)', included: true },
     ],
   },
 ];
@@ -80,7 +80,7 @@ const TierMatrix = () => {
             Start free. Upgrade when you're ready to transact.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-            Free gives you enough to know if a site is worth pursuing. Plus and Pro give you everything you need to execute.
+            Free gives you enough to know if a site is worth pursuing. Buy reports when you need them, or subscribe for the full toolkit.
           </p>
         </motion.div>
 
