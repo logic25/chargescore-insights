@@ -53,8 +53,9 @@ const tiers = [
   },
   {
     name: 'Pro',
-    price: '$299',
+    price: '$499',
     period: '/month',
+    launchPricing: true,
     cta: 'Contact Us',
     ctaAction: '/contact',
     highlight: false,
