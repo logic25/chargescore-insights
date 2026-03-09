@@ -7,6 +7,10 @@ import AddressAutocomplete from '@/components/AddressAutocomplete';
 import { getAnalysisCount } from '@/lib/analytics';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import ProductProof from '@/components/marketing/ProductProof';
+import HowItWorks from '@/components/marketing/HowItWorks';
+import TierMatrix from '@/components/marketing/TierMatrix';
+import FAQSection from '@/components/marketing/FAQSection';
 
 const LandingPage = () => {
   const [selectedAddress, setSelectedAddress] = useState<{ formatted: string; lat: number; lng: number; stateCode: string } | null>(null);
@@ -26,38 +30,38 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <header className="border-b border-border/50">
+      {/* Navy Nav */}
+      <header className="border-b border-navy-muted bg-navy text-navy-foreground">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="h-6 w-6 text-primary" />
-            <span className="font-heading text-xl font-bold text-foreground">ChargeScore</span>
+            <span className="font-heading text-xl font-bold">ChargeScore</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/pricing')} className="hidden sm:flex">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/pricing')} className="hidden text-navy-foreground hover:bg-navy-card hover:text-navy-foreground sm:flex">
               Pricing
             </Button>
             {user ? (
               <>
                 {isAtLeast('pro') && (
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/portfolio')} className="hidden sm:flex">
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/portfolio')} className="hidden text-navy-foreground hover:bg-navy-card hover:text-navy-foreground sm:flex">
                     Portfolio
                   </Button>
                 )}
                 {isAtLeast('plus') && !isAtLeast('pro') && (
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/stall-sizer')} className="hidden sm:flex">
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/stall-sizer')} className="hidden text-navy-foreground hover:bg-navy-card hover:text-navy-foreground sm:flex">
                     Stall Sizer
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => navigate('/my-analyses')} className="hidden sm:flex">
+                <Button variant="ghost" size="sm" onClick={() => navigate('/my-analyses')} className="hidden text-navy-foreground hover:bg-navy-card hover:text-navy-foreground sm:flex">
                   My Projects
                 </Button>
-                <Button variant="outline" size="sm" onClick={signOut} className="hidden sm:flex">
+                <Button variant="outline" size="sm" onClick={signOut} className="hidden border-navy-muted bg-transparent text-navy-foreground hover:bg-navy-card sm:flex">
                   <LogOut className="mr-1.5 h-4 w-4" /> Sign Out
                 </Button>
               </>
             ) : (
-              <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="hidden sm:flex">
+              <Button variant="outline" size="sm" onClick={() => navigate('/auth')} className="hidden border-navy-muted bg-transparent text-navy-foreground hover:bg-navy-card sm:flex">
                 <LogIn className="mr-1.5 h-4 w-4" /> Sign In
               </Button>
             )}
@@ -66,8 +70,8 @@ const LandingPage = () => {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+      <section className="relative overflow-hidden bg-navy text-navy-foreground">
+        <div className="absolute inset-0 bg-gradient-to-b from-navy-deep/30 to-transparent" />
         <div className="container relative py-24 md:py-36">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -75,17 +79,17 @@ const LandingPage = () => {
             transition={{ duration: 0.7 }}
             className="mx-auto max-w-3xl text-center"
           >
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
               ⚡ EV Charging Site Intelligence
             </div>
-            <h1 className="font-heading text-4xl font-extrabold leading-tight tracking-tight text-foreground md:text-6xl">
+            <h1 className="font-heading text-4xl font-extrabold leading-tight tracking-tight md:text-6xl">
               See your property's{' '}
               <span className="text-primary">EV charging potential</span>
             </h1>
-            <p className="mt-6 text-lg text-muted-foreground md:text-xl">
+            <p className="mt-6 text-lg text-navy-foreground/80 md:text-xl">
               Search any address to get a free site analysis. ChargeScore evaluates traffic, competition, incentives, and revenue potential — in 60 seconds.
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm text-navy-foreground/60">
               5 free analyses. No credit card required.
             </p>
 
@@ -102,13 +106,16 @@ const LandingPage = () => {
               </Button>
             </div>
             {!selectedAddress && (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-navy-foreground/50">
                 Type an address above, then select from the dropdown to continue
               </p>
             )}
           </motion.div>
         </div>
       </section>
+
+      {/* Product Proof */}
+      <ProductProof />
 
       {/* Value Props */}
       <section className="border-y border-border/50 bg-muted/30">
@@ -156,6 +163,15 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* How It Works */}
+      <HowItWorks />
+
+      {/* Tier Matrix */}
+      <TierMatrix />
+
+      {/* FAQ */}
+      <FAQSection />
+
       {/* Social Proof */}
       <section className="container py-20">
         <motion.div
@@ -194,7 +210,7 @@ const LandingPage = () => {
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
             Join property owners discovering how EV chargers can turn idle parking spaces into consistent revenue.
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
               className="h-14 px-10 text-base font-semibold"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -212,18 +228,18 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 bg-muted/30">
+      {/* Navy Footer */}
+      <footer className="border-t border-navy-muted bg-navy text-navy-foreground">
         <div className="container flex flex-col items-center justify-between gap-4 py-8 sm:flex-row">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-primary" />
-            <span className="text-sm text-muted-foreground">ChargeScore — EV Charging Site Intelligence</span>
+            <span className="text-sm text-navy-foreground/70">ChargeScore — EV Charging Site Intelligence</span>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/pricing')} className="text-xs text-muted-foreground hover:text-foreground">Pricing</button>
-            <button onClick={() => navigate('/contact')} className="text-xs text-muted-foreground hover:text-foreground">Contact</button>
+            <button onClick={() => navigate('/pricing')} className="text-xs text-navy-foreground/70 transition-colors hover:text-navy-foreground">Pricing</button>
+            <button onClick={() => navigate('/contact')} className="text-xs text-navy-foreground/70 transition-colors hover:text-navy-foreground">Contact</button>
           </div>
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} ChargeScore. All rights reserved.</p>
+          <p className="text-xs text-navy-foreground/50">© {new Date().getFullYear()} ChargeScore. All rights reserved.</p>
         </div>
       </footer>
     </div>
