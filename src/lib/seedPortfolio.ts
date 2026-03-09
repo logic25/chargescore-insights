@@ -43,6 +43,27 @@ const SEED_SITES: SeedSite[] = [
 
 const BOM_PER_STALL = 62500;
 const TESLA_FEE = 0.10;
+const DISCOUNT_RATE = 0.08;
+const UTILIZATION_GROWTH = 1.07;
+const FEE_ESCALATION = 1.03;
+const PROJECT_YEARS = 15;
+
+function computeNpv(site: SeedSite, netInvestment: number): number {
+  const stalls = site.stalls;
+  const baseDailyKwh = stalls * site.kwhPerStallPerDay;
+  let npv = -netInvestment;
+  for (let y = 1; y <= PROJECT_YEARS; y++) {
+    const growth = Math.pow(UTILIZATION_GROWTH, y - 1);
+    const feeEsc = Math.pow(FEE_ESCALATION, y - 1);
+    const yearKwh = baseDailyKwh * growth * 365;
+    const revenue = yearKwh * site.pricePerKwh;
+    const electricity = yearKwh * site.electricityCost;
+    const teslaFee = yearKwh * TESLA_FEE * feeEsc;
+    const yearNoi = revenue - electricity - teslaFee - site.insurance;
+    npv += yearNoi / Math.pow(1 + DISCOUNT_RATE, y);
+  }
+  return Math.round(npv);
+}
 
 export async function seedPortfolioIfEmpty(userId: string): Promise<boolean> {
   const { count } = await supabase
