@@ -35,7 +35,7 @@ const LandingPage = () => {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="h-6 w-6 text-primary" />
-            <span className="font-heading text-xl font-bold">ChargeScore</span>
+            <span className="font-heading text-xl font-bold">ChargeRank</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate('/pricing')} className="hidden text-navy-foreground hover:bg-navy-card hover:text-navy-foreground sm:flex">
