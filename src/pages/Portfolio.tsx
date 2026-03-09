@@ -38,6 +38,8 @@ interface AnalysisRow {
   lng: number;
   charge_score: number;
   num_stalls: number | null;
+  total_parking_spaces: number | null;
+  location_type: 'highway' | 'urban_retail' | 'suburban_retail' | 'rural' | null;
   kwh_per_stall_per_day: number | null;
   price_per_kwh: number | null;
   electricity_cost: number | null;
