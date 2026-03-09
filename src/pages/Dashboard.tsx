@@ -541,7 +541,7 @@ const Dashboard = () => {
           const activeEnginePrograms = incentiveResult.programs.filter(p => p.programStatus !== 'expired');
           const hasPrograms = activeEnginePrograms.length > 0;
           const isFree = !profile?.role || profile.role === 'free';
-          const isPlusOrPro = profile?.role === 'plus' || profile?.role === 'pro';
+          const isPlusOrPro = isAtLeast('plus');
 
           // Unauthenticated / preview: IncentiveTeaser only
           if (!showFullAnalysis && hasPrograms) {
