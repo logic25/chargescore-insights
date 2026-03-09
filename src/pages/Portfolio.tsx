@@ -454,7 +454,7 @@ const Portfolio = () => {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <Zap className="h-5 w-5 text-primary" />
-              <span className="font-heading text-lg font-bold">ChargeScore Pro — Portfolio</span>
+              <span className="font-heading text-lg font-bold">ChargeRank Pro — Portfolio</span>
               <span className="text-sm text-muted-foreground ml-2">{analyses.length} sites</span>
             </div>
             <div className="flex items-center gap-3">

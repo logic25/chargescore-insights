@@ -11,7 +11,7 @@ const steps = [
   {
     icon: BarChart3,
     step: '02',
-    title: 'Receive Your ChargeScore™',
+    title: 'Receive Your ChargeRank™',
     desc: 'Our scoring engine weights 12+ factors across demand, competition, grid capacity, and location quality into a single 0–100 infrastructure score.',
   },
   {
@@ -38,7 +38,7 @@ const HowItWorks = () => (
         className="mb-14 text-center"
       >
         <p className="text-sm font-semibold uppercase tracking-widest text-primary">The Methodology</p>
-        <h2 className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">How ChargeScore works</h2>
+        <h2 className="mt-2 font-heading text-3xl font-bold text-foreground md:text-4xl">How ChargeRank works</h2>
         <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
           Four steps from address to investment decision — each designed to avoid the optimistic guesswork that sinks EV projects.
         </p>

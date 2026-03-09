@@ -83,7 +83,7 @@ export default function Pricing() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <Zap className="h-6 w-6 text-primary" />
-            <span className="font-heading text-xl font-bold text-foreground">ChargeScore</span>
+            <span className="font-heading text-xl font-bold text-foreground">ChargeRank</span>
           </div>
         </div>
       </header>
@@ -159,7 +159,7 @@ export default function Pricing() {
 
       <footer className="border-t border-border/50 bg-muted/30">
         <div className="container flex items-center justify-center py-6">
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} ChargeScore — EV Charging Site Intelligence</p>
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} ChargeRank — EV Charging Site Intelligence</p>
         </div>
       </footer>
     </div>

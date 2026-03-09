@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { SiteAnalysis, NearbyStation } from '@/types/chargeScore';
+import type { SiteAnalysis, NearbyStation } from '@/types/chargeRank';
 import { fetchNearbyStations } from '@/lib/api/stations';
 import { fetchStateIncentives, type NrelIncentive } from '@/lib/api/incentives';
 import { fetchPlannedStations, type PlannedStationData } from '@/lib/api/plannedStations';
@@ -18,14 +18,14 @@ import { fetchSiteData, type SiteDataResult } from '@/lib/api/siteData';
 import { fetchUtilityInfo, type UtilityInfo } from '@/lib/api/utilityInfo';
 import { fetchNearestHighway, type HighwayProximity } from '@/lib/api/highway';
 import { calculateFinancials, calculateParkingImpact, calculateDemandCharge, getIncentives } from '@/lib/calculations';
-import { calculateChargeScoreV2, projectRevenue, type ChargeScoreResult, type RevenueProjection } from '@/lib/scoring';
+import { calculateChargeRankV2, projectRevenue, type ChargeRankResult, type RevenueProjection } from '@/lib/scoring';
 import { findNearestAirport } from '@/data/airports';
 import { getEstimatedEvRegistrations, extractCountyFromAddress } from '@/data/evRegistrations';
 import { logAnalysis } from '@/lib/analytics';
 import SiteAerial from '@/components/dashboard/SiteAerial';
 import MapView from '@/components/dashboard/MapView';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import ChargeScoreGauge from '@/components/dashboard/ChargeScoreGauge';
+import ChargeRankGauge from '@/components/dashboard/ChargeRankGauge';
 import PropertyInputs, { type TrafficLevel, TRAFFIC_LEVEL_VPD } from '@/components/dashboard/PropertyInputs';
 import InvestmentSummary from '@/components/dashboard/InvestmentSummary';
 import FinancialProjection from '@/components/dashboard/FinancialProjection';
@@ -41,7 +41,7 @@ import IncentiveSummary from '@/components/incentives/IncentiveSummary';
 import IncentiveBreakdown from '@/components/incentives/IncentiveBreakdown';
 import OOPRangeBar from '@/components/incentives/OOPRangeBar';
 
-const GATE_UNLOCKED_KEY = 'chargescore_gate_unlocked';
+const GATE_UNLOCKED_KEY = 'chargerank_gate_unlocked';
 
 const fmt = (n: number) => {
   if (!isFinite(n)) return '—';
@@ -185,7 +185,7 @@ const Dashboard = () => {
     return site.electricalService.includes('480v');
   }, [site.electricalService]);
 
-  const chargeScore: ChargeScoreResult = useMemo(() => calculateChargeScoreV2({
+  const chargeScore: ChargeRankResult = useMemo(() => calculateChargeRankV2({
     aadtVpd: aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel],
     evRegistrations,
     nearestDcfcMiles: stationMetrics.nearestDcfcMiles,
@@ -396,7 +396,7 @@ const Dashboard = () => {
             <Crown className="inline h-4 w-4 mr-1 text-accent" />
             You've used all {profile?.lookups_limit} free analyses.{' '}
             <button onClick={() => navigate('/pricing')} className="font-semibold text-primary underline">
-              Upgrade to ChargeScore Plus
+              Upgrade to ChargeRank Plus
             </button>{' '}
             for unlimited reports, revenue projections, and downloadable PDFs.
           </p>
@@ -411,7 +411,7 @@ const Dashboard = () => {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <Zap className="h-4 w-4 text-primary" />
-            <span className="font-heading text-sm font-bold">ChargeScore</span>
+            <span className="font-heading text-sm font-bold">ChargeRank</span>
             {/* Inline score badge */}
             <div className="flex items-center gap-1.5 ml-1">
               <div className="relative flex-shrink-0">
@@ -597,7 +597,7 @@ const Dashboard = () => {
             <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} kwhPerStallPerDay={site.kwhPerStallPerDay} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} onUtilizationChange={(v) => { setManualKwhOverride(true); setSite(prev => ({ ...prev, kwhPerStallPerDay: v })); }} userRole={profile?.role ?? null} />
           )}
           {activePanel === 'investment' && (
-            <ChargeScoreGauge score={chargeScore} siteInsights={{
+            <ChargeRankGauge score={chargeScore} siteInsights={{
               floodZone: siteData.floodZone,
               isHighRisk: siteData.isHighRisk,
               highwayDistance: highwayProximity.distanceMiles,

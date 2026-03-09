@@ -21,7 +21,7 @@ import { fetchParcelInfo } from "@/lib/api/parcel";
 import { fetchSiteData } from "@/lib/api/siteData";
 import { fetchCensusTractFips, fetchPopDensity } from "@/lib/api/census";
 import { getEstimatedEvRegistrations, extractCountyFromAddress } from "@/data/evRegistrations";
-import { calculateChargeScoreV2 } from "@/lib/scoring";
+import { calculateChargeRankV2 } from "@/lib/scoring";
 
 interface ExistingSite {
   id: string;
@@ -129,13 +129,13 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
       const usableLotSqFt = lotSizeSqFt ? Math.max(lotSizeSqFt - bldgArea, lotSizeSqFt * 0.3) : null;
       const totalParkingSpaces = usableLotSqFt ? Math.floor(usableLotSqFt / 350) : null;
 
-      // Calculate ChargeScore
+      // Calculate ChargeRank
       const nearestDcfc = stations.filter(s => s.chargerType === 'DCFC' || s.chargerType === 'Tesla');
       const nearestDcfcMiles = nearestDcfc.length > 0 ? nearestDcfc[0].distanceMiles : null;
       const dcfcWithin5 = nearestDcfc.length;
       const totalPorts = nearestDcfc.reduce((sum, s) => sum + s.numPorts, 0);
 
-      const scoreResult = calculateChargeScoreV2({
+      const scoreResult = calculateChargeRankV2({
         aadtVpd: aadtResult.aadt,
         evRegistrations: evRegs,
         nearestDcfcMiles,
@@ -372,7 +372,7 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
                     </div>
                     <div className="space-y-1">
                       <Tooltip><TooltipTrigger asChild>
-                        <Label className="text-xs flex items-center gap-1 cursor-help">ChargeScore™ <Info className="h-3 w-3 text-muted-foreground" /></Label>
+                        <Label className="text-xs flex items-center gap-1 cursor-help">ChargeRank™ <Info className="h-3 w-3 text-muted-foreground" /></Label>
                       </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Proprietary 0–100 site viability score combining traffic, EV density, competition, incentives, and grid access. Auto-calculated when address is entered.</TooltipContent></Tooltip>
                       <div className={`h-8 flex items-center justify-center rounded-md border text-sm font-mono font-bold ${
                         inputs.chargeScore !== null

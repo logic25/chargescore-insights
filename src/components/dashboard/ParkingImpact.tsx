@@ -2,7 +2,7 @@ import { Car, AlertTriangle, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import type { PropertyType } from '@/types/chargeScore';
+import type { PropertyType } from '@/types/chargeRank';
 
 interface Props {
   totalSpaces: number;

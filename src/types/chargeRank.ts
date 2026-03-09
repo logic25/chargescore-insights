@@ -168,7 +168,7 @@ export interface Incentive {
   sourceUrl?: string;      // link to official program page for verification
 }
 
-export interface ChargeScoreBreakdown {
+export interface ChargeRankBreakdown {
   competitionGap: number;
   trafficIndicator: number;
   electricalFeasibility: number;

@@ -76,7 +76,7 @@ export default function Contact() {
           </div>
           <h2 className="font-heading text-2xl font-bold text-foreground">Thanks!</h2>
           <p className="mt-2 text-muted-foreground">
-            A ChargeScore specialist will reach out within 24 hours.
+            A ChargeRank specialist will reach out within 24 hours.
           </p>
           <Button className="mt-6" onClick={() => navigate('/')}>Back to Home</Button>
         </div>
@@ -92,7 +92,7 @@ export default function Contact() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <Zap className="h-5 w-5 text-primary" />
-          <span className="font-heading text-lg font-bold">ChargeScore</span>
+          <span className="font-heading text-lg font-bold">ChargeRank</span>
         </div>
       </header>
 
@@ -145,7 +145,7 @@ export default function Contact() {
 
       <footer className="border-t border-border/50 bg-muted/30 mt-auto">
         <div className="container flex items-center justify-center py-6">
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} ChargeScore — EV Charging Site Intelligence</p>
+          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} ChargeRank — EV Charging Site Intelligence</p>
         </div>
       </footer>
     </div>

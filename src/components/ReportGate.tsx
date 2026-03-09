@@ -9,16 +9,16 @@ interface Props {
   onUnlock: () => void;
 }
 
-const LEADS_KEY = 'chargescore_leads';
+const LEADS_KEY = 'chargerank_leads';
 
 function storeLead(data: { email: string; name?: string; phone?: string; timestamp: string }) {
   try {
     const existing = JSON.parse(localStorage.getItem(LEADS_KEY) || '[]');
     existing.push(data);
     localStorage.setItem(LEADS_KEY, JSON.stringify(existing));
-    console.log('[ChargeScore Lead Captured]', data);
+    console.log('[ChargeRank Lead Captured]', data);
   } catch {
-    console.log('[ChargeScore Lead Captured]', data);
+    console.log('[ChargeRank Lead Captured]', data);
   }
 }
 
@@ -73,7 +73,7 @@ const ReportGate = ({ chargeScore, onUnlock }: Props) => {
               <Zap className="h-7 w-7 text-primary" />
             </div>
             <h2 className="font-heading text-2xl font-bold text-foreground">
-              Your ChargeScore is ready!
+              Your ChargeRank is ready!
             </h2>
             <div className="mt-2 flex items-center justify-center gap-2">
               <span className="font-mono text-4xl font-bold text-primary">{chargeScore}</span>

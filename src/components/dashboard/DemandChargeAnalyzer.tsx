@@ -1,6 +1,6 @@
 import { AlertTriangle, Zap, Battery, Lightbulb } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import type { DemandChargeAnalysis } from '@/types/chargeScore';
+import type { DemandChargeAnalysis } from '@/types/chargeRank';
 
 interface Props {
   analysis: DemandChargeAnalysis;

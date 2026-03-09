@@ -35,7 +35,7 @@ const ProductProof = () => (
       </motion.div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* ChargeScore panel */}
+        {/* ChargeRank panel */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -44,7 +44,7 @@ const ProductProof = () => (
           className="rounded-xl border border-border bg-card p-6 shadow-sm"
         >
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-heading text-base font-bold text-foreground">ChargeScore™ Breakdown</h3>
+            <h3 className="font-heading text-base font-bold text-foreground">ChargeRank™ Breakdown</h3>
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
               <span className="font-mono text-lg font-extrabold text-primary">76</span>
             </div>

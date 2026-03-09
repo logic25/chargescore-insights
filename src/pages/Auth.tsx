@@ -51,7 +51,7 @@ const Auth = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="mb-6">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to ChargeScore
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to ChargeRank
         </Button>
 
         <div className="rounded-2xl border border-border bg-card shadow-xl p-8">
@@ -63,7 +63,7 @@ const Auth = () => {
               {isSignUp ? 'Create Account' : 'Welcome Back'}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {isSignUp ? 'Sign up to save your site analyses' : 'Sign in to your ChargeScore account'}
+              {isSignUp ? 'Sign up to save your site analyses' : 'Sign in to your ChargeRank account'}
             </p>
           </div>
 

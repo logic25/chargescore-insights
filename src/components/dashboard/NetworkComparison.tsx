@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Zap, Wrench, DollarSign, Clock, Settings, Crown, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import type { SiteAnalysis, Incentive, TurnkeyProjection } from '@/types/chargeScore';
+import type { SiteAnalysis, Incentive, TurnkeyProjection } from '@/types/chargeRank';
 import { calculateFinancials } from '@/lib/calculations';
 
 interface Props {

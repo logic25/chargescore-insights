@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { FileDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import jsPDF from 'jspdf';
-import type { SiteAnalysis, FinancialProjection, Incentive, ParkingAnalysis, DemandChargeAnalysis } from '@/types/chargeScore';
-import type { ChargeScoreResult } from '@/lib/scoring';
+import type { SiteAnalysis, FinancialProjection, Incentive, ParkingAnalysis, DemandChargeAnalysis } from '@/types/chargeRank';
+import type { ChargeRankResult } from '@/lib/scoring';
 import { calculateFinancials, getIncentives } from '@/lib/calculations';
 import { getSatelliteImageUrl } from '@/lib/api/googleMaps';
 
 interface Props {
   site: SiteAnalysis;
-  score: ChargeScoreResult;
+  score: ChargeRankResult;
   financials: FinancialProjection;
   incentives: Incentive[];
   parking: ParkingAnalysis;
@@ -110,7 +110,7 @@ async function generateReport(props: Props): Promise<jsPDF> {
 
   pdf.setTextColor(TEAL);
   pdf.setFontSize(12);
-  pdf.text('CHARGESCORE™', MARGIN, 190);
+  pdf.text('CHARGERANK™', MARGIN, 190);
 
   pdf.setTextColor(WHITE);
   pdf.setFontSize(36);
@@ -525,7 +525,7 @@ const ReportGenerator = (props: Props) => {
     setGenerating(true);
     try {
       const pdf = await generateReport(props);
-      const filename = `ChargeScore_${props.site.address.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      const filename = `ChargeRank_${props.site.address.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)}_${new Date().toISOString().slice(0, 10)}.pdf`;
       pdf.save(filename);
     } catch (err) {
       console.error('PDF generation failed:', err);

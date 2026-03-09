@@ -18,7 +18,7 @@ interface Props {
 
 const items = [
   { id: "waterfall", title: "Portfolio Waterfall", icon: BarChart3 },
-  { id: "chargescore", title: "ChargeScore (Stall Sizer)", icon: Zap },
+  { id: "chargescore", title: "ChargeRank (Stall Sizer)", icon: Zap },
   { id: "documents", title: "Documents", icon: FileText },
   { id: "exit", title: "Exit Scenarios", icon: TrendingUp, disabled: true },
 ];
@@ -33,7 +33,7 @@ export default function PortfolioSidebar({ activeTab, onTabChange }: Props) {
         {!collapsed && (
           <div className="px-4 pb-3 border-b border-border/20">
             <h2 className="text-sm font-heading font-bold text-navy-foreground">AR Spark Energy</h2>
-            <p className="text-[10px] text-navy-foreground/60">Powered by ChargeScore</p>
+            <p className="text-[10px] text-navy-foreground/60">Powered by ChargeRank</p>
           </div>
         )}
         <SidebarGroup>

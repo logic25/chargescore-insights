@@ -35,7 +35,7 @@ const LandingPage = () => {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="h-6 w-6 text-primary" />
-            <span className="font-heading text-xl font-bold">ChargeScore</span>
+            <span className="font-heading text-xl font-bold">ChargeRank</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate('/pricing')} className="hidden text-navy-foreground hover:bg-navy-card hover:text-navy-foreground sm:flex">
@@ -87,7 +87,7 @@ const LandingPage = () => {
               <span className="text-primary">EV charging potential</span>
             </h1>
             <p className="mt-6 text-lg text-navy-foreground/80 md:text-xl">
-              Search any address to get a free site analysis. ChargeScore evaluates traffic, competition, incentives, and revenue potential — in 60 seconds.
+              Search any address to get a free site analysis. ChargeRank evaluates traffic, competition, incentives, and revenue potential — in 60 seconds.
             </p>
             <p className="mt-2 text-sm text-navy-foreground/60">
               5 free analyses. No credit card required.
@@ -131,7 +131,7 @@ const LandingPage = () => {
               {
                 icon: Zap,
                 title: 'Instant Site Score',
-                desc: 'Our ChargeScore™ algorithm evaluates your property for EV charger viability — competition, traffic, electrical capacity, and more.',
+                desc: 'Our ChargeRank™ algorithm evaluates your property for EV charger viability — competition, traffic, electrical capacity, and more.',
               },
               {
                 icon: DollarSign,
@@ -190,7 +190,7 @@ const LandingPage = () => {
             {[
               { value: `${Math.max(getAnalysisCount(), 0)}`, label: 'Sites Analyzed' },
               { value: '$12M', label: 'Incentives Found' },
-              { value: '73', label: 'Avg ChargeScore' },
+              { value: '73', label: 'Avg ChargeRank' },
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <p className="font-mono text-3xl font-bold text-foreground">{stat.value}</p>
@@ -233,13 +233,13 @@ const LandingPage = () => {
         <div className="container flex flex-col items-center justify-between gap-4 py-8 sm:flex-row">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-primary" />
-            <span className="text-sm text-navy-foreground/70">ChargeScore — EV Charging Site Intelligence</span>
+            <span className="text-sm text-navy-foreground/70">ChargeRank — EV Charging Site Intelligence</span>
           </div>
           <div className="flex items-center gap-4">
             <button onClick={() => navigate('/pricing')} className="text-xs text-navy-foreground/70 transition-colors hover:text-navy-foreground">Pricing</button>
             <button onClick={() => navigate('/contact')} className="text-xs text-navy-foreground/70 transition-colors hover:text-navy-foreground">Contact</button>
           </div>
-          <p className="text-xs text-navy-foreground/50">© {new Date().getFullYear()} ChargeScore. All rights reserved.</p>
+          <p className="text-xs text-navy-foreground/50">© {new Date().getFullYear()} ChargeRank. All rights reserved.</p>
         </div>
       </footer>
     </div>

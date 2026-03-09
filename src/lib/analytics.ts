@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-const ANALYSIS_COUNT_KEY = 'chargescore_analysis_count';
+const ANALYSIS_COUNT_KEY = 'chargerank_analysis_count';
 const ML_READINESS_THRESHOLD = 500;
 
 export async function logAnalysis(data: {
@@ -16,9 +16,9 @@ export async function logAnalysis(data: {
 }) {
   // Always store locally
   try {
-    const existing = JSON.parse(localStorage.getItem('chargescore_analyses') || '[]');
+    const existing = JSON.parse(localStorage.getItem('chargerank_analyses') || '[]');
     existing.push(data);
-    localStorage.setItem('chargescore_analyses', JSON.stringify(existing));
+    localStorage.setItem('chargerank_analyses', JSON.stringify(existing));
     localStorage.setItem(ANALYSIS_COUNT_KEY, existing.length.toString());
   } catch {
     // ignore
@@ -43,7 +43,7 @@ export function getMlReadiness() {
 }
 
 export function exportAnalysesCSV(): string {
-  const data = JSON.parse(localStorage.getItem('chargescore_analyses') || '[]');
+  const data = JSON.parse(localStorage.getItem('chargerank_analyses') || '[]');
   if (data.length === 0) return '';
   const headers = Object.keys(data[0]);
   const rows = data.map((row: any) => headers.map(h => {

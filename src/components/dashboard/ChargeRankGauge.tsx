@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Info, AlertTriangle, CheckCircle2, Zap, MapPin } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import type { ChargeScoreResult, ScoreFactor } from '@/lib/scoring';
+import type { ChargeRankResult, ScoreFactor } from '@/lib/scoring';
 
 export interface SiteInsights {
   floodZone: string | null;
@@ -20,15 +20,15 @@ export interface IncentiveTeaser {
   outOfPocket: number;
 }
 
-interface ChargeScoreGaugeProps {
-  score: ChargeScoreResult;
+interface ChargeRankGaugeProps {
+  score: ChargeRankResult;
   siteInsights?: SiteInsights;
   incentiveTeaser?: IncentiveTeaser;
 }
 
 const fmt = (n: number) => n < 0 ? `-$${Math.abs(Math.round(n)).toLocaleString()}` : `$${Math.round(n).toLocaleString()}`;
 
-const ChargeScoreGauge = ({ score, siteInsights, incentiveTeaser }: ChargeScoreGaugeProps) => {
+const ChargeRankGauge = ({ score, siteInsights, incentiveTeaser }: ChargeRankGaugeProps) => {
   const [displayScore, setDisplayScore] = useState(0);
 
   useEffect(() => {
@@ -63,13 +63,13 @@ const ChargeScoreGauge = ({ score, siteInsights, incentiveTeaser }: ChargeScoreG
       className="glass-card p-6"
     >
       <div className="mb-5 flex items-center gap-2">
-        <h2 className="font-heading text-base font-bold text-foreground">ChargeScore™</h2>
+        <h2 className="font-heading text-base font-bold text-foreground">ChargeRank™</h2>
         <Tooltip>
           <TooltipTrigger>
             <Info className="h-4 w-4 text-muted-foreground" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs text-sm">
-            ChargeScore rates this location from 0-100 based on 9 factors: traffic, EV density, competition, dwell time, amenities, parking, grid capacity, incentive eligibility, and demand overflow. Higher is better.
+            ChargeRank rates this location from 0-100 based on 9 factors: traffic, EV density, competition, dwell time, amenities, parking, grid capacity, incentive eligibility, and demand overflow. Higher is better.
           </TooltipContent>
         </Tooltip>
         {score.grade && (
@@ -201,4 +201,4 @@ const ChargeScoreGauge = ({ score, siteInsights, incentiveTeaser }: ChargeScoreG
   );
 };
 
-export default ChargeScoreGauge;
+export default ChargeRankGauge;

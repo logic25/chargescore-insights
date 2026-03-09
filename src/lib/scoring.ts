@@ -1,4 +1,4 @@
-// ChargeScore Scoring Engine — 9 factors, 0-100 scale
+// ChargeRank Scoring Engine — 9 factors, 0-100 scale
 
 export interface ScoreFactor {
   name: string;
@@ -10,12 +10,15 @@ export interface ScoreFactor {
   rawValue: string;
 }
 
-export interface ChargeScoreResult {
+export interface ChargeRankResult {
   totalScore: number;
   grade: string;
   factors: ScoreFactor[];
   recommendation: string;
 }
+
+/** @deprecated Use ChargeRankResult */
+export type ChargeScoreResult = ChargeRankResult;
 
 export interface ScoringInputs {
   aadtVpd: number | null;
@@ -41,7 +44,7 @@ export interface ScoringInputs {
   utilityName?: string | null;
 }
 
-export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult {
+export function calculateChargeRankV2(inputs: ScoringInputs): ChargeRankResult {
   const factors: ScoreFactor[] = [];
 
   // Pre-compute urban context (used by multiple factors)
@@ -420,6 +423,9 @@ export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult
 
   return { totalScore, grade, factors, recommendation };
 }
+
+/** @deprecated Use calculateChargeRankV2 */
+export const calculateChargeScoreV2 = calculateChargeRankV2;
 
 // --- Revenue Projection ---
 
