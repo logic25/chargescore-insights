@@ -69,9 +69,40 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
     });
   }, [effectiveLotSqFt, totalSpots, onParkingEstimate]);
 
+  // Validation ranges for financial inputs
+  const VALID_RANGES = {
+    pricePerKwh: { min: 0.05, max: 1.50, label: 'Retail price' },
+    electricityCostPerKwh: { min: 0.01, max: 0.80, label: 'Electricity cost' },
+    totalParkingSpaces: { min: 1, max: 10000, label: 'Parking spots' },
+    lotSqFt: { min: 500, max: 5000000, label: 'Lot size' },
+  };
+
+  const [warnings, setWarnings] = useState<Record<string, string>>({});
+
+  const validateAndUpdate = (field: string, value: number, partial: Partial<SiteAnalysis>) => {
+    const range = VALID_RANGES[field as keyof typeof VALID_RANGES];
+    const newWarnings = { ...warnings };
+    
+    if (range && value > 0) {
+      if (value > range.max) {
+        newWarnings[field] = `${range.label} seems too high (max ~$${range.max}). Did you mean $${(value / 10).toFixed(2)}?`;
+      } else if (value < range.min) {
+        newWarnings[field] = `${range.label} seems too low (min ~$${range.min}).`;
+      } else {
+        delete newWarnings[field];
+      }
+    } else {
+      delete newWarnings[field];
+    }
+    
+    setWarnings(newWarnings);
+    onChange({ ...site, ...partial });
+  };
+
   const update = (partial: Partial<SiteAnalysis>) => {
     onChange({ ...site, ...partial });
   };
+
 
   const parcelSourceLabel = parcelData?.source === 'mappluto'
     ? 'NYC MapPLUTO'
@@ -309,10 +340,16 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
                   <TooltipContent className="max-w-[260px] text-sm">Price you charge EV drivers per kWh.</TooltipContent>
                 </Tooltip>
               </Label>
-              <Input type="number" step="0.01" className="h-10 font-mono text-sm"
+              <Input type="number" step="0.01" min="0.05" max="1.50" className="h-10 font-mono text-sm"
                 value={site.pricePerKwh}
-                onChange={(e) => update({ pricePerKwh: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value) || 0;
+                  validateAndUpdate('pricePerKwh', val, { pricePerKwh: val });
+                }}
               />
+              {warnings.pricePerKwh && (
+                <p className="text-[10px] text-amber-600">⚠ {warnings.pricePerKwh}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground flex items-center gap-1">
@@ -322,10 +359,16 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
                   <TooltipContent className="max-w-[260px] text-sm">All-in electricity cost including demand charges and fees.</TooltipContent>
                 </Tooltip>
               </Label>
-              <Input type="number" step="0.01" className="h-10 font-mono text-sm"
+              <Input type="number" step="0.01" min="0.01" max="0.80" className="h-10 font-mono text-sm"
                 value={site.electricityCostPerKwh}
-                onChange={(e) => update({ electricityCostPerKwh: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value) || 0;
+                  validateAndUpdate('electricityCostPerKwh', val, { electricityCostPerKwh: val });
+                }}
               />
+              {warnings.electricityCostPerKwh && (
+                <p className="text-[10px] text-amber-600">⚠ {warnings.electricityCostPerKwh}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground flex items-center gap-1">
