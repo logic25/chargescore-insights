@@ -50,7 +50,7 @@ function generateSpotGrid(center: L.LatLng, count: number, map: L.Map): L.LatLng
   return points;
 }
 
-const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialProps) => {
+const SiteAerial = ({ lat, lng, lotSizeSqFt, address, onSpotsCounted, onSpotsConfirmed }: SiteAerialProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const [countMode, setCountMode] = useState(false);
