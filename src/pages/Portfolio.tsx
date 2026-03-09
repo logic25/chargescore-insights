@@ -460,6 +460,18 @@ const Portfolio = () => {
                   <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleLoadPartnerSites}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Load 16 Partner Sites
                   </Button>
+                  <div className="flex items-center gap-2 border border-border rounded-lg px-3 py-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap">Split</span>
+                    <Slider
+                      value={[globalSplit]}
+                      onValueChange={([v]) => setGlobalSplit(v)}
+                      min={50}
+                      max={95}
+                      step={5}
+                      className="w-24"
+                    />
+                    <span className="font-mono text-xs font-bold text-foreground whitespace-nowrap">{globalSplit}/{100 - globalSplit}</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <Sliders className="h-4 w-4 text-muted-foreground" />
                     <Select value={scenario} onValueChange={setScenario}>
