@@ -135,7 +135,7 @@ const Portfolio = () => {
   const [controls, setControls] = useState<MCType>(DEFAULT_CONTROLS);
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
   const [globalSplit, setGlobalSplit] = useState(70); // Owner % (0-100)
-  const [sizerPrefill, setSizerPrefill] = useState<{ address: string; lat: number; lng: number; state: string; id: string; numStalls?: number | null } | null>(null);
+  const [sizerPrefill, setSizerPrefill] = useState<{ address: string; lat: number; lng: number; state: string; id: string; numStalls?: number | null; chargeScore?: number | null } | null>(null);
   const [siteIncentives, setSiteIncentives] = useState<Record<string, IncentiveResult>>({});
 
   const multiplier = parseFloat(scenario);
@@ -600,7 +600,7 @@ const Portfolio = () => {
                                   <TooltipTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-7 w-7"
                                       onClick={() => {
-                                        setSizerPrefill({ address: s.address, lat: (s as any).lat, lng: (s as any).lng, state: s.state, id: s.id, numStalls: s.num_stalls });
+                                        setSizerPrefill({ address: s.address, lat: (s as any).lat, lng: (s as any).lng, state: s.state, id: s.id, numStalls: s.num_stalls, chargeScore: s.charge_score });
                                         setActiveTab('sizer');
                                       }}>
                                       <Ruler className="h-3.5 w-3.5" />

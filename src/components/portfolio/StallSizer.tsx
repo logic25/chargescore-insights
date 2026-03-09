@@ -33,7 +33,7 @@ interface Props {
   onAddToPortfolio: (site: Omit<SiteRow, 'id'>) => void;
   onUpdateSite?: (id: string, updates: { stalls: number; kwhPerStallPerDay: number }) => void;
   existingSites?: ExistingSite[];
-  prefillSite?: { address: string; lat: number; lng: number; state: string; id: string; numStalls?: number | null } | null;
+  prefillSite?: { address: string; lat: number; lng: number; state: string; id: string; numStalls?: number | null; chargeScore?: number | null } | null;
 }
 
 const DEFAULT_INPUTS: StallSizerInputs = {
@@ -181,14 +181,19 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
       }).then(() => {
         // After fetch completes, override with known portfolio data if available
         // Parcel APIs often return the wrong tax lot — portfolio data is ground truth
-        if (prefillSite.numStalls && prefillSite.numStalls > 0) {
-          // Estimate parking from stalls (stalls are typically 5-10% of total parking)
-          const estimatedParking = Math.max(prefillSite.numStalls * 10, 50);
-          setInputs(prev => ({
-            ...prev,
-            totalParkingSpaces: Math.max(prev.totalParkingSpaces ?? 0, estimatedParking),
-          }));
-        }
+        setInputs(prev => {
+          let updated = { ...prev };
+          // Use the portfolio's stored ChargeScore (computed from full dashboard data)
+          // instead of the Stall Sizer's re-computed score which may have weak API signals
+          if (prefillSite.chargeScore && prefillSite.chargeScore > 0) {
+            updated.chargeScore = prefillSite.chargeScore;
+          }
+          if (prefillSite.numStalls && prefillSite.numStalls > 0) {
+            const estimatedParking = Math.max(prefillSite.numStalls * 10, 50);
+            updated.totalParkingSpaces = Math.max(updated.totalParkingSpaces ?? 0, estimatedParking);
+          }
+          return updated;
+        });
       });
     }
   }, [prefillSite, lastPrefillId, handleAddressSelect]);
