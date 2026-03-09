@@ -113,7 +113,7 @@ const Dashboard = () => {
   const [siteData, setSiteData] = useState<SiteDataResult>({ isDAC: false, isOnCorridor: false, floodZone: null, floodZoneSubtype: null, isHighRisk: false });
   const [utilityInfo, setUtilityInfo] = useState<UtilityInfo>({ utilityName: null, commercialRate: null, companyId: null });
   const [aadtData, setAadtData] = useState<AadtResult>({ aadt: null, routeId: null, year: null });
-  const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null, source: null });
+  const [parcelData, setParcelData] = useState<ParcelResult>({ lotArea: null, bldgArea: null, address: null, ownerName: null, landUse: null, bbl: null, source: null, geometry: null });
   const [highwayProximity, setHighwayProximity] = useState<HighwayProximity>({ distanceMiles: null, routeName: null, isInterstate: false });
 
   const handleParkingEstimate = useCallback((data: { lotSqFt: number; totalSpots: number }) => {
@@ -497,7 +497,7 @@ const Dashboard = () => {
                 </TabsList>
               </div>
               <TabsContent value="satellite" className="mt-0 flex-1 min-h-0">
-                <SiteAerial lat={site.lat} lng={site.lng} lotSizeSqFt={parcelData.lotArea} address={site.address} onSpotsCounted={handleSpotsCounted} onSpotsConfirmed={handleSpotsConfirmed} />
+                <SiteAerial lat={site.lat} lng={site.lng} lotSizeSqFt={parcelData.lotArea} address={site.address} parcelGeometry={parcelData.geometry} onSpotsCounted={handleSpotsCounted} onSpotsConfirmed={handleSpotsConfirmed} />
               </TabsContent>
               <TabsContent value="competition" className="mt-0 flex-1 min-h-0">
                 <MapView lat={site.lat} lng={site.lng} stations={stations} loading={stationsLoading} radius={stationRadius} onRadiusChange={setStationRadius} />

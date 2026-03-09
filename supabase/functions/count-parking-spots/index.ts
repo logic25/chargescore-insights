@@ -9,18 +9,56 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { lat, lng, imageUrl, lotSizeSqFt, address } = await req.json();
+    const { lat, lng, imageUrl, lotSizeSqFt, address, parcelBounds } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Use satellite imagery URL if no image provided — tighter bbox for property focus
-    const span = 0.0007; // ~75m radius — focuses on subject property
-    const satUrl = imageUrl || `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${lng - span},${lat - span},${lng + span},${lat + span}&bboxSR=4326&size=1024,1024&imageSR=4326&format=png&f=image`;
+    // Calculate bounding box: use parcel bounds if available, else fixed 75m span
+    let bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number };
+    if (parcelBounds) {
+      const latPad = (parcelBounds.maxLat - parcelBounds.minLat) * 0.15;
+      const lngPad = (parcelBounds.maxLng - parcelBounds.minLng) * 0.15;
+      bbox = {
+        minLng: parcelBounds.minLng - lngPad,
+        minLat: parcelBounds.minLat - latPad,
+        maxLng: parcelBounds.maxLng + lngPad,
+        maxLat: parcelBounds.maxLat + latPad,
+      };
+    } else {
+      const span = 0.0007;
+      bbox = { minLng: lng - span, minLat: lat - span, maxLng: lng + span, maxLat: lat + span };
+    }
+
+    const satUrl = imageUrl ||
+      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=1024,1024&imageSR=4326&format=png&f=image`;
 
     const propertyContext = [
       address ? `Property address: ${address}` : '',
       lotSizeSqFt ? `Known lot size: ~${Math.round(lotSizeSqFt).toLocaleString()} sq ft` : '',
     ].filter(Boolean).join('. ');
+
+    const boundaryDescription = parcelBounds
+      ? `The property boundary extends from SW corner (${parcelBounds.minLat.toFixed(6)}, ${parcelBounds.minLng.toFixed(6)}) to NE corner (${parcelBounds.maxLat.toFixed(6)}, ${parcelBounds.maxLng.toFixed(6)}). The satellite image is cropped to show primarily this property with slight padding. Count ONLY spots within this property boundary.`
+      : 'No exact boundary data is available. Use visual cues (fences, walls, curb lines, pavement changes, landscaping) to identify the subject property boundary.';
+
+    const systemPrompt = `You are an expert parking lot analyst. You will be shown a satellite/aerial image of a specific property. Your job is to count the parking spots that belong ONLY to the subject property.
+
+CRITICAL RULES:
+1. The blue marker pin in the center of the image marks the subject property
+2. ${boundaryDescription}
+3. Count ONLY parking spots INSIDE the subject property's lot boundary
+4. Do NOT count spots on neighboring properties, adjacent businesses, or across streets
+5. Do NOT count street parking or public road spaces
+6. Look for property boundaries: fences, walls, curb lines, different pavement colors, landscaping strips, sidewalks, and roads that separate lots
+7. If the property is a shopping center or strip mall, count all spots within that shopping center's connected lot
+8. Count marked/striped parking stalls. If striping is not clearly visible, estimate based on paved parking area using 1 spot per 170 sq ft (not building footprint)
+9. If spots are partially obscured by vehicles, still count them if the stall lines are visible
+10. Do NOT count driveways, loading zones, fire lanes, or unmarked areas
+
+Return ONLY a JSON object with these fields:
+- count: number (total parking spots on the SUBJECT property only)
+- confidence: "high" | "medium" | "low"
+- notes: string (brief description of what you see and how you identified the property boundary)`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -31,32 +69,13 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: "system",
-            content: `You are a parking lot analyst. You will be shown a satellite/aerial image centered on a specific property. Your job is to count the parking spots that belong ONLY to the subject property.
-
-CRITICAL RULES:
-- The blue marker pin in the center of the image marks the subject property
-- Count ONLY parking spots that belong to the subject property's lot — the lot where the pin is located
-- DO NOT count spots on neighboring properties, adjacent businesses, or across streets
-- Look for property boundaries: fences, walls, curb lines, different pavement colors, landscaping strips, sidewalks, and roads that separate lots
-- If the property is a shopping center or strip mall, count all spots within that shopping center's connected lot
-- Count only clearly visible painted parking stalls within the property boundary
-- If spots are partially obscured by vehicles, still count them if the stall lines are visible
-- Do NOT count driveways, loading zones, or unmarked areas
-- If you cannot see clear parking stalls, estimate based on the paved area using 1 spot per 350 sq ft
-
-Return ONLY a JSON object with these fields:
-- count: number (total parking spots on the SUBJECT property only)
-- confidence: "high" | "medium" | "low"
-- notes: string (brief description of what you see and how you identified the property boundary)`
-          },
+          { role: "system", content: systemPrompt },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: `Count the parking spots for ONLY the subject property at coordinates ${lat}, ${lng}. The blue pin marks the property. ${propertyContext ? propertyContext + '.' : ''} Do NOT count spots on neighboring properties. Return JSON only.`
+                text: `Count the parking spots for ONLY the subject property at coordinates ${lat}, ${lng}. The blue pin marks the property. ${propertyContext ? propertyContext + '.' : ''} ${boundaryDescription} Return JSON only.`
               },
               {
                 type: "image_url",
@@ -107,7 +126,6 @@ Return ONLY a JSON object with these fields:
 
     const data = await response.json();
     
-    // Extract from tool call response
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       const result = JSON.parse(toolCall.function.arguments);
@@ -116,7 +134,6 @@ Return ONLY a JSON object with these fields:
       });
     }
 
-    // Fallback: try to parse content as JSON
     const content = data.choices?.[0]?.message?.content || "";
     const jsonMatch = content.match(/\{[\s\S]*?\}/);
     if (jsonMatch) {
