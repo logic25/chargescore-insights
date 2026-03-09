@@ -135,7 +135,7 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
       const dcfcWithin5 = nearestDcfc.length;
       const totalPorts = nearestDcfc.reduce((sum, s) => sum + s.numPorts, 0);
 
-      const scoreResult = calculateChargeScoreV2({
+      const scoreResult = calculateChargeRankV2({
         aadtVpd: aadtResult.aadt,
         evRegistrations: evRegs,
         nearestDcfcMiles,
