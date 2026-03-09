@@ -136,6 +136,21 @@ const Portfolio = () => {
 
   const multiplier = parseFloat(scenario);
 
+  // Infer utility territory from address for incentive matching
+  const inferUtilityTerritory = (site: AnalysisRow): string | null => {
+    const addr = site.address.toLowerCase();
+    if (site.state === 'NY') {
+      if (addr.includes('brooklyn') || addr.includes('queens') || addr.includes('bronx') || addr.includes('manhattan') || addr.includes('staten island')) return 'Con Edison';
+      if (addr.includes('elmont') || addr.includes('hewlett') || addr.includes('merrick') || addr.includes('lindenhurst') || addr.includes('long island')) return 'PSEG LI';
+      // Default NYC boroughs to Con Edison
+      return 'Con Edison';
+    }
+    if (site.state === 'FL') return 'Duke Energy FL';
+    if (site.state === 'NJ') return 'ACE NJ';
+    if (site.state === 'MA') return 'National Grid MA';
+    return null;
+  };
+
   // Fetch incentive programs for an expanded site
   const handleExpandSite = useCallback(async (site: AnalysisRow) => {
     if (expandedSiteId === site.id) {
@@ -145,7 +160,8 @@ const Portfolio = () => {
     setExpandedSiteId(site.id);
     if (siteIncentives[site.id]) return; // already loaded
 
-    const programs = await fetchIncentivePrograms(null, site.state);
+    const territory = inferUtilityTerritory(site);
+    const programs = await fetchIncentivePrograms(territory, site.state);
     const stalls = site.num_stalls ?? 8;
     const grossCost = site.total_project_cost ?? stalls * 87500;
     const result = calculateIncentives(programs, stalls, grossCost);
