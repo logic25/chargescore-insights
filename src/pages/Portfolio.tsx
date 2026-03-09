@@ -135,6 +135,7 @@ const Portfolio = () => {
   const [controls, setControls] = useState<MCType>(DEFAULT_CONTROLS);
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
   const [globalSplit, setGlobalSplit] = useState(70); // Owner % (0-100)
+  const [sizerPrefill, setSizerPrefill] = useState<{ address: string; lat: number; lng: number; state: string; id: string } | null>(null);
   const [siteIncentives, setSiteIncentives] = useState<Record<string, IncentiveResult>>({});
 
   const multiplier = parseFloat(scenario);
@@ -599,9 +600,8 @@ const Portfolio = () => {
                                   <TooltipTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-7 w-7"
                                       onClick={() => {
+                                        setSizerPrefill({ address: s.address, lat: (s as any).lat, lng: (s as any).lng, state: s.state, id: s.id });
                                         setActiveTab('sizer');
-                                        // Pre-fill will happen via the address in the Stall Sizer
-                                        toast.success(`Switch to Stall Sizer and enter "${s.address.split(',')[0]}" address`);
                                       }}>
                                       <Ruler className="h-3.5 w-3.5" />
                                     </Button>
@@ -702,6 +702,7 @@ const Portfolio = () => {
                 onAddToPortfolio={handleAddFromSizer}
                 onUpdateSite={handleUpdateSiteFromSizer}
                 existingSites={analyses.map(a => ({ id: a.id, name: a.address.split(',')[0], address: a.address }))}
+                prefillSite={sizerPrefill}
               />
             </TabsContent>
 

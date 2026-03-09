@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ interface Props {
   onAddToPortfolio: (site: Omit<SiteRow, 'id'>) => void;
   onUpdateSite?: (id: string, updates: { stalls: number; kwhPerStallPerDay: number }) => void;
   existingSites?: ExistingSite[];
+  prefillSite?: { address: string; lat: number; lng: number; state: string; id: string } | null;
 }
 
 const DEFAULT_INPUTS: StallSizerInputs = {
@@ -60,13 +61,14 @@ const LOCATION_LABELS: Record<LocationType, string> = {
   rural: "Rural",
 };
 
-export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSites = [] }: Props) {
+export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSites = [], prefillSite }: Props) {
   const { user } = useAuth();
   const [inputs, setInputs] = useState<StallSizerInputs>(DEFAULT_INPUTS);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [fetching, setFetching] = useState(false);
   const [evpinUploading, setEvpinUploading] = useState(false);
   const evpinFileRef = useRef<HTMLInputElement>(null);
+  const [lastPrefillId, setLastPrefillId] = useState<string | null>(null);
   const set = <K extends keyof StallSizerInputs>(key: K, value: StallSizerInputs[K]) => setInputs(prev => ({ ...prev, [key]: value }));
 
   const recommendation = computeStallRecommendation(inputs);
@@ -165,6 +167,20 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
       setFetching(false);
     }
   }, []);
+
+  // Auto-fill when a site is passed from the portfolio via the ruler button
+  React.useEffect(() => {
+    if (prefillSite && prefillSite.id !== lastPrefillId) {
+      setLastPrefillId(prefillSite.id);
+      setSelectedSiteId(prefillSite.id);
+      handleAddressSelect({
+        formatted: prefillSite.address,
+        lat: prefillSite.lat,
+        lng: prefillSite.lng,
+        stateCode: prefillSite.state,
+      });
+    }
+  }, [prefillSite, lastPrefillId, handleAddressSelect]);
 
   const handleAddToPortfolio = () => {
     const stalls = recommendation.base;
