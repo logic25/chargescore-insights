@@ -17,12 +17,13 @@ const tiers = [
       'Save to My Projects',
       'Incentive program names',
       'Basic stall suggestion',
+      'Buy PDF reports à la carte — $39 each',
     ],
     excluded: [
       'Revenue projections',
       'Incentive amounts & how-to',
       'Stall Sizer tool',
-      'PDF reports',
+      'Incentive status alerts',
       'Portfolio builder',
       'Waterfall model',
     ],
@@ -37,11 +38,14 @@ const tiers = [
     highlight: true,
     features: [
       'Unlimited full analyses',
+      '5 PDF reports/month included',
       'Revenue projections (4/8/12/16 stalls)',
       'Full incentive breakdown',
       'Interactive Stall Sizer',
       'Simple ROI calculator',
-      'Downloadable PDF reports',
+      'Incentive status alerts & deadline reminders',
+      'Quarterly market data refreshes',
+      'Live project dashboard (while subscribed)',
       'Unlimited saved projects',
     ],
     excluded: [
@@ -61,6 +65,7 @@ const tiers = [
     highlight: false,
     features: [
       'Everything in Plus',
+      'Unlimited PDF reports',
       'Multi-site portfolio builder',
       'Waterfall model with LP/GP splits',
       'Scenario modeling',
