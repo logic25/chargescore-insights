@@ -4,7 +4,7 @@ import type {
   ParkingAnalysis,
   DemandChargeAnalysis,
   Incentive,
-} from '@/types/chargeScore';
+} from '@/types/chargeRank';
 
 // --- Constants ---
 
