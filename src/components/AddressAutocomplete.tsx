@@ -14,6 +14,7 @@ interface Props {
   onSelect: (result: AddressResult) => void;
   placeholder?: string;
   className?: string;
+  defaultValue?: string;
 }
 
 declare global {
