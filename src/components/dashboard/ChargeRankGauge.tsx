@@ -63,7 +63,7 @@ const ChargeRankGauge = ({ score, siteInsights, incentiveTeaser }: ChargeRankGau
       className="glass-card p-6"
     >
       <div className="mb-5 flex items-center gap-2">
-        <h2 className="font-heading text-base font-bold text-foreground">ChargeScore™</h2>
+        <h2 className="font-heading text-base font-bold text-foreground">ChargeRank™</h2>
         <Tooltip>
           <TooltipTrigger>
             <Info className="h-4 w-4 text-muted-foreground" />
