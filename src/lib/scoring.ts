@@ -1,4 +1,4 @@
-// ChargeScore Scoring Engine — 9 factors, 0-100 scale
+// ChargeRank Scoring Engine — 9 factors, 0-100 scale
 
 export interface ScoreFactor {
   name: string;
@@ -10,12 +10,15 @@ export interface ScoreFactor {
   rawValue: string;
 }
 
-export interface ChargeScoreResult {
+export interface ChargeRankResult {
   totalScore: number;
   grade: string;
   factors: ScoreFactor[];
   recommendation: string;
 }
+
+/** @deprecated Use ChargeRankResult */
+export type ChargeScoreResult = ChargeRankResult;
 
 export interface ScoringInputs {
   aadtVpd: number | null;
