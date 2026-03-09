@@ -211,6 +211,12 @@ const Portfolio = () => {
     if (success) await fetchSites();
   };
 
+  const handleRefreshPartnerSites = async () => {
+    if (!user) return;
+    const success = await refreshPartnerSites(user.id);
+    if (success) await fetchSites();
+  };
+
   // --- Sites tab data --- recalculate owner/ms splits live from globalSplit
   const scaled = useMemo(() => analyses.map(s => {
     const noi = s.noi != null ? s.noi * multiplier : null;
