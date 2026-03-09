@@ -69,9 +69,40 @@ const PropertyInputs = ({ site, onChange, trafficLevel, onTrafficLevelChange, co
     });
   }, [effectiveLotSqFt, totalSpots, onParkingEstimate]);
 
+  // Validation ranges for financial inputs
+  const VALID_RANGES = {
+    pricePerKwh: { min: 0.05, max: 1.50, label: 'Retail price' },
+    electricityCostPerKwh: { min: 0.01, max: 0.80, label: 'Electricity cost' },
+    totalParkingSpaces: { min: 1, max: 10000, label: 'Parking spots' },
+    lotSqFt: { min: 500, max: 5000000, label: 'Lot size' },
+  };
+
+  const [warnings, setWarnings] = useState<Record<string, string>>({});
+
+  const validateAndUpdate = (field: string, value: number, partial: Partial<SiteAnalysis>) => {
+    const range = VALID_RANGES[field as keyof typeof VALID_RANGES];
+    const newWarnings = { ...warnings };
+    
+    if (range && value > 0) {
+      if (value > range.max) {
+        newWarnings[field] = `${range.label} seems too high (max ~$${range.max}). Did you mean $${(value / 10).toFixed(2)}?`;
+      } else if (value < range.min) {
+        newWarnings[field] = `${range.label} seems too low (min ~$${range.min}).`;
+      } else {
+        delete newWarnings[field];
+      }
+    } else {
+      delete newWarnings[field];
+    }
+    
+    setWarnings(newWarnings);
+    onChange({ ...site, ...partial });
+  };
+
   const update = (partial: Partial<SiteAnalysis>) => {
     onChange({ ...site, ...partial });
   };
+
 
   const parcelSourceLabel = parcelData?.source === 'mappluto'
     ? 'NYC MapPLUTO'
