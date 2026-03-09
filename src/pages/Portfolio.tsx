@@ -26,7 +26,8 @@ import {
   computeExit,
 } from '@/lib/waterfallCalc';
 import type { MasterControls as MCType, SiteRow } from '@/lib/waterfallCalc';
-import { fetchIncentivePrograms, calculateIncentives, resolveUtilityTerritory, type IncentiveResult, type IncentiveProgram } from '@/lib/incentiveCalc';
+import { fetchIncentivePrograms, calculateIncentives, resolveUtilityTerritory, nrelToIncentivePrograms, type IncentiveResult, type IncentiveProgram } from '@/lib/incentiveCalc';
+import { fetchStateIncentives } from '@/lib/api/incentives';
 import IncentiveBreakdown from '@/components/incentives/IncentiveBreakdown';
 import OOPRangeBar from '@/components/incentives/OOPRangeBar';
 
@@ -168,9 +169,18 @@ const Portfolio = () => {
 
     const territory = inferUtilityTerritory(site);
     const programs = await fetchIncentivePrograms(territory, site.state);
+    const activeCurated = programs.filter(p => p.programStatus !== 'expired');
+    
+    let mergedPrograms = programs;
+    if (activeCurated.length === 0) {
+      // No curated programs — fall back to NREL AFDC
+      const nrelResults = await fetchStateIncentives({ stateCode: site.state, siteAddress: site.address });
+      mergedPrograms = [...programs, ...nrelToIncentivePrograms(nrelResults)];
+    }
+
     const stalls = site.num_stalls ?? 8;
     const grossCost = site.total_project_cost ?? stalls * 87500;
-    const result = calculateIncentives(programs, stalls, grossCost);
+    const result = calculateIncentives(mergedPrograms, stalls, grossCost);
     setSiteIncentives(prev => ({ ...prev, [site.id]: result }));
   }, [expandedSiteId]);
 

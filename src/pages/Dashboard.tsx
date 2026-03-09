@@ -35,7 +35,7 @@ import ReportGate from '@/components/ReportGate';
 import StallHint from '@/components/dashboard/StallHint';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { computeStallRecommendation } from '@/lib/waterfallCalc';
-import { fetchIncentivePrograms, calculateIncentives, resolveUtilityTerritory, type IncentiveResult, type IncentiveProgram } from '@/lib/incentiveCalc';
+import { fetchIncentivePrograms, calculateIncentives, resolveUtilityTerritory, nrelToIncentivePrograms, type IncentiveResult, type IncentiveProgram } from '@/lib/incentiveCalc';
 import IncentiveTeaser from '@/components/incentives/IncentiveTeaser';
 import IncentiveSummary from '@/components/incentives/IncentiveSummary';
 import IncentiveBreakdown from '@/components/incentives/IncentiveBreakdown';
@@ -256,9 +256,17 @@ const Dashboard = () => {
     fetchIncentivePrograms(utilityTerritory, site.state).then(setIncentivePrograms);
   }, [utilityTerritory, site.state]);
 
+  const mergedPrograms = useMemo(() => {
+    const activeCurated = incentivePrograms.filter(p => p.programStatus !== 'expired');
+    if (activeCurated.length > 0) return incentivePrograms;
+    // No curated programs — fall back to NREL AFDC results
+    const nrelPrograms = nrelToIncentivePrograms(nrelIncentives);
+    return [...incentivePrograms, ...nrelPrograms];
+  }, [incentivePrograms, nrelIncentives]);
+
   const incentiveResult: IncentiveResult = useMemo(
-    () => calculateIncentives(incentivePrograms, site.teslaStalls, financials.totalProjectCost),
-    [incentivePrograms, site.teslaStalls, financials.totalProjectCost]
+    () => calculateIncentives(mergedPrograms, site.teslaStalls, financials.totalProjectCost),
+    [mergedPrograms, site.teslaStalls, financials.totalProjectCost]
   );
 
   const sizerLocationType = useMemo(() => {

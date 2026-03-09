@@ -15,6 +15,7 @@ const CONFIDENCE_STYLES: Record<string, { dot: string; badge: string; label: str
   confirmed: { dot: '●', badge: 'bg-success/10 text-success border-success/20', label: 'Confirmed' },
   likely: { dot: '◐', badge: 'bg-accent/10 text-accent-foreground border-accent/30', label: 'Likely' },
   uncertain: { dot: '○', badge: 'bg-muted text-muted-foreground border-border', label: 'Uncertain' },
+  unverified: { dot: '◇', badge: 'bg-amber-500/10 text-amber-600 border-amber-500/30 border-dashed', label: 'Unverified' },
 };
 
 function isStaleLe(updatedAt: string): boolean {
@@ -94,6 +95,12 @@ const ProgramCard = ({ program, stallCount }: { program: IncentiveProgram; stall
         )}
       </div>
 
+      {!isExpired && program.confidence === 'unverified' && (
+        <p className="text-[10px] text-amber-600/70 italic leading-relaxed">
+          Data from AFDC — not manually verified by ChargeRank
+        </p>
+      )}
+
       {!isExpired && program.applicationUrl && (
         <a
           href={program.applicationUrl}
@@ -134,10 +141,16 @@ const IncentiveBreakdown = ({ result, grossProjectCost, stallCount }: Props) => 
           <span className="text-muted-foreground">Confirmed + Likely</span>
           <span className="font-mono font-bold text-success">{fmt(result.confirmedTotal + result.likelyTotal)}</span>
         </div>
-        {result.uncertainTotal > 0 && (
+      {result.uncertainTotal > 0 && (
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Uncertain (not included in estimate)</span>
             <span className="font-mono font-bold text-muted-foreground">{fmtK(result.uncertainRange.low)} – {fmtK(result.uncertainRange.high)}</span>
+          </div>
+        )}
+        {result.unverifiedTotal > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Unverified AFDC (not included)</span>
+            <span className="font-mono font-bold text-amber-600/70">{fmtK(result.unverifiedTotal)}</span>
           </div>
         )}
         <div className="border-t border-border/50 pt-2 flex justify-between text-sm">
