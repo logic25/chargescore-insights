@@ -1,6 +1,7 @@
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { FinancialProjection } from '@/types/chargeRank';
+import FinancialDisclaimer from './FinancialDisclaimer';
 
 interface Props {
   financials: FinancialProjection;
