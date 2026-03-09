@@ -233,7 +233,7 @@ const LandingPage = () => {
         <div className="container flex flex-col items-center justify-between gap-4 py-8 sm:flex-row">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-primary" />
-            <span className="text-sm text-navy-foreground/70">ChargeScore — EV Charging Site Intelligence</span>
+            <span className="text-sm text-navy-foreground/70">ChargeRank — EV Charging Site Intelligence</span>
           </div>
           <div className="flex items-center gap-4">
             <button onClick={() => navigate('/pricing')} className="text-xs text-navy-foreground/70 transition-colors hover:text-navy-foreground">Pricing</button>
