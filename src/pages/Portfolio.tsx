@@ -600,7 +600,7 @@ const Portfolio = () => {
                                   <TooltipTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-7 w-7"
                                       onClick={() => {
-                                        setSizerPrefill({ address: s.address, lat: (s as any).lat, lng: (s as any).lng, state: s.state, id: s.id, numStalls: s.num_stalls });
+                                        setSizerPrefill({ address: s.address, lat: (s as any).lat, lng: (s as any).lng, state: s.state, id: s.id, numStalls: s.num_stalls, chargeScore: s.charge_score });
                                         setActiveTab('sizer');
                                       }}>
                                       <Ruler className="h-3.5 w-3.5" />
