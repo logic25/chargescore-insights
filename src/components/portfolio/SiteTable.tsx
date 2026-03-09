@@ -24,8 +24,8 @@ const TH = ({ children, tip }: { children?: React.ReactNode; tip?: string }) => 
   </TableHead>
 );
 
-const EditCell = ({ value, onChange, type = "text", step, className = "" }: {
-  value: string | number; onChange: (v: string) => void; type?: string; step?: number; className?: string;
+const EditCell = ({ value, onChange, onBlur, type = "text", step, className = "" }: {
+  value: string | number; onChange: (v: string) => void; onBlur?: () => void; type?: string; step?: number; className?: string;
 }) => (
   <TableCell className="px-1 py-0.5">
     <Input
@@ -33,6 +33,7 @@ const EditCell = ({ value, onChange, type = "text", step, className = "" }: {
       step={step}
       value={value}
       onChange={e => onChange(e.target.value)}
+      onBlur={onBlur}
       className={`h-7 text-xs font-mono bg-amber/10 text-primary border-transparent focus:border-primary px-1.5 min-w-[60px] ${className}`}
     />
   </TableCell>
