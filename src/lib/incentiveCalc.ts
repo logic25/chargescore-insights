@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { NrelIncentive } from '@/lib/api/incentives';
 
 export interface IncentiveProgram {
   id: string;
@@ -9,7 +10,7 @@ export interface IncentiveProgram {
   amountPerPort: number | null;
   amountFlat: number | null;
   amountCap: number | null;
-  confidence: 'confirmed' | 'likely' | 'uncertain';
+  confidence: 'confirmed' | 'likely' | 'uncertain' | 'unverified';
   programStatus: 'active' | 'expiring' | 'expired' | 'announced';
   expirationDate: string | null;
   applicationUrl: string | null;
@@ -18,6 +19,7 @@ export interface IncentiveProgram {
   updatedAt: string;
   // Computed per-site
   computedAmount: number;
+  isAfdc?: boolean;
 }
 
 export interface IncentiveResult {
