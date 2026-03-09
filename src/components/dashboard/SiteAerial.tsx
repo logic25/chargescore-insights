@@ -168,11 +168,12 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
     if (parcelGeometry?.rings) {
       const latlngs = parcelGeometry.rings[0].map(([lng, lat]) => [lat, lng] as L.LatLngTuple);
       const poly = L.polygon(latlngs, {
-        color: '#00d4aa',
-        fillColor: '#00d4aa',
-        fillOpacity: 0.12,
-        weight: 2,
-        dashArray: '6 4',
+        color: '#ffffff',
+        fillColor: 'transparent',
+        fillOpacity: 0,
+        weight: 1.5,
+        dashArray: '4 4',
+        opacity: 0.4,
       }).addTo(map);
       parcelPolyRef.current = poly;
     }
