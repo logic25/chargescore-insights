@@ -1,26 +1,33 @@
 
 
+# Add 'Unverified' Confidence Badge for NREL AFDC Results
+
 ## Problem
+The new confidence-tiered incentive engine (`incentiveCalc.ts`) only pulls from the curated `incentive_programs` DB table. For sites outside the 6 curated utility territories, users see **zero incentive programs** — even though the NREL AFDC API returns relevant state/utility programs via `fetchStateIncentives()`.
 
-The satellite image on the dashboard is broken. The `<img>` tag points to a Google Maps Static API URL, but the request is failing (referrer restriction or API not enabled). When the image fails, there's no `onError` handler, so the browser just shows the alt text.
+## Approach
+Bridge the two systems: when no curated programs match, convert NREL AFDC results into `IncentiveProgram` objects with a new `'unverified'` confidence level and feed them into the existing display pipeline.
 
-## Plan
+## Changes
 
-**Fix `src/components/dashboard/SiteAerial.tsx`:**
+### 1. `src/lib/incentiveCalc.ts` — Expand confidence type + add NREL converter
+- Add `'unverified'` to the `confidence` union type on `IncentiveProgram`
+- Add a new function `nrelToIncentivePrograms(nrelResults: NrelIncentive[]): IncentiveProgram[]` that maps NREL records into the `IncentiveProgram` shape with `confidence: 'unverified'`, extracting estimated amounts from `estimatedBenefit` strings
+- Update `calculateIncentives()` to treat `unverified` programs like `uncertain` — excluded from confirmed/likely totals, shown separately
 
-1. Add an `onError` handler on the `<img>` tag that switches to a fallback state when the Google Static Map image fails to load.
-2. The fallback will show:
-   - An embedded Leaflet/OpenStreetMap satellite tile map as the primary fallback (using the same Leaflet library already installed), OR
-   - A cleaner placeholder with a map icon and coordinates if Leaflet is too heavy for this component.
+### 2. `src/pages/Dashboard.tsx` — Merge NREL fallback into the new engine
+- After fetching curated `incentivePrograms` and `nrelIncentives`, if no curated programs match (or only expired ones), convert NREL results via `nrelToIncentivePrograms()` and merge them into the program list
+- Pass the merged list to `calculateIncentives()`
 
-**Recommended approach** — Use an OpenStreetMap static image as fallback:
-- On `<img onError>`, swap `src` to an OpenStreetMap-based static image tile (e.g., from `tile.openstreetmap.org`) or show the "Satellite view unavailable" placeholder with proper styling instead of broken alt text.
-- This requires no additional dependencies.
+### 3. `src/components/incentives/IncentiveBreakdown.tsx` — Render unverified badge
+- Add `unverified` to `CONFIDENCE_STYLES` with a distinct visual: dashed outline, muted amber/yellow tone, "Unverified" label
+- Add a small disclaimer below unverified cards: "Data from AFDC — not manually verified by ChargeRank"
 
-**Specifically:**
-- Add `useState` for `imageError`
-- Add `onError={() => setImageError(true)}` to the `<img>`
-- When `imageError` is true, render the fallback placeholder (styled nicely with a Map icon) instead of the broken image
+### 4. `src/pages/Portfolio.tsx` — Same NREL fallback merge for portfolio sites
+- Apply the same fallback logic when fetching incentives per portfolio site
 
-This is a quick fix that ensures users never see broken image alt text.
+## Summary
+- 4 files modified
+- New `'unverified'` confidence tier flows through the entire incentive pipeline
+- Non-curated territories get NREL data with honest labeling instead of showing nothing
 
