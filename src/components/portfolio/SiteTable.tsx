@@ -24,8 +24,8 @@ const TH = ({ children, tip }: { children?: React.ReactNode; tip?: string }) => 
   </TableHead>
 );
 
-const EditCell = ({ value, onChange, type = "text", step, className = "" }: {
-  value: string | number; onChange: (v: string) => void; type?: string; step?: number; className?: string;
+const EditCell = ({ value, onChange, onBlur, type = "text", step, className = "" }: {
+  value: string | number; onChange: (v: string) => void; onBlur?: () => void; type?: string; step?: number; className?: string;
 }) => (
   <TableCell className="px-1 py-0.5">
     <Input
@@ -33,6 +33,7 @@ const EditCell = ({ value, onChange, type = "text", step, className = "" }: {
       step={step}
       value={value}
       onChange={e => onChange(e.target.value)}
+      onBlur={onBlur}
       className={`h-7 text-xs font-mono bg-amber/10 text-primary border-transparent focus:border-primary px-1.5 min-w-[60px] ${className}`}
     />
   </TableCell>
@@ -62,10 +63,16 @@ export default function SiteTable({ sites, controls, onSitesChange }: Props) {
     if (key === 'name' || key === 'address') {
       (s as any)[key] = raw;
     } else {
-      let val = parseFloat(raw) || 0;
-      if (key === 'stalls') val = Math.max(4, Math.ceil(val / 4) * 4);
-      (s as any)[key] = val;
+      (s as any)[key] = parseFloat(raw) || 0;
     }
+    updated[idx] = s;
+    onSitesChange(updated);
+  };
+
+  const roundStalls = (idx: number) => {
+    const updated = [...sites];
+    const s = { ...updated[idx] };
+    s.stalls = Math.max(4, Math.ceil(s.stalls / 4) * 4);
     updated[idx] = s;
     onSitesChange(updated);
   };
@@ -148,7 +155,7 @@ export default function SiteTable({ sites, controls, onSitesChange }: Props) {
               <TableRow key={c.id} className="hover:bg-muted/30">
                 <EditCell value={c.name} onChange={v => updateSite(i, 'name', v)} className="min-w-[100px]" />
                 <EditCell value={c.address} onChange={v => updateSite(i, 'address', v)} className="min-w-[100px]" />
-                <EditCell value={c.stalls} onChange={v => updateSite(i, 'stalls', v)} type="number" step={4} />
+                <EditCell value={c.stalls} onChange={v => updateSite(i, 'stalls', v)} onBlur={() => roundStalls(i)} type="number" step={4} />
                 <EditCell value={c.baseKwhPerStallPerDay} onChange={v => updateSite(i, 'baseKwhPerStallPerDay', v)} type="number" />
                 <FormulaCell>{c.effectiveKwhPerDay.toFixed(0)}</FormulaCell>
                 <EditCell value={c.customerPrice} onChange={v => updateSite(i, 'customerPrice', v)} type="number" step={0.01} />
