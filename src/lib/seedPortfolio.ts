@@ -150,6 +150,7 @@ export async function forceSeedPortfolio(userId: string): Promise<boolean> {
       estimated_incentives: s.incentives,
       net_investment: netInv,
       noi,
+      npv: computeNpv(s, netInv),
       margin_kwh: margin,
       owner_monthly: ownerMonthly,
       ms_monthly: msMonthly,
