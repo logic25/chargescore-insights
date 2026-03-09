@@ -33,6 +33,7 @@ interface Props {
   onAddToPortfolio: (site: Omit<SiteRow, 'id'>) => void;
   onUpdateSite?: (id: string, updates: { stalls: number; kwhPerStallPerDay: number }) => void;
   existingSites?: ExistingSite[];
+  prefillSite?: { address: string; lat: number; lng: number; state: string; id: string } | null;
 }
 
 const DEFAULT_INPUTS: StallSizerInputs = {
