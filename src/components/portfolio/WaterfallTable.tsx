@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import type { WaterfallYearRow } from "@/lib/waterfallCalc";
+import FinancialDisclaimer from "@/components/dashboard/FinancialDisclaimer";
 import { fmt } from "@/lib/waterfallCalc";
 
 interface Props {
