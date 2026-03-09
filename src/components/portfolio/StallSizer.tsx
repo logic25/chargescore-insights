@@ -61,13 +61,14 @@ const LOCATION_LABELS: Record<LocationType, string> = {
   rural: "Rural",
 };
 
-export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSites = [] }: Props) {
+export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSites = [], prefillSite }: Props) {
   const { user } = useAuth();
   const [inputs, setInputs] = useState<StallSizerInputs>(DEFAULT_INPUTS);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [fetching, setFetching] = useState(false);
   const [evpinUploading, setEvpinUploading] = useState(false);
   const evpinFileRef = useRef<HTMLInputElement>(null);
+  const [lastPrefillId, setLastPrefillId] = useState<string | null>(null);
   const set = <K extends keyof StallSizerInputs>(key: K, value: StallSizerInputs[K]) => setInputs(prev => ({ ...prev, [key]: value }));
 
   const recommendation = computeStallRecommendation(inputs);
