@@ -259,7 +259,7 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, onSpotsCounted, onSpotsCon
     setSpots([]);
     try {
       const { data, error } = await supabase.functions.invoke('count-parking-spots', {
-        body: { lat, lng },
+        body: { lat, lng, lotSizeSqFt: lotSizeSqFt ?? undefined, address: address ?? undefined },
       });
 
       if (error) throw error;
