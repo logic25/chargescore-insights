@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, DollarSign, BarChart3, ChevronRight, LogIn, LogOut } from 'lucide-react';
+import { Zap, DollarSign, BarChart3, ChevronRight, LogIn, LogOut, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import AddressAutocomplete from '@/components/AddressAutocomplete';
@@ -56,6 +56,11 @@ const LandingPage = () => {
                 <Button variant="ghost" size="sm" onClick={() => navigate('/my-analyses')} className="hidden text-navy-foreground hover:bg-navy-card hover:text-navy-foreground sm:flex">
                   My Projects
                 </Button>
+                {isAtLeast('admin') && (
+                  <Button variant="ghost" size="icon" onClick={() => navigate('/admin/ml')} className="hidden text-navy-foreground hover:bg-navy-card hover:text-navy-foreground sm:flex" title="Admin">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" onClick={signOut} className="hidden border-navy-muted bg-transparent text-navy-foreground hover:bg-navy-card sm:flex">
                   <LogOut className="mr-1.5 h-4 w-4" /> Sign Out
                 </Button>
