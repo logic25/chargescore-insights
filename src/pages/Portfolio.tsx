@@ -307,17 +307,22 @@ const Portfolio = () => {
             </div>
             <div className="flex items-center gap-3">
               {activeTab === 'sites' && (
-                <div className="flex items-center gap-2">
-                  <Sliders className="h-4 w-4 text-muted-foreground" />
-                  <Select value={scenario} onValueChange={setScenario}>
-                    <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {SCENARIO_OPTIONS.map(o => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <>
+                  <Button variant="outline" size="sm" className="text-xs h-8" onClick={handleLoadPartnerSites}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Load 16 Partner Sites
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Sliders className="h-4 w-4 text-muted-foreground" />
+                    <Select value={scenario} onValueChange={setScenario}>
+                      <SelectTrigger className="h-8 w-[160px] text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {SCENARIO_OPTIONS.map(o => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
               )}
             </div>
           </div>
