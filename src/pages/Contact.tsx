@@ -76,7 +76,7 @@ export default function Contact() {
           </div>
           <h2 className="font-heading text-2xl font-bold text-foreground">Thanks!</h2>
           <p className="mt-2 text-muted-foreground">
-            A ChargeScore specialist will reach out within 24 hours.
+            A ChargeRank specialist will reach out within 24 hours.
           </p>
           <Button className="mt-6" onClick={() => navigate('/')}>Back to Home</Button>
         </div>
