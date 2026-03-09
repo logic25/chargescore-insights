@@ -101,10 +101,8 @@ function calculateTeslaFinancials(site: SiteAnalysis, incentives: Incentive[]): 
     .filter(i => i.eligible && !i.isAlternative)
     .reduce((sum, i) => sum + (i.computedAmount ?? 0), 0);
 
-  // Include federal 30C only if eligible (true or null/unknown — NOT false)
-  const federal30c = incentives.find(i => i.id === 'federal-30c');
-  const federalAmount = (federal30c && federal30c.eligible !== false) ? federal30c.computedAmount : 0;
-  const selectedTotal = totalIncentiveAmount + federalAmount;
+  // 30C excluded from totals — deadline June 30 2026 is unreachable for new DCFC projects
+  const selectedTotal = totalIncentiveAmount;
 
   const estimatedIncentives = Math.min(selectedTotal, totalProjectCost);
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
@@ -224,10 +222,8 @@ function calculateGenericFinancials(site: SiteAnalysis, incentives: Incentive[])
     .filter(i => i.eligible && !i.isAlternative)
     .reduce((sum, i) => sum + (i.computedAmount ?? 0), 0);
 
-  // Include federal 30C only if eligible (true or null/unknown — NOT false)
-  const federal30c = incentives.find(i => i.id === 'federal-30c');
-  const federalAmount = (federal30c && federal30c.eligible !== false) ? federal30c.computedAmount : 0;
-  const selectedTotal = totalIncentiveAmount + federalAmount;
+  // 30C excluded from totals — deadline June 30 2026 is unreachable for new DCFC projects
+  const selectedTotal = totalIncentiveAmount;
 
   const estimatedIncentives = Math.min(selectedTotal, totalProjectCost);
   const netInvestment = Math.max(0, totalProjectCost - estimatedIncentives);
@@ -828,15 +824,13 @@ export function getIncentives(site: SiteAnalysis, context?: IncentiveContext, nr
   incentives.push({
     id: 'federal-30c',
     name: 'Federal 30C Tax Credit',
-    description: is30cEligible === false
-      ? 'NOT ELIGIBLE — site is not in a qualifying census tract'
-      : '30% of hardware + installation costs',
+    description: 'EXPIRING — deadline June 30, 2026. Unlikely for new DCFC projects.',
     amount: is30cEligible === false ? '$0' : `$${Math.round(federal30cAmount).toLocaleString()}`,
     computedAmount: is30cEligible === false ? 0 : federal30cAmount,
-    eligible: is30cEligible,
-    details: is30cEligible === false
-      ? 'This site is NOT in an eligible low-income or disadvantaged census tract. The 30C Alternative Fuel Vehicle Refueling Property Credit requires the property to be in a qualifying area per IRS guidance. Consider NEVI or state/utility programs instead.'
-      : `30% of equipment + installation, up to $100,000 per port. Must be in eligible census tract. Expires June 2026.`,
+    eligible: false,
+    details: 'The 30C Alternative Fuel Vehicle Refueling Property Credit requires sites to be "placed in service" by June 30, 2026. New DCFC installations starting after March 2026 are unlikely to meet permitting, construction, and inspection timelines. Amount shown for reference only — excluded from incentive totals.',
+    warning: 'Deadline June 30, 2026 — new DCFC projects are unlikely to be placed in service in time',
+    confidence: 'uncertain',
     category: 'federal',
     expiresAt: 'Jun 2026',
     isAlternative: false,

@@ -10,7 +10,7 @@ const scores = [
 ];
 
 const incentives = [
-  { name: 'Federal 30C Tax Credit', tier: 'Confirmed', icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10', amount: '$30,000' },
+  { name: 'NYSERDA Make-Ready', tier: 'Confirmed', icon: CheckCircle2, color: 'text-success', bg: 'bg-success/10', amount: '$32,000' },
   { name: 'CA NEVI State Match', tier: 'Likely', icon: TrendingUp, color: 'text-primary', bg: 'bg-primary/10', amount: '$18,000' },
   { name: 'Utility Rebate (SCE)', tier: 'Uncertain', icon: HelpCircle, color: 'text-accent', bg: 'bg-accent/10', amount: '~$4,000' },
 ];
