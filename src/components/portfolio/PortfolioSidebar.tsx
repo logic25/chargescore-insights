@@ -18,7 +18,7 @@ interface Props {
 
 const items = [
   { id: "waterfall", title: "Portfolio Waterfall", icon: BarChart3 },
-  { id: "chargescore", title: "ChargeScore (Stall Sizer)", icon: Zap },
+  { id: "chargescore", title: "ChargeRank (Stall Sizer)", icon: Zap },
   { id: "documents", title: "Documents", icon: FileText },
   { id: "exit", title: "Exit Scenarios", icon: TrendingUp, disabled: true },
 ];
