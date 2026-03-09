@@ -8,6 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import MlAdmin from "./pages/MlAdmin";
+import RoleGuard from "./components/RoleGuard";
 import MyAnalyses from "./pages/MyAnalyses";
 import Portfolio from "./pages/Portfolio";
 import Pricing from "./pages/Pricing";
