@@ -74,8 +74,13 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
 
   const recommendation = computeStallRecommendation(inputs);
 
-  const handleAddressSelect = useCallback(async (result: { formatted: string; lat: number; lng: number; stateCode: string }) => {
+  const handleAddressSelect = useCallback(async (
+    result: { formatted: string; lat: number; lng: number; stateCode: string },
+    options?: { applyParcelParking?: boolean }
+  ) => {
     const { formatted, lat, lng, stateCode } = result;
+    const applyParcelParking = options?.applyParcelParking ?? true;
+
     setInputs(prev => ({
       ...prev,
       siteName: formatted.split(',')[0] || formatted,
@@ -157,7 +162,7 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
         dailyTraffic: aadtResult.aadt ?? prev.dailyTraffic,
         nearbyL3Ports: l3Ports,
         lotSizeSqFt: lotSizeSqFt ?? prev.lotSizeSqFt,
-        totalParkingSpaces: totalParkingSpaces ?? prev.totalParkingSpaces,
+        totalParkingSpaces: applyParcelParking ? (totalParkingSpaces ?? prev.totalParkingSpaces) : prev.totalParkingSpaces,
         evAdoptionRate: adoptionRate,
         locationType,
         chargeScore: scoreResult.totalScore,
