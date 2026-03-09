@@ -208,15 +208,24 @@ const Portfolio = () => {
     if (success) await fetchSites();
   };
 
-  // --- Sites tab data ---
-  const scaled = useMemo(() => analyses.map(s => ({
-    ...s,
-    noi: s.noi != null ? s.noi * multiplier : null,
-    owner_monthly: s.owner_monthly != null ? s.owner_monthly * multiplier : null,
-    ms_monthly: s.ms_monthly != null ? s.ms_monthly * multiplier : null,
-    npv: s.npv != null ? s.npv * multiplier : null,
-    coc: s.coc != null ? s.coc * multiplier : null,
-  })), [analyses, multiplier]);
+  // --- Sites tab data --- recalculate owner/ms splits live from globalSplit
+  const scaled = useMemo(() => analyses.map(s => {
+    const noi = s.noi != null ? s.noi * multiplier : null;
+    const ownerPct = globalSplit / 100;
+    const ownerMonthly = noi != null ? (noi * ownerPct) / 12 : null;
+    const msMonthly = noi != null ? (noi * (1 - ownerPct)) / 12 : null;
+    const netInv = s.net_investment ?? 0;
+    const coc = noi != null && netInv > 0 ? (noi * ownerPct / netInv) * 100 : null;
+    return {
+      ...s,
+      noi,
+      owner_monthly: ownerMonthly,
+      ms_monthly: msMonthly,
+      npv: s.npv != null ? s.npv * multiplier : null,
+      coc,
+      owner_split_pct: globalSplit,
+    };
+  }), [analyses, multiplier, globalSplit]);
 
   const totals = useMemo(() => {
     const sum = (key: keyof AnalysisRow) => scaled.reduce((acc, s) => acc + ((s[key] as number) ?? 0), 0);
