@@ -261,6 +261,14 @@ const Dashboard = () => {
     [incentivePrograms, site.teslaStalls, financials.totalProjectCost]
   );
 
+  const sizerLocationType = useMemo(() => {
+    const traffic = aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel];
+    if (traffic >= 25000) return 'highway' as const;
+    if (traffic >= 10000) return 'urban_retail' as const;
+    if (traffic >= 5000) return 'suburban_retail' as const;
+    return 'rural' as const;
+  }, [aadtData.aadt, trafficLevel]);
+
   // Stall recommendation for hint
   const stallRecommendation = useMemo(() => computeStallRecommendation({
     siteName: '',
@@ -274,14 +282,11 @@ const Dashboard = () => {
     evAdoptionRate: evRegistrations > 0 ? Math.min(evRegistrations / 100000, 0.15) : 0.05,
     avgChargeTimeMin: 25,
     operatingHours: 16,
-    locationType:
-      (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 25000 ? 'highway' :
-      (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 10000 ? 'urban_retail' :
-      (aadtData.aadt ?? TRAFFIC_LEVEL_VPD[trafficLevel]) >= 5000 ? 'suburban_retail' : 'rural',
+    locationType: sizerLocationType,
     evpinScore: null,
     chargeScore: chargeScore.totalScore,
     nearbyL3Ports: stationMetrics.totalDcfcPortsWithin5Miles,
-  }), [site.state, site.totalParkingSpaces, parcelData.lotArea, aadtData, trafficLevel, evRegistrations, chargeScore.totalScore, stationMetrics]);
+  }), [site.state, site.totalParkingSpaces, parcelData.lotArea, aadtData, trafficLevel, evRegistrations, sizerLocationType, chargeScore.totalScore, stationMetrics]);
 
   const handleSaveProject = async () => {
     if (!user) {
