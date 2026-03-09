@@ -83,6 +83,10 @@ const FinancialProjection = ({ financials, npvYears, onNpvYearsChange }: Props) 
         <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground leading-relaxed">
           <p><strong>What is NPV?</strong> Net Present Value shows your total {npvYears}-year profit in today's dollars. Future earnings are worth less than money today — we discount at 8% annually, reflecting the opportunity cost of capital (i.e., what you'd likely earn investing elsewhere). A positive NPV means this charging station outperforms a typical market investment.</p>
         </div>
+
+        <div className="mt-3">
+          <FinancialDisclaimer compact />
+        </div>
       </div>
     </div>
   );

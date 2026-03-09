@@ -52,6 +52,9 @@ export default function QuickFinancialPreview({ stalls, kwhPerStallPerDay }: Pro
           <Row label="Annual NOI" value={fmt(Math.round(annualNOI))} bold />
           <Row label="Est. CoC (at 70% owner)" value={estimatedCoC !== null ? fmtPct(estimatedCoC) : 'N/A'} bold />
         </div>
+        <div className="md:col-span-2 mt-2">
+          <FinancialDisclaimer compact />
+        </div>
       </CardContent>
     </Card>
   );
