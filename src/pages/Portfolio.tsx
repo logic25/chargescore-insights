@@ -638,7 +638,11 @@ const Portfolio = () => {
 
             {/* ═══ STALL SIZER TAB ═══ */}
             <TabsContent value="sizer">
-              <StallSizer onAddToPortfolio={handleAddFromSizer} />
+              <StallSizer
+                onAddToPortfolio={handleAddFromSizer}
+                onUpdateSite={handleUpdateSiteFromSizer}
+                existingSites={analyses.map(a => ({ id: a.id, name: a.address.split(',')[0], address: a.address }))}
+              />
             </TabsContent>
 
             {/* ═══ DOCUMENTS TAB ═══ */}
