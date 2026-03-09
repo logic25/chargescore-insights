@@ -126,6 +126,9 @@ export default function Pricing() {
               <div className="mt-2 mb-4">
                 <span className="font-mono text-4xl font-extrabold text-foreground">{tier.price}</span>
                 <span className="text-sm text-muted-foreground">{tier.period}</span>
+                {tier.launchPricing && (
+                  <p className="mt-1 text-xs font-medium text-primary">🔒 Launch pricing — locks in your rate</p>
+                )}
               </div>
 
               <Button
