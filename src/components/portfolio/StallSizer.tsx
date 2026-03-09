@@ -297,7 +297,13 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
                     <Tooltip><TooltipTrigger asChild>
                       <Label className="text-xs flex items-center gap-1 cursor-help">Total Parking Spaces <Info className="h-3 w-3 text-muted-foreground" /></Label>
                     </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Total number of parking spaces at the site. Auto-estimated from lot size minus building footprint at ~350 sqft/space.</TooltipContent></Tooltip>
-                    <Input type="number" value={inputs.totalParkingSpaces ?? ''} onChange={e => set('totalParkingSpaces', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" placeholder="Or estimate from lot size" />
+                    <Input type="number" value={inputs.totalParkingSpaces ?? ''} onChange={e => {
+                      const parsed = e.target.value ? parseInt(e.target.value) : null;
+                      set('totalParkingSpaces', parsed);
+                      if (selectedSiteId && parsed !== null) {
+                        setParkingOverrides(prev => ({ ...prev, [selectedSiteId]: parsed }));
+                      }
+                    }} className="h-8 text-sm bg-amber/10 text-primary" placeholder="Or estimate from lot size" />
                   </div>
                   <div className="space-y-1">
                     <Tooltip><TooltipTrigger asChild>
