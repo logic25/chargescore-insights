@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { MapPin, CircleDot, X, Undo2, Trash2, Check, Sparkles, Loader2 } from 'lucide-react';
+import { MapPin, CircleDot, X, Undo2, Trash2, Check, Sparkles, Loader2, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import L from 'leaflet';
@@ -12,10 +12,47 @@ interface SiteAerialProps {
   onSpotsConfirmed?: (count: number) => void;
 }
 
+/**
+ * Generate a grid of points within the visible map bounds, offset from center.
+ * Used to visualize AI-counted spots on the map.
+ */
+function generateSpotGrid(center: L.LatLng, count: number, map: L.Map): L.LatLng[] {
+  const bounds = map.getBounds();
+  const ne = bounds.getNorthEast();
+  const sw = bounds.getSouthWest();
+
+  // Use ~60% of the visible area, centered
+  const latSpan = (ne.lat - sw.lat) * 0.6;
+  const lngSpan = (ne.lng - sw.lng) * 0.6;
+  const baseLat = center.lat - latSpan / 2;
+  const baseLng = center.lng - lngSpan / 2;
+
+  // Calculate grid dimensions
+  const cols = Math.ceil(Math.sqrt(count * 1.5));
+  const rows = Math.ceil(count / cols);
+  const latStep = latSpan / (rows + 1);
+  const lngStep = lngSpan / (cols + 1);
+
+  const points: L.LatLng[] = [];
+  for (let r = 1; r <= rows && points.length < count; r++) {
+    for (let c = 1; c <= cols && points.length < count; c++) {
+      // Add slight jitter for natural look
+      const jitterLat = (Math.random() - 0.5) * latStep * 0.3;
+      const jitterLng = (Math.random() - 0.5) * lngStep * 0.3;
+      points.push(L.latLng(
+        baseLat + r * latStep + jitterLat,
+        baseLng + c * lngStep + jitterLng
+      ));
+    }
+  }
+  return points;
+}
+
 const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const [countMode, setCountMode] = useState(false);
+  const [editMode, setEditMode] = useState(false); // edit AI spots
   const [spots, setSpots] = useState<L.LatLng[]>([]);
   const [confirmed, setConfirmed] = useState(false);
   const markersRef = useRef<L.CircleMarker[]>([]);
@@ -27,6 +64,7 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
   // AI counter state
   const [aiCounting, setAiCounting] = useState(false);
   const [aiResult, setAiResult] = useState<{ count: number; confidence: string; notes: string } | null>(null);
+  const [aiEdited, setAiEdited] = useState(false); // tracks if user modified AI spots
 
   // Initialize map
   useEffect(() => {
@@ -53,13 +91,16 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
     });
     L.marker([lat, lng], { icon }).addTo(map);
 
-    // Reset AI result on location change
     setAiResult(null);
+    setAiEdited(false);
+    setSpots([]);
+    setConfirmed(false);
+    setEditMode(false);
 
     return () => { map.remove(); mapRef.current = null; };
   }, [lat, lng]);
 
-  // Toggle count mode — keep dragging enabled, distinguish click vs drag
+  // Click handler for count mode OR edit mode
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -69,9 +110,10 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
       clickHandlerRef.current = null;
     }
 
-    if (countMode) {
-      map.dragging.enable();
+    const isActive = countMode || editMode;
 
+    if (isActive) {
+      map.dragging.enable();
       const container = map.getContainer();
 
       const onMouseDown = (e: MouseEvent) => {
@@ -81,9 +123,7 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
       const onMouseMove = () => {
         if (dragStartRef.current) isDraggingRef.current = true;
       };
-      const onMouseUp = () => {
-        dragStartRef.current = null;
-      };
+      const onMouseUp = () => { dragStartRef.current = null; };
 
       container.addEventListener('mousedown', onMouseDown);
       container.addEventListener('mousemove', onMouseMove);
@@ -93,6 +133,7 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
         if (!isDraggingRef.current) {
           setSpots(prev => [...prev, e.latlng]);
           setConfirmed(false);
+          if (editMode) setAiEdited(true);
         }
         isDraggingRef.current = false;
       };
@@ -109,9 +150,9 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
       map.dragging.enable();
       map.getContainer().style.cursor = '';
     }
-  }, [countMode]);
+  }, [countMode, editMode]);
 
-  // Draw spot markers
+  // Draw spot markers — clickable to delete in edit/count mode
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -121,10 +162,39 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
     labelsRef.current.forEach(m => m.remove());
     labelsRef.current = [];
 
+    const isActive = countMode || editMode;
+    const isAiSpot = aiResult && !aiEdited && !countMode;
+
     spots.forEach((p, i) => {
       const marker = L.circleMarker(p, {
-        radius: 8, color: '#fff', fillColor: confirmed ? '#22c55e' : '#00d4aa', fillOpacity: 0.9, weight: 2,
+        radius: 8,
+        color: '#fff',
+        fillColor: confirmed ? '#22c55e' : isAiSpot ? '#8b5cf6' : '#00d4aa',
+        fillOpacity: 0.9,
+        weight: 2,
       }).addTo(map);
+
+      // Allow clicking markers to delete them in edit/count mode
+      if (isActive) {
+        map.getContainer().style.cursor = 'crosshair';
+        marker.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          setSpots(prev => prev.filter((_, idx) => idx !== i));
+          setConfirmed(false);
+          if (editMode) setAiEdited(true);
+        });
+        // Add a subtle pulse effect on hover
+        marker.on('mouseover', () => {
+          marker.setStyle({ fillColor: '#ef4444', fillOpacity: 1 });
+        });
+        marker.on('mouseout', () => {
+          marker.setStyle({
+            fillColor: confirmed ? '#22c55e' : isAiSpot ? '#8b5cf6' : '#00d4aa',
+            fillOpacity: 0.9,
+          });
+        });
+      }
+
       markersRef.current.push(marker);
 
       const label = L.marker(p, {
@@ -140,28 +210,51 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
     });
 
     onSpotsCounted?.(spots.length);
-  }, [spots, confirmed, onSpotsCounted]);
+  }, [spots, confirmed, countMode, editMode, aiResult, aiEdited, onSpotsCounted]);
 
-  const handleClear = useCallback(() => { setSpots([]); setConfirmed(false); }, []);
-  const handleUndo = useCallback(() => { setSpots(prev => prev.slice(0, -1)); setConfirmed(false); }, []);
+  const handleClear = useCallback(() => { setSpots([]); setConfirmed(false); setAiEdited(true); }, []);
+  const handleUndo = useCallback(() => { setSpots(prev => prev.slice(0, -1)); setConfirmed(false); if (editMode) setAiEdited(true); }, [editMode]);
 
   const handleConfirm = useCallback(() => {
     setConfirmed(true);
     onSpotsConfirmed?.(spots.length);
     setCountMode(false);
+    setEditMode(false);
   }, [spots.length, onSpotsConfirmed]);
 
   const toggleCount = useCallback(() => {
     if (countMode && !confirmed) {
       handleClear();
     }
+    setEditMode(false);
     setCountMode(prev => !prev);
   }, [countMode, confirmed, handleClear]);
 
-  // AI auto-count
+  // Enter edit mode for AI spots
+  const handleEditAiSpots = useCallback(() => {
+    setEditMode(true);
+    setConfirmed(false);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    if (editMode && !aiEdited && aiResult) {
+      // Restore original AI grid
+      const map = mapRef.current;
+      if (map) {
+        const grid = generateSpotGrid(L.latLng(lat, lng), aiResult.count, map);
+        setSpots(grid);
+      }
+    }
+    setEditMode(false);
+    setCountMode(false);
+  }, [editMode, aiEdited, aiResult, lat, lng]);
+
+  // AI auto-count — now places visual markers
   const handleAiCount = useCallback(async () => {
     setAiCounting(true);
     setAiResult(null);
+    setAiEdited(false);
+    setSpots([]);
     try {
       const { data, error } = await supabase.functions.invoke('count-parking-spots', {
         body: { lat, lng },
@@ -172,8 +265,13 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
 
       setAiResult(data);
       if (data?.count > 0) {
-        onSpotsConfirmed?.(data.count);
-        toast.success(`AI detected ${data.count} parking spots (${data.confidence} confidence)`);
+        // Place markers on map
+        const map = mapRef.current;
+        if (map) {
+          const grid = generateSpotGrid(L.latLng(lat, lng), data.count, map);
+          setSpots(grid);
+        }
+        toast.success(`AI detected ${data.count} parking spots (${data.confidence} confidence). Tap "Edit" to adjust.`);
       } else {
         toast.info('AI could not detect parking spots clearly. Try manual count.');
       }
@@ -189,9 +287,11 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
     } finally {
       setAiCounting(false);
     }
-  }, [lat, lng, onSpotsConfirmed]);
+  }, [lat, lng]);
 
   const confidenceColor = aiResult?.confidence === 'high' ? 'bg-green-600/80' : aiResult?.confidence === 'medium' ? 'bg-amber-600/80' : 'bg-red-600/80';
+
+  const isEditing = countMode || editMode;
 
   return (
     <div className="overflow-hidden h-full">
@@ -206,9 +306,9 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
           </span>
         </div>
 
-        {/* Count mode controls */}
+        {/* Top-right controls */}
         <div className="absolute top-2 right-2 z-[1000] flex items-center gap-1.5">
-          {countMode && (
+          {isEditing && (
             <>
               <button type="button" onClick={handleUndo} disabled={spots.length === 0}
                 className="flex items-center gap-1 rounded bg-black/60 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-sm hover:bg-black/80 disabled:opacity-40 transition-colors">
@@ -226,7 +326,7 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
               )}
             </>
           )}
-          {!countMode && (
+          {!isEditing && (
             <>
               {/* AI Auto Count button */}
               <button type="button" onClick={handleAiCount} disabled={aiCounting}
@@ -234,6 +334,13 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
                 {aiCounting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                 {aiCounting ? 'Counting…' : 'AI Count'}
               </button>
+              {/* Edit AI spots (only if AI result with spots visible) */}
+              {aiResult && aiResult.count > 0 && spots.length > 0 && !confirmed && (
+                <button type="button" onClick={handleEditAiSpots}
+                  className="flex items-center gap-1 rounded px-2.5 py-1.5 text-[10px] font-semibold backdrop-blur-sm transition-colors bg-violet-600/90 text-white hover:bg-violet-700">
+                  <Pencil className="h-3 w-3" /> Edit
+                </button>
+              )}
               {/* Manual Count button */}
               <button type="button" onClick={toggleCount}
                 className="flex items-center gap-1 rounded px-2.5 py-1.5 text-[10px] font-semibold backdrop-blur-sm transition-colors bg-black/60 text-white hover:bg-black/80">
@@ -242,8 +349,8 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
               </button>
             </>
           )}
-          {countMode && (
-            <button type="button" onClick={toggleCount}
+          {isEditing && (
+            <button type="button" onClick={handleCancelEdit}
               className="flex items-center gap-1 rounded px-2.5 py-1.5 text-[10px] font-semibold backdrop-blur-sm transition-colors bg-primary text-primary-foreground">
               <X className="h-3 w-3" /> Cancel
             </button>
@@ -251,42 +358,57 @@ const SiteAerial = ({ lat, lng, onSpotsCounted, onSpotsConfirmed }: SiteAerialPr
         </div>
 
         {/* Instructions */}
-        {countMode && (
-          <div className="absolute top-2 left-2 z-[1000] rounded bg-black/60 px-2.5 py-1.5 backdrop-blur-sm">
-            <span className="text-[10px] font-medium text-white">
-              {spots.length === 0
-                ? 'Tap each parking spot • Pan to move around'
-                : `${spots.length} spot${spots.length !== 1 ? 's' : ''} marked • Pan to see more`}
+        {isEditing && (
+          <div className="absolute top-2 left-2 z-[1000] rounded bg-black/60 px-2.5 py-1.5 backdrop-blur-sm max-w-[220px]">
+            <span className="text-[10px] font-medium text-white leading-tight block">
+              {editMode
+                ? spots.length === 0
+                  ? 'Tap to add spots • Click existing to remove'
+                  : `${spots.length} spot${spots.length !== 1 ? 's' : ''} • Tap to add, click marker to remove`
+                : spots.length === 0
+                  ? 'Tap each parking spot • Pan to move around'
+                  : `${spots.length} spot${spots.length !== 1 ? 's' : ''} marked • Tap to add, click marker to remove`}
             </span>
           </div>
         )}
 
-        {/* AI result badge */}
-        {!countMode && aiResult && aiResult.count > 0 && (
+        {/* AI result badge — shown when AI spots are on map but not editing */}
+        {!isEditing && aiResult && aiResult.count > 0 && spots.length > 0 && (
           <div className={`absolute bottom-2 right-2 z-[1000] rounded-lg ${confidenceColor} px-3 py-2 backdrop-blur-sm`}>
             <div className="flex items-center gap-1.5">
               <Sparkles className="h-3 w-3 text-white" />
-              <span className="text-[10px] text-white/80">AI Count</span>
+              <span className="text-[10px] text-white/80">AI Count{aiEdited ? ' (edited)' : ''}</span>
             </div>
-            <div className="font-mono text-xl font-bold text-white">{aiResult.count} spots</div>
+            <div className="font-mono text-xl font-bold text-white">{spots.length} spots</div>
             <div className="text-[10px] text-white/70">{aiResult.confidence} confidence</div>
             {aiResult.notes && <div className="text-[9px] text-white/50 max-w-[180px] truncate mt-0.5">{aiResult.notes}</div>}
+            {!confirmed && (
+              <button type="button" onClick={handleConfirm}
+                className="mt-1.5 w-full rounded bg-white/20 px-2 py-1 text-[10px] font-semibold text-white hover:bg-white/30 transition-colors">
+                ✓ Use this count
+              </button>
+            )}
+            {confirmed && (
+              <div className="mt-1 text-[10px] text-white/90 font-semibold">✓ Confirmed</div>
+            )}
           </div>
         )}
 
-        {/* Confirmed count badge (shown when not in count mode, manual) */}
-        {!countMode && confirmed && spots.length > 0 && !aiResult && (
+        {/* Confirmed count badge (manual count, no AI) */}
+        {!isEditing && confirmed && spots.length > 0 && !aiResult && (
           <div className="absolute bottom-2 right-2 z-[1000] rounded-lg bg-green-700/80 px-3 py-2 backdrop-blur-sm">
             <div className="text-[10px] text-white/80">Confirmed Count</div>
             <div className="font-mono text-xl font-bold text-white">{spots.length} spots</div>
           </div>
         )}
 
-        {/* Live count while counting */}
-        {countMode && spots.length > 0 && (
+        {/* Live count while editing */}
+        {isEditing && spots.length > 0 && (
           <div className="absolute bottom-2 right-2 z-[1000] rounded-lg bg-black/70 px-3 py-2 backdrop-blur-sm">
             <div className="font-mono text-2xl font-bold text-primary">{spots.length}</div>
-            <div className="text-[10px] text-white/70">spots counted</div>
+            <div className="text-[10px] text-white/70">
+              {editMode ? 'spots (editing)' : 'spots counted'}
+            </div>
           </div>
         )}
 
