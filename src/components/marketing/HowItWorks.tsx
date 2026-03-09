@@ -11,7 +11,7 @@ const steps = [
   {
     icon: BarChart3,
     step: '02',
-    title: 'Receive Your ChargeScore™',
+    title: 'Receive Your ChargeRank™',
     desc: 'Our scoring engine weights 12+ factors across demand, competition, grid capacity, and location quality into a single 0–100 infrastructure score.',
   },
   {
