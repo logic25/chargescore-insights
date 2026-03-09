@@ -31,7 +31,7 @@ const tiers = [
     highlight: true,
     badge: 'Most Popular',
     features: [
-      { label: 'ChargeScore™ (full)', included: true },
+      { label: 'ChargeRank™ (full)', included: true },
       { label: 'Incentive program count + range', included: true },
       { label: 'Traffic & competition map', included: true },
       { label: 'Incentive confidence tiers', included: true },
