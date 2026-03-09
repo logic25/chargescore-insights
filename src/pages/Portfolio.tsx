@@ -152,13 +152,13 @@ const Portfolio = () => {
   };
 
   // Fetch incentive programs for an expanded site
+  // Always re-fetch incentives when expanding to get latest data
   const handleExpandSite = useCallback(async (site: AnalysisRow) => {
     if (expandedSiteId === site.id) {
       setExpandedSiteId(null);
       return;
     }
     setExpandedSiteId(site.id);
-    if (siteIncentives[site.id]) return; // already loaded
 
     const territory = inferUtilityTerritory(site);
     const programs = await fetchIncentivePrograms(territory, site.state);
@@ -166,7 +166,7 @@ const Portfolio = () => {
     const grossCost = site.total_project_cost ?? stalls * 87500;
     const result = calculateIncentives(programs, stalls, grossCost);
     setSiteIncentives(prev => ({ ...prev, [site.id]: result }));
-  }, [expandedSiteId, siteIncentives]);
+  }, [expandedSiteId]);
 
   useEffect(() => {
     if (authLoading) return;
