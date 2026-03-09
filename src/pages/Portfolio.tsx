@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Zap, ArrowLeft, TrendingUp, Sliders, Trash2, ExternalLink, BarChart3, FileText, Settings, ChevronDown } from 'lucide-react';
+import { Zap, ArrowLeft, TrendingUp, Sliders, Trash2, ExternalLink, BarChart3, FileText, Settings, ChevronDown, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
