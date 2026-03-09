@@ -87,7 +87,7 @@ const LandingPage = () => {
               <span className="text-primary">EV charging potential</span>
             </h1>
             <p className="mt-6 text-lg text-navy-foreground/80 md:text-xl">
-              Search any address to get a free site analysis. ChargeScore evaluates traffic, competition, incentives, and revenue potential — in 60 seconds.
+              Search any address to get a free site analysis. ChargeRank evaluates traffic, competition, incentives, and revenue potential — in 60 seconds.
             </p>
             <p className="mt-2 text-sm text-navy-foreground/60">
               5 free analyses. No credit card required.
