@@ -13,7 +13,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Calculate bounding box: use parcel bounds if available, else fixed 75m span
+    // Calculate bounding box: use parcel bounds if available, else fixed span
     let bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number };
     if (parcelBounds) {
       const latPad = (parcelBounds.maxLat - parcelBounds.minLat) * 0.15;
@@ -29,8 +29,41 @@ serve(async (req) => {
       bbox = { minLng: lng - span, minLat: lat - span, maxLng: lng + span, maxLat: lat + span };
     }
 
+    // Enforce minimum bbox span so ArcGIS export doesn't fail
+    const MIN_SPAN = 0.0012; // ~130m minimum
+    const latSpan = bbox.maxLat - bbox.minLat;
+    const lngSpan = bbox.maxLng - bbox.minLng;
+    if (latSpan < MIN_SPAN) {
+      const center = (bbox.maxLat + bbox.minLat) / 2;
+      bbox.minLat = center - MIN_SPAN / 2;
+      bbox.maxLat = center + MIN_SPAN / 2;
+    }
+    if (lngSpan < MIN_SPAN) {
+      const center = (bbox.maxLng + bbox.minLng) / 2;
+      bbox.minLng = center - MIN_SPAN / 2;
+      bbox.maxLng = center + MIN_SPAN / 2;
+    }
+
     const satUrl = imageUrl ||
       `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=1024,1024&imageSR=4326&format=png&f=image`;
+
+    // Fetch the image server-side and convert to base64 data URI
+    // (Gemini sometimes can't fetch external URLs directly)
+    let imageContent: { type: string; image_url: { url: string } };
+    try {
+      const imgResp = await fetch(satUrl);
+      if (imgResp.ok) {
+        const imgBuf = await imgResp.arrayBuffer();
+        const b64 = btoa(String.fromCharCode(...new Uint8Array(imgBuf)));
+        imageContent = { type: "image_url", image_url: { url: `data:image/png;base64,${b64}` } };
+      } else {
+        console.error("ArcGIS image fetch failed:", imgResp.status);
+        imageContent = { type: "image_url", image_url: { url: satUrl } };
+      }
+    } catch (imgErr) {
+      console.error("Image fetch error:", imgErr);
+      imageContent = { type: "image_url", image_url: { url: satUrl } };
+    }
 
     const propertyContext = [
       address ? `Property address: ${address}` : '',
@@ -77,10 +110,7 @@ Return ONLY a JSON object with these fields:
                 type: "text",
                 text: `Count the parking spots for ONLY the subject property at coordinates ${lat}, ${lng}. The blue pin marks the property. ${propertyContext ? propertyContext + '.' : ''} ${boundaryDescription} Return JSON only.`
               },
-              {
-                type: "image_url",
-                image_url: { url: satUrl }
-              }
+              imageContent
             ]
           }
         ],
