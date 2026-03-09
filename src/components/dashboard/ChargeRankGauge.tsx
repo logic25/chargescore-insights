@@ -69,7 +69,7 @@ const ChargeRankGauge = ({ score, siteInsights, incentiveTeaser }: ChargeRankGau
             <Info className="h-4 w-4 text-muted-foreground" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs text-sm">
-            ChargeScore rates this location from 0-100 based on 9 factors: traffic, EV density, competition, dwell time, amenities, parking, grid capacity, incentive eligibility, and demand overflow. Higher is better.
+            ChargeRank rates this location from 0-100 based on 9 factors: traffic, EV density, competition, dwell time, amenities, parking, grid capacity, incentive eligibility, and demand overflow. Higher is better.
           </TooltipContent>
         </Tooltip>
         {score.grade && (
