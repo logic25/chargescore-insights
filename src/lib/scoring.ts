@@ -44,7 +44,7 @@ export interface ScoringInputs {
   utilityName?: string | null;
 }
 
-export function calculateChargeScoreV2(inputs: ScoringInputs): ChargeScoreResult {
+export function calculateChargeRankV2(inputs: ScoringInputs): ChargeRankResult {
   const factors: ScoreFactor[] = [];
 
   // Pre-compute urban context (used by multiple factors)
