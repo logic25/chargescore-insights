@@ -26,6 +26,7 @@ const tiers = [
     name: 'Plus',
     price: '$49',
     sub: 'per month',
+    launchPricing: true,
     cta: 'Get Plus',
     ctaVariant: 'default' as const,
     highlight: true,
