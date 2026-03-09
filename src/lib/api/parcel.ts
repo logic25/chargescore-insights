@@ -8,9 +8,13 @@
 const PLUTO_QUERY =
   'https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MAPPLUTO/FeatureServer/0/query';
 
-// Official NYS ITS GIS service — layer 0 is footprints, parcels are at the service-level query endpoint
+// Official NYS ITS GIS service
 const NYS_PARCELS_QUERY =
   'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer/query';
+
+export interface ParcelGeometry {
+  rings: number[][][]; // ArcGIS polygon format: [[[lng, lat], ...]]
+}
 
 export interface ParcelResult {
   lotArea: number | null;       // sq ft
@@ -20,11 +24,13 @@ export interface ParcelResult {
   landUse: string | null;
   bbl: string | null;
   source: 'mappluto' | 'nys_parcels' | null;
+  geometry: ParcelGeometry | null;
 }
 
 const empty: ParcelResult = {
   lotArea: null, bldgArea: null, address: null,
   ownerName: null, landUse: null, bbl: null, source: null,
+  geometry: null,
 };
 
 /**
@@ -38,7 +44,8 @@ async function fetchMapPluto(lat: number, lng: number): Promise<ParcelResult> {
     url.searchParams.set('inSR', '4326');
     url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
     url.searchParams.set('outFields', 'LotArea,BldgArea,Address,OwnerName,LandUse,BBL');
-    url.searchParams.set('returnGeometry', 'false');
+    url.searchParams.set('returnGeometry', 'true');
+    url.searchParams.set('outSR', '4326');
     url.searchParams.set('f', 'json');
 
     const res = await fetch(url.toString());
@@ -49,6 +56,10 @@ async function fetchMapPluto(lat: number, lng: number): Promise<ParcelResult> {
     if (!features?.length) return empty;
 
     const attrs = features[0].attributes;
+    const geometry: ParcelGeometry | null = features[0].geometry?.rings
+      ? { rings: features[0].geometry.rings }
+      : null;
+
     return {
       lotArea: attrs.LotArea ?? null,
       bldgArea: attrs.BldgArea ?? null,
@@ -57,6 +68,7 @@ async function fetchMapPluto(lat: number, lng: number): Promise<ParcelResult> {
       landUse: attrs.LandUse ?? null,
       bbl: attrs.BBL ? String(attrs.BBL) : null,
       source: 'mappluto',
+      geometry,
     };
   } catch (err) {
     console.error('MapPLUTO query failed', err);
@@ -66,11 +78,8 @@ async function fetchMapPluto(lat: number, lng: number): Promise<ParcelResult> {
 
 /**
  * Query NYS Tax Parcels by point (all participating NY counties).
- * Uses service-level query which searches across all layers.
- * Also tries individual layer queries as fallback.
  */
 async function fetchNysParcels(lat: number, lng: number): Promise<ParcelResult> {
-  // Try multiple layer endpoints since different counties may be on different layers
   const layerUrls = [
     'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer/0/query',
     'https://gisservices.its.ny.gov/arcgis/rest/services/NYS_Tax_Parcels_Public/FeatureServer/1/query',
@@ -84,7 +93,8 @@ async function fetchNysParcels(lat: number, lng: number): Promise<ParcelResult> 
       url.searchParams.set('inSR', '4326');
       url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
       url.searchParams.set('outFields', '*');
-      url.searchParams.set('returnGeometry', 'false');
+      url.searchParams.set('returnGeometry', 'true');
+      url.searchParams.set('outSR', '4326');
       url.searchParams.set('f', 'json');
 
       const res = await fetch(url.toString());
@@ -95,8 +105,10 @@ async function fetchNysParcels(lat: number, lng: number): Promise<ParcelResult> 
       if (!features?.length) continue;
 
       const attrs = features[0].attributes;
-      // Field names vary — check common ones
       const sqFt = attrs.SQ_FT ?? attrs.SHAPE_Area ?? (attrs.CALC_ACRES ? Math.round(attrs.CALC_ACRES * 43560) : null);
+      const geometry: ParcelGeometry | null = features[0].geometry?.rings
+        ? { rings: features[0].geometry.rings }
+        : null;
 
       return {
         lotArea: sqFt ? Math.round(Number(sqFt)) : null,
@@ -106,6 +118,7 @@ async function fetchNysParcels(lat: number, lng: number): Promise<ParcelResult> 
         landUse: attrs.PROP_CLASS ?? attrs.LAND_USE ?? attrs.LandUse ?? null,
         bbl: null,
         source: 'nys_parcels',
+        geometry,
       };
     } catch (err) {
       console.error(`NYS Tax Parcels query failed for ${baseUrl}`, err);
@@ -117,7 +130,6 @@ async function fetchNysParcels(lat: number, lng: number): Promise<ParcelResult> 
 
 /**
  * Query Nassau County GIS parcels by point.
- * Public MapServer at gis.nassaucountyny.gov, Layer 1 (Parcels).
  */
 async function fetchNassauParcels(lat: number, lng: number): Promise<ParcelResult> {
   try {
@@ -129,7 +141,8 @@ async function fetchNassauParcels(lat: number, lng: number): Promise<ParcelResul
     url.searchParams.set('inSR', '4326');
     url.searchParams.set('spatialRel', 'esriSpatialRelIntersects');
     url.searchParams.set('outFields', 'PARCEL_ADDRESS,SHAPE_Area,PARCELKEY,OWNER');
-    url.searchParams.set('returnGeometry', 'false');
+    url.searchParams.set('returnGeometry', 'true');
+    url.searchParams.set('outSR', '4326');
     url.searchParams.set('f', 'json');
 
     const res = await fetch(url.toString());
@@ -140,6 +153,10 @@ async function fetchNassauParcels(lat: number, lng: number): Promise<ParcelResul
     if (!features?.length) return empty;
 
     const attrs = features[0].attributes;
+    const geometry: ParcelGeometry | null = features[0].geometry?.rings
+      ? { rings: features[0].geometry.rings }
+      : null;
+
     return {
       lotArea: attrs.SHAPE_Area ? Math.round(Number(attrs.SHAPE_Area)) : null,
       bldgArea: null,
@@ -148,6 +165,7 @@ async function fetchNassauParcels(lat: number, lng: number): Promise<ParcelResul
       landUse: null,
       bbl: null,
       source: 'nys_parcels',
+      geometry,
     };
   } catch (err) {
     console.error('Nassau County parcel query failed', err);
@@ -159,16 +177,12 @@ async function fetchNassauParcels(lat: number, lng: number): Promise<ParcelResul
  * Try MapPLUTO first (NYC), then Nassau County GIS, then NYS Tax Parcels.
  */
 export async function fetchParcelInfo(lat: number, lng: number, state?: string): Promise<ParcelResult> {
-  // Try MapPLUTO first (NYC 5 boroughs)
   const plutoResult = await fetchMapPluto(lat, lng);
   if (plutoResult.lotArea) return plutoResult;
 
-  // Try Nassau County GIS
   if (state === 'NY') {
     const nassauResult = await fetchNassauParcels(lat, lng);
     if (nassauResult.lotArea) return nassauResult;
-
-    // Fall back to NYS Tax Parcels for rest of NY
     return fetchNysParcels(lat, lng);
   }
 
