@@ -18,7 +18,7 @@ export async function logAnalysis(data: {
   try {
     const existing = JSON.parse(localStorage.getItem('chargerank_analyses') || '[]');
     existing.push(data);
-    localStorage.setItem('chargescore_analyses', JSON.stringify(existing));
+    localStorage.setItem('chargerank_analyses', JSON.stringify(existing));
     localStorage.setItem(ANALYSIS_COUNT_KEY, existing.length.toString());
   } catch {
     // ignore
