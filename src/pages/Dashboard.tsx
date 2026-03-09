@@ -312,6 +312,8 @@ const Dashboard = () => {
         charge_score: chargeScore.totalScore,
         factors: Object.fromEntries(chargeScore.factors.map(f => [f.name, f.score])) as any,
         num_stalls: site.teslaStalls,
+        total_parking_spaces: site.totalParkingSpaces,
+        location_type: sizerLocationType,
         predicted_utilization: revenueProjection.utilization,
         owner_split_pct: site.ownerSplitPct,
         annual_insurance: site.annualInsurance,
