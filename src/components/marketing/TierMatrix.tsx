@@ -44,8 +44,9 @@ const tiers = [
   },
   {
     name: 'Pro',
-    price: '$149',
+    price: '$499',
     sub: 'per month',
+    launchPricing: true,
     cta: 'Get Pro',
     ctaVariant: 'outline' as const,
     highlight: false,
