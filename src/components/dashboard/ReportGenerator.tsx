@@ -110,7 +110,7 @@ async function generateReport(props: Props): Promise<jsPDF> {
 
   pdf.setTextColor(TEAL);
   pdf.setFontSize(12);
-  pdf.text('CHARGESCORE™', MARGIN, 190);
+  pdf.text('CHARGERANK™', MARGIN, 190);
 
   pdf.setTextColor(WHITE);
   pdf.setFontSize(36);
