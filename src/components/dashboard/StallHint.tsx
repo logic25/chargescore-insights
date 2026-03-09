@@ -19,7 +19,7 @@ export default function StallHint({ recommendedStalls, userRole }: Props) {
             Suggested: <span className="font-mono font-bold text-primary">{recommendedStalls}</span> stalls
           </span>
         </div>
-        {userRole === 'pro' && (
+        {(userRole === 'pro' || userRole === 'admin') && (
           <button
             onClick={() => navigate('/portfolio?tab=sizer')}
             className="flex items-center gap-1 text-xs text-primary hover:underline"
@@ -27,6 +27,7 @@ export default function StallHint({ recommendedStalls, userRole }: Props) {
             Open Stall Sizer <ArrowRight className="h-3 w-3" />
           </button>
         )}
+
         {userRole === 'plus' && (
           <button
             onClick={() => navigate('/stall-sizer')}
