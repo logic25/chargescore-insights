@@ -68,13 +68,19 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
   const [fetching, setFetching] = useState(false);
   const [evpinUploading, setEvpinUploading] = useState(false);
   const evpinFileRef = useRef<HTMLInputElement>(null);
-  
+  const [parkingOverrides, setParkingOverrides] = useState<Record<string, number>>({});
+
   const set = <K extends keyof StallSizerInputs>(key: K, value: StallSizerInputs[K]) => setInputs(prev => ({ ...prev, [key]: value }));
 
   const recommendation = computeStallRecommendation(inputs);
 
-  const handleAddressSelect = useCallback(async (result: { formatted: string; lat: number; lng: number; stateCode: string }) => {
+  const handleAddressSelect = useCallback(async (
+    result: { formatted: string; lat: number; lng: number; stateCode: string },
+    options?: { applyParcelParking?: boolean }
+  ) => {
     const { formatted, lat, lng, stateCode } = result;
+    const applyParcelParking = options?.applyParcelParking ?? true;
+
     setInputs(prev => ({
       ...prev,
       siteName: formatted.split(',')[0] || formatted,
@@ -156,7 +162,7 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
         dailyTraffic: aadtResult.aadt ?? prev.dailyTraffic,
         nearbyL3Ports: l3Ports,
         lotSizeSqFt: lotSizeSqFt ?? prev.lotSizeSqFt,
-        totalParkingSpaces: totalParkingSpaces ?? prev.totalParkingSpaces,
+        totalParkingSpaces: applyParcelParking ? (totalParkingSpaces ?? prev.totalParkingSpaces) : prev.totalParkingSpaces,
         evAdoptionRate: adoptionRate,
         locationType,
         chargeScore: scoreResult.totalScore,
@@ -172,28 +178,24 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
   React.useEffect(() => {
     if (!prefillSite) return;
 
+    const savedParking = parkingOverrides[prefillSite.id];
     setSelectedSiteId(prefillSite.id);
+
     handleAddressSelect({
       formatted: prefillSite.address,
       lat: prefillSite.lat,
       lng: prefillSite.lng,
       stateCode: prefillSite.state,
+    }, {
+      applyParcelParking: false,
     }).then(() => {
-      // After fetch completes, override with known portfolio data if available
-      // Parcel APIs often return the wrong tax lot — portfolio data is ground truth
-      setInputs(prev => {
-        let updated = { ...prev };
-        if (prefillSite.chargeScore && prefillSite.chargeScore > 0) {
-          updated.chargeScore = prefillSite.chargeScore;
-        }
-        if (prefillSite.numStalls && prefillSite.numStalls > 0) {
-          const estimatedParking = Math.max(prefillSite.numStalls * 10, 50);
-          updated.totalParkingSpaces = Math.max(updated.totalParkingSpaces ?? 0, estimatedParking);
-        }
-        return updated;
-      });
+      setInputs(prev => ({
+        ...prev,
+        chargeScore: (prefillSite.chargeScore && prefillSite.chargeScore > 0) ? prefillSite.chargeScore : prev.chargeScore,
+        totalParkingSpaces: savedParking ?? prev.totalParkingSpaces,
+      }));
     });
-  }, [prefillSite, handleAddressSelect]);
+  }, [prefillSite, handleAddressSelect, parkingOverrides]);
 
   const handleAddToPortfolio = () => {
     const stalls = recommendation.base;
@@ -295,7 +297,13 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
                     <Tooltip><TooltipTrigger asChild>
                       <Label className="text-xs flex items-center gap-1 cursor-help">Total Parking Spaces <Info className="h-3 w-3 text-muted-foreground" /></Label>
                     </TooltipTrigger><TooltipContent side="top" className="max-w-[220px] text-xs">Total number of parking spaces at the site. Auto-estimated from lot size minus building footprint at ~350 sqft/space.</TooltipContent></Tooltip>
-                    <Input type="number" value={inputs.totalParkingSpaces ?? ''} onChange={e => set('totalParkingSpaces', e.target.value ? parseInt(e.target.value) : null)} className="h-8 text-sm bg-amber/10 text-primary" placeholder="Or estimate from lot size" />
+                    <Input type="number" value={inputs.totalParkingSpaces ?? ''} onChange={e => {
+                      const parsed = e.target.value ? parseInt(e.target.value) : null;
+                      set('totalParkingSpaces', parsed);
+                      if (selectedSiteId && parsed !== null) {
+                        setParkingOverrides(prev => ({ ...prev, [selectedSiteId]: parsed }));
+                      }
+                    }} className="h-8 text-sm bg-amber/10 text-primary" placeholder="Or estimate from lot size" />
                   </div>
                   <div className="space-y-1">
                     <Tooltip><TooltipTrigger asChild>
