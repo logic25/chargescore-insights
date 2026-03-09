@@ -28,6 +28,7 @@ export type Database = {
           kwh_per_stall_per_day: number | null
           lat: number
           lng: number
+          location_type: string | null
           margin_kwh: number | null
           monthly_rent: number | null
           ms_monthly: number | null
@@ -40,6 +41,7 @@ export type Database = {
           predicted_utilization: number | null
           price_per_kwh: number | null
           state: string
+          total_parking_spaces: number | null
           total_project_cost: number | null
           user_id: string
         }
@@ -56,6 +58,7 @@ export type Database = {
           kwh_per_stall_per_day?: number | null
           lat: number
           lng: number
+          location_type?: string | null
           margin_kwh?: number | null
           monthly_rent?: number | null
           ms_monthly?: number | null
@@ -68,6 +71,7 @@ export type Database = {
           predicted_utilization?: number | null
           price_per_kwh?: number | null
           state: string
+          total_parking_spaces?: number | null
           total_project_cost?: number | null
           user_id: string
         }
@@ -84,6 +88,7 @@ export type Database = {
           kwh_per_stall_per_day?: number | null
           lat?: number
           lng?: number
+          location_type?: string | null
           margin_kwh?: number | null
           monthly_rent?: number | null
           ms_monthly?: number | null
@@ -96,6 +101,7 @@ export type Database = {
           predicted_utilization?: number | null
           price_per_kwh?: number | null
           state?: string
+          total_parking_spaces?: number | null
           total_project_cost?: number | null
           user_id?: string
         }
