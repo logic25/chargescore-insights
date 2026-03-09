@@ -178,6 +178,17 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
         lat: prefillSite.lat,
         lng: prefillSite.lng,
         stateCode: prefillSite.state,
+      }).then(() => {
+        // After fetch completes, override with known portfolio data if available
+        // Parcel APIs often return the wrong tax lot — portfolio data is ground truth
+        if (prefillSite.numStalls && prefillSite.numStalls > 0) {
+          // Estimate parking from stalls (stalls are typically 5-10% of total parking)
+          const estimatedParking = Math.max(prefillSite.numStalls * 10, 50);
+          setInputs(prev => ({
+            ...prev,
+            totalParkingSpaces: Math.max(prev.totalParkingSpaces ?? 0, estimatedParking),
+          }));
+        }
       });
     }
   }, [prefillSite, lastPrefillId, handleAddressSelect]);
