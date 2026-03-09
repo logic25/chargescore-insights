@@ -83,7 +83,7 @@ export default function Pricing() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <Zap className="h-6 w-6 text-primary" />
-            <span className="font-heading text-xl font-bold text-foreground">ChargeScore</span>
+            <span className="font-heading text-xl font-bold text-foreground">ChargeRank</span>
           </div>
         </div>
       </header>
