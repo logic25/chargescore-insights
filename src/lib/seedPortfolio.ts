@@ -97,3 +97,54 @@ export async function seedPortfolioIfEmpty(userId: string): Promise<boolean> {
   toast.success('16 partner sites loaded. You can edit all assumptions on each site.');
   return true;
 }
+
+/**
+ * Force-seed the 16 partner sites (even if user already has analyses)
+ */
+export async function forceSeedPortfolio(userId: string): Promise<boolean> {
+  const rows = SEED_SITES.map(s => {
+    const margin = s.pricePerKwh - s.electricityCost - TESLA_FEE;
+    const annualRev = s.stalls * s.kwhPerStallPerDay * margin * 365;
+    const noi = annualRev - s.insurance;
+    const totalCost = (BOM_PER_STALL + s.installPerStall) * s.stalls;
+    const netInv = Math.max(0, totalCost - s.incentives);
+    const ownerPct = 0.70;
+    const ownerMonthly = (noi * ownerPct) / 12;
+    const msMonthly = (noi * (1 - ownerPct)) / 12;
+    const coc = netInv > 0 ? (noi * ownerPct / netInv) * 100 : null;
+
+    return {
+      user_id: userId,
+      address: s.address,
+      lat: s.lat,
+      lng: s.lng,
+      state: s.state,
+      charge_score: s.chargeScore,
+      num_stalls: s.stalls,
+      kwh_per_stall_per_day: s.kwhPerStallPerDay,
+      price_per_kwh: s.pricePerKwh,
+      electricity_cost: s.electricityCost,
+      total_project_cost: totalCost,
+      estimated_incentives: s.incentives,
+      net_investment: netInv,
+      noi,
+      margin_kwh: margin,
+      owner_monthly: ownerMonthly,
+      ms_monthly: msMonthly,
+      coc,
+      annual_insurance: s.insurance,
+      monthly_rent: 0,
+      owner_split_pct: 70,
+    };
+  });
+
+  const { error } = await supabase.from('analyses').insert(rows as any);
+  if (error) {
+    console.error('Seed error:', error);
+    toast.error('Failed to add partner sites');
+    return false;
+  }
+
+  toast.success(`Added ${SEED_SITES.length} partner sites to portfolio`);
+  return true;
+}
