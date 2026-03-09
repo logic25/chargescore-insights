@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ExitAnalysis as ExitAnalysisType, MasterControls } from "@/lib/waterfallCalc";
 import { fmt, fmtPct, fmtMult } from "@/lib/waterfallCalc";
+import FinancialDisclaimer from "@/components/dashboard/FinancialDisclaimer";
 
 interface Props {
   exit: ExitAnalysisType;
