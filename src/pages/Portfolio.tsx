@@ -169,9 +169,18 @@ const Portfolio = () => {
 
     const territory = inferUtilityTerritory(site);
     const programs = await fetchIncentivePrograms(territory, site.state);
+    const activeCurated = programs.filter(p => p.programStatus !== 'expired');
+    
+    let mergedPrograms = programs;
+    if (activeCurated.length === 0) {
+      // No curated programs — fall back to NREL AFDC
+      const nrelResults = await fetchStateIncentives({ stateCode: site.state, siteAddress: site.address });
+      mergedPrograms = [...programs, ...nrelToIncentivePrograms(nrelResults)];
+    }
+
     const stalls = site.num_stalls ?? 8;
     const grossCost = site.total_project_cost ?? stalls * 87500;
-    const result = calculateIncentives(programs, stalls, grossCost);
+    const result = calculateIncentives(mergedPrograms, stalls, grossCost);
     setSiteIncentives(prev => ({ ...prev, [site.id]: result }));
   }, [expandedSiteId]);
 

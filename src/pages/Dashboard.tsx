@@ -256,9 +256,17 @@ const Dashboard = () => {
     fetchIncentivePrograms(utilityTerritory, site.state).then(setIncentivePrograms);
   }, [utilityTerritory, site.state]);
 
+  const mergedPrograms = useMemo(() => {
+    const activeCurated = incentivePrograms.filter(p => p.programStatus !== 'expired');
+    if (activeCurated.length > 0) return incentivePrograms;
+    // No curated programs — fall back to NREL AFDC results
+    const nrelPrograms = nrelToIncentivePrograms(nrelIncentives);
+    return [...incentivePrograms, ...nrelPrograms];
+  }, [incentivePrograms, nrelIncentives]);
+
   const incentiveResult: IncentiveResult = useMemo(
-    () => calculateIncentives(incentivePrograms, site.teslaStalls, financials.totalProjectCost),
-    [incentivePrograms, site.teslaStalls, financials.totalProjectCost]
+    () => calculateIncentives(mergedPrograms, site.teslaStalls, financials.totalProjectCost),
+    [mergedPrograms, site.teslaStalls, financials.totalProjectCost]
   );
 
   const sizerLocationType = useMemo(() => {
