@@ -182,6 +182,7 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
     }
   }, [prefillSite, lastPrefillId, handleAddressSelect]);
 
+  const handleAddToPortfolio = () => {
     const stalls = recommendation.base;
     const site: Omit<SiteRow, 'id'> = {
       name: inputs.siteName || "New Site",
