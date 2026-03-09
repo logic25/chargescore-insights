@@ -105,7 +105,7 @@ export default function Pricing() {
             Simple, transparent pricing
           </h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Start free with 5 site analyses. Upgrade when you need deeper insights or portfolio-level tools.
+            Analyze any site for free. Buy reports when you need them, or subscribe for unlimited tools and live monitoring.
           </p>
         </motion.div>
 
