@@ -192,7 +192,8 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
       setInputs(prev => ({
         ...prev,
         chargeScore: (prefillSite.chargeScore && prefillSite.chargeScore > 0) ? prefillSite.chargeScore : prev.chargeScore,
-        totalParkingSpaces: savedParking ?? prev.totalParkingSpaces,
+        totalParkingSpaces: prefillSite.totalParkingSpaces ?? savedParking ?? prev.totalParkingSpaces,
+        locationType: prefillSite.locationType ?? prev.locationType,
       }));
     });
   }, [prefillSite, handleAddressSelect, parkingOverrides]);
