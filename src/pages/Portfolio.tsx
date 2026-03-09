@@ -602,7 +602,7 @@ const Portfolio = () => {
                                   <TooltipTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-7 w-7"
                                       onClick={() => {
-                                        setSizerPrefill({ address: s.address, lat: (s as any).lat, lng: (s as any).lng, state: s.state, id: s.id, numStalls: s.num_stalls, chargeScore: s.charge_score });
+                                        setSizerPrefill({ address: s.address, lat: (s as any).lat, lng: (s as any).lng, state: s.state, id: s.id, numStalls: s.num_stalls, chargeScore: s.charge_score, totalParkingSpaces: s.total_parking_spaces, locationType: s.location_type });
                                         setActiveTab('sizer');
                                       }}>
                                       <Ruler className="h-3.5 w-3.5" />
