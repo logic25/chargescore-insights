@@ -1,0 +1,2 @@
+INSERT INTO public.incentive_programs (program_name, state, utility_territory, amount_flat, amount_cap, confidence, program_status, administrator, notes, stacking_allowed)
+VALUES ('NY Municipal ZEV Grant', 'NY', NULL, NULL, 50000, 'uncertain', 'active', 'NY State', 'Up to $500K — competitive municipal grant for zero-emission vehicle infrastructure', true);
