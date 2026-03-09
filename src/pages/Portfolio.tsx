@@ -16,7 +16,7 @@ import ExitAnalysisCard from '@/components/portfolio/ExitAnalysis';
 import WaterfallCharts from '@/components/portfolio/WaterfallCharts';
 import StallSizer from '@/components/portfolio/StallSizer';
 import DocumentsManager from '@/components/portfolio/DocumentsManager';
-import { seedPortfolioIfEmpty } from '@/lib/seedPortfolio';
+import { seedPortfolioIfEmpty, forceSeedPortfolio } from '@/lib/seedPortfolio';
 import {
   DEFAULT_CONTROLS,
   computeSite,
