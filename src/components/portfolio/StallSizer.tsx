@@ -23,8 +23,16 @@ import { fetchCensusTractFips, fetchPopDensity } from "@/lib/api/census";
 import { getEstimatedEvRegistrations, extractCountyFromAddress } from "@/data/evRegistrations";
 import { calculateChargeScoreV2 } from "@/lib/scoring";
 
+interface ExistingSite {
+  id: string;
+  name: string;
+  address: string;
+}
+
 interface Props {
   onAddToPortfolio: (site: Omit<SiteRow, 'id'>) => void;
+  onUpdateSite?: (id: string, updates: { stalls: number; kwhPerStallPerDay: number }) => void;
+  existingSites?: ExistingSite[];
 }
 
 const DEFAULT_INPUTS: StallSizerInputs = {
