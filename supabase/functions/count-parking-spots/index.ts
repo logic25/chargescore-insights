@@ -110,10 +110,7 @@ Return ONLY a JSON object with these fields:
                 type: "text",
                 text: `Count the parking spots for ONLY the subject property at coordinates ${lat}, ${lng}. The blue pin marks the property. ${propertyContext ? propertyContext + '.' : ''} ${boundaryDescription} Return JSON only.`
               },
-              {
-                type: "image_url",
-                image_url: { url: satUrl }
-              }
+              imageContent
             ]
           }
         ],
