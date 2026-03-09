@@ -63,10 +63,16 @@ export default function SiteTable({ sites, controls, onSitesChange }: Props) {
     if (key === 'name' || key === 'address') {
       (s as any)[key] = raw;
     } else {
-      let val = parseFloat(raw) || 0;
-      if (key === 'stalls') val = Math.max(4, Math.ceil(val / 4) * 4);
-      (s as any)[key] = val;
+      (s as any)[key] = parseFloat(raw) || 0;
     }
+    updated[idx] = s;
+    onSitesChange(updated);
+  };
+
+  const roundStalls = (idx: number) => {
+    const updated = [...sites];
+    const s = { ...updated[idx] };
+    s.stalls = Math.max(4, Math.ceil(s.stalls / 4) * 4);
     updated[idx] = s;
     onSitesChange(updated);
   };
