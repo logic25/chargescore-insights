@@ -61,6 +61,7 @@ export default {
           foreground: "hsl(var(--navy-foreground))",
           deep: "hsl(var(--navy-deep))",
           card: "hsl(var(--navy-card))",
+          muted: "hsl(var(--navy-muted))",
         },
         amber: {
           DEFAULT: "hsl(var(--amber))",
