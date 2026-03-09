@@ -155,7 +155,7 @@ export default function Pricing() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-10">
-          No credit card required for Free tier. Plus and Pro require a conversation with our team.
+          No credit card required for Free tier. Launch pricing locks in your rate. Plus and Pro billed monthly after onboarding.
         </p>
       </main>
 
