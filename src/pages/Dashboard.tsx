@@ -597,7 +597,7 @@ const Dashboard = () => {
             <InvestmentSummary financials={financials} incentives={incentives} stalls={site.teslaStalls} kwhPerStallPerDay={site.kwhPerStallPerDay} onStallsChange={(v) => setSite(prev => ({ ...prev, teslaStalls: v }))} onUtilizationChange={(v) => { setManualKwhOverride(true); setSite(prev => ({ ...prev, kwhPerStallPerDay: v })); }} userRole={profile?.role ?? null} />
           )}
           {activePanel === 'investment' && (
-            <ChargeScoreGauge score={chargeScore} siteInsights={{
+            <ChargeRankGauge score={chargeScore} siteInsights={{
               floodZone: siteData.floodZone,
               isHighRisk: siteData.isHighRisk,
               highwayDistance: highwayProximity.distanceMiles,
