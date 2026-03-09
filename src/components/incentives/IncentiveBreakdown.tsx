@@ -15,6 +15,7 @@ const CONFIDENCE_STYLES: Record<string, { dot: string; badge: string; label: str
   confirmed: { dot: '●', badge: 'bg-success/10 text-success border-success/20', label: 'Confirmed' },
   likely: { dot: '◐', badge: 'bg-accent/10 text-accent-foreground border-accent/30', label: 'Likely' },
   uncertain: { dot: '○', badge: 'bg-muted text-muted-foreground border-border', label: 'Uncertain' },
+  unverified: { dot: '◇', badge: 'bg-amber-500/10 text-amber-600 border-amber-500/30 border-dashed', label: 'Unverified' },
 };
 
 function isStaleLe(updatedAt: string): boolean {
