@@ -136,7 +136,7 @@ const LandingPage = () => {
               {
                 icon: DollarSign,
                 title: 'Find Every Incentive',
-                desc: 'Federal 30C tax credits, NEVI funding, and state programs can cover 30-80% of your investment. We find every dollar.',
+                desc: 'NEVI funding, state rebates, and utility programs can cover 30-80% of your investment. We find every dollar.',
               },
               {
                 icon: BarChart3,

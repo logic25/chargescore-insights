@@ -4,7 +4,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 const faqs = [
   {
     q: 'How accurate are the incentive estimates?',
-    a: 'We cross-reference your address against federal (30C, NEVI), state, and utility program databases quarterly. Each program is labeled Confirmed (eligibility clear), Likely (meets most criteria), or Uncertain (possible, unverified). We never show a flat number — you get a conservative-to-optimistic range so you can plan responsibly. Expect ±15% accuracy on Confirmed programs.',
+    a: 'We cross-reference your address against federal (NEVI), state, and utility program databases quarterly. Each program is labeled Confirmed (eligibility clear), Likely (meets most criteria), or Uncertain (possible, unverified). We never show a flat number — you get a conservative-to-optimistic range so you can plan responsibly. Expect ±15% accuracy on Confirmed programs.',
   },
   {
     q: 'Why do you show ranges instead of a single number?',

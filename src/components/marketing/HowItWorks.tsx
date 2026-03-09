@@ -18,7 +18,7 @@ const steps = [
     icon: DollarSign,
     step: '03',
     title: 'Incentive Confidence Engine',
-    desc: 'We cross-reference federal 30C, NEVI, and 50+ state/utility programs against your address and classify each as Confirmed, Likely, or Uncertain — never a flat $0 or inflated estimate.',
+    desc: 'We cross-reference NEVI and 50+ state/utility programs against your address and classify each as Confirmed, Likely, or Uncertain — never a flat $0 or inflated estimate.',
   },
   {
     icon: FileText,
