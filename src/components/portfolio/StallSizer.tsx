@@ -33,7 +33,7 @@ interface Props {
   onAddToPortfolio: (site: Omit<SiteRow, 'id'>) => void;
   onUpdateSite?: (id: string, updates: { stalls: number; kwhPerStallPerDay: number }) => void;
   existingSites?: ExistingSite[];
-  prefillSite?: { address: string; lat: number; lng: number; state: string; id: string; numStalls?: number | null; chargeScore?: number | null } | null;
+  prefillSite?: { address: string; lat: number; lng: number; state: string; id: string; numStalls?: number | null; chargeScore?: number | null; totalParkingSpaces?: number | null; locationType?: LocationType | null } | null;
 }
 
 const DEFAULT_INPUTS: StallSizerInputs = {
@@ -192,7 +192,8 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
       setInputs(prev => ({
         ...prev,
         chargeScore: (prefillSite.chargeScore && prefillSite.chargeScore > 0) ? prefillSite.chargeScore : prev.chargeScore,
-        totalParkingSpaces: savedParking ?? prev.totalParkingSpaces,
+        totalParkingSpaces: prefillSite.totalParkingSpaces ?? savedParking ?? prev.totalParkingSpaces,
+        locationType: prefillSite.locationType ?? prev.locationType,
       }));
     });
   }, [prefillSite, handleAddressSelect, parkingOverrides]);

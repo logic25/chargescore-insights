@@ -38,6 +38,8 @@ interface AnalysisRow {
   lng: number;
   charge_score: number;
   num_stalls: number | null;
+  total_parking_spaces: number | null;
+  location_type: 'highway' | 'urban_retail' | 'suburban_retail' | 'rural' | null;
   kwh_per_stall_per_day: number | null;
   price_per_kwh: number | null;
   electricity_cost: number | null;
@@ -135,7 +137,7 @@ const Portfolio = () => {
   const [controls, setControls] = useState<MCType>(DEFAULT_CONTROLS);
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
   const [globalSplit, setGlobalSplit] = useState(70); // Owner % (0-100)
-  const [sizerPrefill, setSizerPrefill] = useState<{ address: string; lat: number; lng: number; state: string; id: string; numStalls?: number | null; chargeScore?: number | null } | null>(null);
+  const [sizerPrefill, setSizerPrefill] = useState<{ address: string; lat: number; lng: number; state: string; id: string; numStalls?: number | null; chargeScore?: number | null; totalParkingSpaces?: number | null; locationType?: 'highway' | 'urban_retail' | 'suburban_retail' | 'rural' | null } | null>(null);
   const [siteIncentives, setSiteIncentives] = useState<Record<string, IncentiveResult>>({});
 
   const multiplier = parseFloat(scenario);
@@ -600,7 +602,7 @@ const Portfolio = () => {
                                   <TooltipTrigger asChild>
                                     <Button variant="ghost" size="icon" className="h-7 w-7"
                                       onClick={() => {
-                                        setSizerPrefill({ address: s.address, lat: (s as any).lat, lng: (s as any).lng, state: s.state, id: s.id, numStalls: s.num_stalls, chargeScore: s.charge_score });
+                                        setSizerPrefill({ address: s.address, lat: (s as any).lat, lng: (s as any).lng, state: s.state, id: s.id, numStalls: s.num_stalls, chargeScore: s.charge_score, totalParkingSpaces: s.total_parking_spaces, locationType: s.location_type });
                                         setActiveTab('sizer');
                                       }}>
                                       <Ruler className="h-3.5 w-3.5" />
