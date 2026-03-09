@@ -8,6 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import MlAdmin from "./pages/MlAdmin";
+import RoleGuard from "./components/RoleGuard";
 import MyAnalyses from "./pages/MyAnalyses";
 import Portfolio from "./pages/Portfolio";
 import Pricing from "./pages/Pricing";
@@ -33,7 +34,7 @@ const App = () => (
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/stall-sizer" element={<StallSizerPage />} />
-            <Route path="/admin/ml" element={<MlAdmin />} />
+            <Route path="/admin/ml" element={<RoleGuard requiredRole="admin"><MlAdmin /></RoleGuard>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
