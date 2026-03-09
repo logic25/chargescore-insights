@@ -35,7 +35,7 @@ const ProductProof = () => (
       </motion.div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* ChargeScore panel */}
+        {/* ChargeRank panel */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
