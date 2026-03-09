@@ -92,7 +92,7 @@ export default function Contact() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <Zap className="h-5 w-5 text-primary" />
-          <span className="font-heading text-lg font-bold">ChargeScore</span>
+          <span className="font-heading text-lg font-bold">ChargeRank</span>
         </div>
       </header>
 
