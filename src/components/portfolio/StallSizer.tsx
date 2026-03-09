@@ -178,28 +178,24 @@ export default function StallSizer({ onAddToPortfolio, onUpdateSite, existingSit
   React.useEffect(() => {
     if (!prefillSite) return;
 
+    const savedParking = parkingOverrides[prefillSite.id];
     setSelectedSiteId(prefillSite.id);
+
     handleAddressSelect({
       formatted: prefillSite.address,
       lat: prefillSite.lat,
       lng: prefillSite.lng,
       stateCode: prefillSite.state,
+    }, {
+      applyParcelParking: false,
     }).then(() => {
-      // After fetch completes, override with known portfolio data if available
-      // Parcel APIs often return the wrong tax lot — portfolio data is ground truth
-      setInputs(prev => {
-        let updated = { ...prev };
-        if (prefillSite.chargeScore && prefillSite.chargeScore > 0) {
-          updated.chargeScore = prefillSite.chargeScore;
-        }
-        if (prefillSite.numStalls && prefillSite.numStalls > 0) {
-          const estimatedParking = Math.max(prefillSite.numStalls * 10, 50);
-          updated.totalParkingSpaces = Math.max(updated.totalParkingSpaces ?? 0, estimatedParking);
-        }
-        return updated;
-      });
+      setInputs(prev => ({
+        ...prev,
+        chargeScore: (prefillSite.chargeScore && prefillSite.chargeScore > 0) ? prefillSite.chargeScore : prev.chargeScore,
+        totalParkingSpaces: savedParking ?? prev.totalParkingSpaces,
+      }));
     });
-  }, [prefillSite, handleAddressSelect]);
+  }, [prefillSite, handleAddressSelect, parkingOverrides]);
 
   const handleAddToPortfolio = () => {
     const stalls = recommendation.base;
