@@ -156,9 +156,12 @@ export function calculateIncentives(
   const likely = active.filter(p => p.confidence === 'likely');
   const uncertain = active.filter(p => p.confidence === 'uncertain');
 
+  const unverified = active.filter(p => p.confidence === 'unverified');
+
   const confirmedTotal = confirmed.reduce((s, p) => s + p.computedAmount, 0);
   const likelyTotal = likely.reduce((s, p) => s + p.computedAmount, 0);
   const uncertainTotal = uncertain.reduce((s, p) => s + p.computedAmount, 0);
+  const unverifiedTotal = unverified.reduce((s, p) => s + p.computedAmount, 0);
 
   const oopFloor = Math.max(0, grossProjectCost - confirmedTotal - likelyTotal);
   const oopCeiling = Math.max(0, grossProjectCost - confirmedTotal);
@@ -176,9 +179,42 @@ export function calculateIncentives(
     confirmedTotal,
     likelyTotal,
     uncertainTotal,
+    unverifiedTotal,
     oopFloor,
     oopCeiling,
     fullCoveragePossible,
     uncertainRange,
   };
+}
+
+/** Convert NREL AFDC results into IncentiveProgram objects with 'unverified' confidence */
+export function nrelToIncentivePrograms(nrelResults: NrelIncentive[]): IncentiveProgram[] {
+  return nrelResults.map(r => {
+    let amount = 0;
+    if (r.estimatedBenefit) {
+      // Try to parse dollar amounts from estimatedBenefit string
+      const match = r.estimatedBenefit.match(/\$\s?([\d,]+)/);
+      if (match) amount = parseInt(match[1].replace(/,/g, ''), 10) || 0;
+    }
+
+    return {
+      id: `nrel-${r.id}`,
+      programName: r.title,
+      administrator: r.category === 'utility' ? 'Utility Program' : r.category === 'state' ? 'State Program' : null,
+      state: r.state,
+      utilityTerritory: null,
+      amountPerPort: null,
+      amountFlat: amount > 0 ? amount : null,
+      amountCap: null,
+      confidence: 'unverified' as const,
+      programStatus: 'active' as const,
+      expirationDate: null,
+      applicationUrl: null,
+      notes: r.description ? r.description.slice(0, 200) + (r.description.length > 200 ? '…' : '') : null,
+      stackingAllowed: true,
+      updatedAt: r.amended_date || r.enacted_date || new Date().toISOString(),
+      computedAmount: amount,
+      isAfdc: true,
+    };
+  });
 }
