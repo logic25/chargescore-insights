@@ -44,33 +44,49 @@ serve(async (req) => {
       bbox.maxLng = center + MIN_SPAN / 2;
     }
 
-    const satUrl = imageUrl ||
-      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=1024,1024&imageSR=4326&format=png&f=image`;
+    const arcGisUrl = imageUrl ||
+      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=600,600&imageSR=4326&format=png&f=image`;
 
-    // Fetch the image server-side and convert to base64 data URI
-    // (Gemini sometimes can't fetch external URLs directly)
-    let imageContent: { type: string; image_url: { url: string } };
-    try {
-      const imgResp = await fetch(satUrl);
-      if (imgResp.ok) {
-        const imgBuf = await imgResp.arrayBuffer();
-        const bytes = new Uint8Array(imgBuf);
-        // Chunk the conversion to avoid stack overflow on large images
+    const GOOGLE_MAPS_KEY = Deno.env.get("GOOGLE_MAPS_KEY");
+    const googleFallbackUrl = GOOGLE_MAPS_KEY
+      ? `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=19&size=600x600&maptype=satellite&key=${GOOGLE_MAPS_KEY}`
+      : null;
+
+    // Helper to fetch image and convert to base64
+    async function fetchImageAsBase64(url: string): Promise<string | null> {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          console.error("Image fetch failed:", resp.status, url.substring(0, 80));
+          return null;
+        }
+        const buf = await resp.arrayBuffer();
+        const bytes = new Uint8Array(buf);
         let binary = '';
         const chunkSize = 8192;
         for (let i = 0; i < bytes.length; i += chunkSize) {
           binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
         }
-        const b64 = btoa(binary);
-        imageContent = { type: "image_url", image_url: { url: `data:image/png;base64,${b64}` } };
-      } else {
-        console.error("ArcGIS image fetch failed:", imgResp.status);
-        imageContent = { type: "image_url", image_url: { url: satUrl } };
+        const contentType = resp.headers.get("content-type") || "image/png";
+        return `data:${contentType};base64,${btoa(binary)}`;
+      } catch (err) {
+        console.error("Image fetch error:", err);
+        return null;
       }
-    } catch (imgErr) {
-      console.error("Image fetch error:", imgErr);
-      imageContent = { type: "image_url", image_url: { url: satUrl } };
     }
+
+    // Try ArcGIS first, then Google Static Maps fallback
+    let dataUri = await fetchImageAsBase64(arcGisUrl);
+    if (!dataUri && googleFallbackUrl) {
+      console.log("ArcGIS failed, trying Google Static Maps fallback");
+      dataUri = await fetchImageAsBase64(googleFallbackUrl);
+    }
+
+    if (!dataUri) {
+      throw new Error("Could not fetch satellite imagery from any source");
+    }
+
+    const imageContent = { type: "image_url", image_url: { url: dataUri } };
 
     const propertyContext = [
       address ? `Property address: ${address}` : '',
