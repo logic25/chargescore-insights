@@ -44,13 +44,19 @@ serve(async (req) => {
       bbox.maxLng = center + MIN_SPAN / 2;
     }
 
-    const arcGisUrl = imageUrl ||
-      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=600,600&imageSR=4326&format=png&f=image`;
-
+    // Prefer Google Static Maps (sharper imagery, better stall visibility) over ArcGIS
     const GOOGLE_MAPS_KEY = Deno.env.get("GOOGLE_MAPS_KEY");
-    const googleFallbackUrl = GOOGLE_MAPS_KEY
-      ? `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=19&size=600x600&maptype=satellite&key=${GOOGLE_MAPS_KEY}`
+    
+    // Calculate zoom level from bbox span — tighter bbox = higher zoom
+    const maxSpan = Math.max(bbox.maxLat - bbox.minLat, bbox.maxLng - bbox.minLng);
+    const googleZoom = maxSpan < 0.001 ? 20 : maxSpan < 0.002 ? 19 : maxSpan < 0.004 ? 18 : 17;
+    
+    const googleUrl = GOOGLE_MAPS_KEY
+      ? `https://maps.googleapis.com/maps/api/staticmap?center=${(bbox.minLat + bbox.maxLat) / 2},${(bbox.minLng + bbox.maxLng) / 2}&zoom=${googleZoom}&size=640x640&scale=2&maptype=satellite&key=${GOOGLE_MAPS_KEY}`
       : null;
+    
+    const arcGisUrl = imageUrl ||
+      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=1280,1280&imageSR=4326&format=png&f=image`;
 
     // Helper to fetch image and convert to base64
     async function fetchImageAsBase64(url: string): Promise<string | null> {
@@ -75,11 +81,15 @@ serve(async (req) => {
       }
     }
 
-    // Try ArcGIS first, then Google Static Maps fallback
-    let dataUri = await fetchImageAsBase64(arcGisUrl);
-    if (!dataUri && googleFallbackUrl) {
-      console.log("ArcGIS failed, trying Google Static Maps fallback");
-      dataUri = await fetchImageAsBase64(googleFallbackUrl);
+    // Try Google first (sharper, higher res with scale=2), then ArcGIS fallback
+    let dataUri: string | null = null;
+    if (googleUrl) {
+      console.log("Trying Google Static Maps (1280x1280 @scale=2, zoom=" + googleZoom + ")");
+      dataUri = await fetchImageAsBase64(googleUrl);
+    }
+    if (!dataUri) {
+      console.log("Google unavailable, trying ArcGIS fallback (1280x1280)");
+      dataUri = await fetchImageAsBase64(arcGisUrl);
     }
 
     if (!dataUri) {
@@ -109,24 +119,24 @@ serve(async (req) => {
 
     const hasDrawnBoundary = polygonCoords && polygonCoords.length >= 3;
 
-    const systemPrompt = `You are an expert parking lot analyst. You will be shown a satellite/aerial image of a specific property. Your job is to count the parking spots.
+    const systemPrompt = `You are an expert parking lot analyst examining a HIGH-RESOLUTION satellite image. Your job is to count individual parking stalls by looking at the painted line markings on the pavement.
 
-CRITICAL RULES:
-1. ${hasDrawnBoundary ? 'The user has drawn a polygon boundary around ONLY the parking lot area they want counted. Count spots ONLY inside this drawn boundary.' : 'The blue marker pin in the center of the image marks the subject property.'}
-2. ${boundaryDescription}
-3. Count ONLY striped/marked parking stalls visible in the image
-4. Do NOT count the building footprint, grass, driveways, loading zones, fire lanes, or drive aisles as parking
-5. Do NOT count street parking or spots on neighboring properties
-6. If individual stall markings are visible, count each one
-7. If striping is NOT clearly visible but you can see a paved parking area, estimate using 1 spot per 350 sq ft of PAVED PARKING AREA ONLY (exclude building, landscaping, driveways)
-8. If spots are partially obscured by vehicles, still count them
-9. Be conservative — it's better to slightly undercount than to wildly overcount
-10. For a typical suburban shopping center lot, expect roughly 4-5 spots per 1,000 sq ft of paved parking area
+HOW TO COUNT:
+1. Look for the white or yellow PAINTED LINES that separate individual parking stalls
+2. Each pair of adjacent lines defines ONE parking stall — count the spaces BETWEEN lines
+3. Count row by row: identify each row of parking, count the stalls in that row, then move to the next row
+4. Vehicles parked in stalls still count — if you can see a car in a stall, that's 1 stall
+5. ${hasDrawnBoundary ? 'The user drew a polygon boundary. Count ONLY stalls INSIDE this boundary.' : 'The blue marker pin marks the subject property.'}
+6. ${boundaryDescription}
 
-Return ONLY a JSON object with these fields:
-- count: number (total parking spots in the ${hasDrawnBoundary ? 'drawn boundary area' : 'subject property'} only)
-- confidence: "high" | "medium" | "low"
-- notes: string (brief description of what you see and how you counted)`;
+WHAT NOT TO COUNT:
+- Drive aisles / lanes between rows (these are for driving, not parking)
+- The building footprint, grass, sidewalks, or landscaping
+- Loading docks, dumpster areas, or fire lanes
+- Street parking or adjacent property parking
+- Any area outside the ${hasDrawnBoundary ? 'drawn boundary' : 'property boundary'}
+
+IMPORTANT: Be precise. Count the actual stall lines you can see. Do NOT estimate by area formula. If you can see painted lines, count the individual stalls between them. A typical row of angled parking has 10-20 stalls. A suburban shopping center like Price Chopper typically has 60-120 spots total, NOT 150+.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -143,7 +153,7 @@ Return ONLY a JSON object with these fields:
             content: [
               {
                 type: "text",
-                text: `Count the parking spots for ONLY the subject property at coordinates ${lat}, ${lng}. The blue pin marks the property. ${propertyContext ? propertyContext + '.' : ''} ${boundaryDescription} Return JSON only.`
+                text: `Count the individual parking stalls visible in this satellite image. Look for painted line markings on the pavement and count the spaces between them, row by row. ${propertyContext ? propertyContext + '.' : ''} ${hasDrawnBoundary ? 'Count ONLY stalls inside the drawn boundary polygon.' : `The blue pin at ${lat}, ${lng} marks the property.`}`
               },
               imageContent
             ]
@@ -154,13 +164,13 @@ Return ONLY a JSON object with these fields:
             type: "function",
             function: {
               name: "report_parking_count",
-              description: "Report the counted parking spots from the satellite image",
+              description: "Report the counted parking stalls. Count by examining painted line markings row by row.",
               parameters: {
                 type: "object",
                 properties: {
-                  count: { type: "number", description: "Total number of parking spots counted" },
-                  confidence: { type: "string", enum: ["high", "medium", "low"], description: "Confidence level of the count" },
-                  notes: { type: "string", description: "Brief description of what was observed" }
+                  count: { type: "number", description: "Total number of individual parking stalls counted by examining line markings" },
+                  confidence: { type: "string", enum: ["high", "medium", "low"], description: "Confidence level" },
+                  notes: { type: "string", description: "Row-by-row breakdown of how you counted (e.g. 'Row 1: 15 stalls, Row 2: 12 stalls...')" }
                 },
                 required: ["count", "confidence", "notes"],
                 additionalProperties: false
