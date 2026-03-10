@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { MapPin, CircleDot, X, Undo2, Trash2, Check, Sparkles, Loader2, Pencil, PenTool } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -50,16 +50,20 @@ function generateSpotsInParcel(rings: number[][][], count: number): L.LatLng[] {
   const bounds = getBoundsFromRings(rings);
   
   const spots: L.LatLng[] = [];
-  const gridSize = Math.ceil(Math.sqrt(count * 4)); // Oversample
+  const gridSize = Math.ceil(Math.sqrt(count * 6)); // Oversample with higher multiplier
   const latStep = (bounds.maxLat - bounds.minLat) / gridSize;
   const lngStep = (bounds.maxLng - bounds.minLng) / gridSize;
 
-  for (let r = 0; r < gridSize && spots.length < count; r++) {
-    for (let c = 0; c < gridSize && spots.length < count; c++) {
-      const lat = bounds.minLat + latStep * (r + 0.5) + (Math.random() - 0.5) * latStep * 0.3;
-      const lng = bounds.minLng + lngStep * (c + 0.5) + (Math.random() - 0.5) * lngStep * 0.3;
-      if (pointInPolygon([lat, lng], polygon)) {
-        spots.push(L.latLng(lat, lng));
+  // Multiple passes with offset for better coverage
+  for (let pass = 0; pass < 3 && spots.length < count; pass++) {
+    for (let r = 0; r < gridSize && spots.length < count; r++) {
+      for (let c = 0; c < gridSize && spots.length < count; c++) {
+        const jitter = pass * 0.15;
+        const lat = bounds.minLat + latStep * (r + 0.5 + jitter) + (Math.random() - 0.5) * latStep * 0.3;
+        const lng = bounds.minLng + lngStep * (c + 0.5 + jitter) + (Math.random() - 0.5) * lngStep * 0.3;
+        if (pointInPolygon([lat, lng], polygon)) {
+          spots.push(L.latLng(lat, lng));
+        }
       }
     }
   }
@@ -116,7 +120,10 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
 
   // The effective geometry for AI counting: user-drawn boundary takes priority (parking lot only)
   // Parcel geometry is just a reference — it covers the whole property including buildings
-  const effectiveGeometry = drawnBoundary ? { rings: drawnBoundary } : null;
+  const effectiveGeometry = useMemo(
+    () => drawnBoundary ? { rings: drawnBoundary } : null,
+    [drawnBoundary]
+  );
 
   // Initialize map
   useEffect(() => {
@@ -359,9 +366,10 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
   // Boundary drawing controls
   const handleFinishBoundary = useCallback(() => {
     if (boundaryPoints.length >= 3) {
-      // Convert to ArcGIS-style rings [lng, lat]
+      // Convert Leaflet LatLng → ArcGIS-style rings [lng, lat]
       const ring = boundaryPoints.map(p => [p.lng, p.lat]);
       ring.push(ring[0]); // Close the ring
+      console.log('[Boundary] Ring points:', ring.length, 'First:', ring[0], 'Last:', ring[ring.length - 1]);
       setDrawnBoundary([ring]);
       toast.success('Boundary set! Now run AI Count.');
     }
@@ -393,6 +401,9 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
       let parcelBounds: { minLat: number; maxLat: number; minLng: number; maxLng: number } | undefined;
       if (effectiveGeometry?.rings) {
         parcelBounds = getBoundsFromRings(effectiveGeometry.rings);
+        console.log('[AI Count] Using boundary:', parcelBounds);
+      } else {
+        console.log('[AI Count] No boundary — counting full image');
       }
 
       const { data, error } = await supabase.functions.invoke('count-parking-spots', {
@@ -409,11 +420,14 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
 
       setAiResult(data);
       if (data?.count > 0) {
-        // Place markers constrained to parcel if geometry available
+        // Place markers constrained to boundary if available
         if (effectiveGeometry?.rings) {
+          console.log('[AI Count] Generating spots inside boundary polygon');
           const grid = generateSpotsInParcel(effectiveGeometry.rings, data.count);
+          console.log(`[AI Count] Generated ${grid.length} spots inside polygon out of ${data.count} AI counted`);
           setSpots(grid);
         } else {
+          console.log('[AI Count] No boundary — using full map grid');
           const map = mapRef.current;
           if (map) {
             const grid = generateSpotGrid(L.latLng(lat, lng), data.count, map);
