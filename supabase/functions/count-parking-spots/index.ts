@@ -44,13 +44,19 @@ serve(async (req) => {
       bbox.maxLng = center + MIN_SPAN / 2;
     }
 
-    const arcGisUrl = imageUrl ||
-      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=600,600&imageSR=4326&format=png&f=image`;
-
+    // Prefer Google Static Maps (sharper imagery, better stall visibility) over ArcGIS
     const GOOGLE_MAPS_KEY = Deno.env.get("GOOGLE_MAPS_KEY");
-    const googleFallbackUrl = GOOGLE_MAPS_KEY
-      ? `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=19&size=600x600&maptype=satellite&key=${GOOGLE_MAPS_KEY}`
+    
+    // Calculate zoom level from bbox span — tighter bbox = higher zoom
+    const maxSpan = Math.max(bbox.maxLat - bbox.minLat, bbox.maxLng - bbox.minLng);
+    const googleZoom = maxSpan < 0.001 ? 20 : maxSpan < 0.002 ? 19 : maxSpan < 0.004 ? 18 : 17;
+    
+    const googleUrl = GOOGLE_MAPS_KEY
+      ? `https://maps.googleapis.com/maps/api/staticmap?center=${(bbox.minLat + bbox.maxLat) / 2},${(bbox.minLng + bbox.maxLng) / 2}&zoom=${googleZoom}&size=640x640&scale=2&maptype=satellite&key=${GOOGLE_MAPS_KEY}`
       : null;
+    
+    const arcGisUrl = imageUrl ||
+      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=1280,1280&imageSR=4326&format=png&f=image`;
 
     // Helper to fetch image and convert to base64
     async function fetchImageAsBase64(url: string): Promise<string | null> {
