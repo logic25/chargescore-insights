@@ -43,43 +43,47 @@ function getBoundsFromRings(rings: number[][][]) {
   return { minLat, maxLat, minLng, maxLng };
 }
 
-/** Generate spots constrained to a parcel polygon, placed in parking-lot rows */
+/** Generate spots constrained to a parcel polygon, evenly distributed */
 function generateSpotsInParcel(rings: number[][][], count: number): L.LatLng[] {
   // Convert ArcGIS [lng, lat] to [lat, lng] for point-in-polygon
   const polygon = rings[0].map(([lng, lat]) => [lat, lng]);
   const bounds = getBoundsFromRings(rings);
   
-  const spots: L.LatLng[] = [];
-  
-  // Use parking-row layout: rows spaced ~8m apart, spots ~3m apart within rows
+  // First pass: generate ALL valid grid positions inside the polygon
   const latRange = bounds.maxLat - bounds.minLat;
   const lngRange = bounds.maxLng - bounds.minLng;
+  const cosLat = Math.cos(((bounds.minLat + bounds.maxLat) / 2) * Math.PI / 180);
   
-  // Approximate meters per degree at this latitude
-  const latMeters = latRange * 111320;
-  const lngMeters = lngRange * 111320 * Math.cos(((bounds.minLat + bounds.maxLat) / 2) * Math.PI / 180);
+  // Use fine grid (~3m spacing) to find all candidate positions
+  const fineSpacing = 3 / 111320;
+  const fineSpacingLng = 3 / (111320 * cosLat);
   
-  // Row spacing ~8m (a parking row + drive aisle), spot spacing ~3m
-  const rowSpacingDeg = 8 / 111320;
-  const spotSpacingDeg = 3 / (111320 * Math.cos(((bounds.minLat + bounds.maxLat) / 2) * Math.PI / 180));
-  
-  const numRows = Math.max(2, Math.ceil(latRange / rowSpacingDeg));
-  const spotsPerRow = Math.max(2, Math.ceil(lngRange / spotSpacingDeg));
-  
-  const actualRowSpacing = latRange / numRows;
-  const actualSpotSpacing = lngRange / spotsPerRow;
-  
-  // Place spots in rows, only if inside polygon
-  for (let r = 0; r < numRows && spots.length < count; r++) {
-    const lat = bounds.minLat + actualRowSpacing * (r + 0.5);
-    for (let c = 0; c < spotsPerRow && spots.length < count; c++) {
-      const lng = bounds.minLng + actualSpotSpacing * (c + 0.5);
-      if (pointInPolygon([lat, lng], polygon)) {
-        spots.push(L.latLng(lat, lng));
+  const allCandidates: [number, number][] = [];
+  for (let latPos = bounds.minLat + fineSpacing * 0.5; latPos < bounds.maxLat; latPos += fineSpacing) {
+    for (let lngPos = bounds.minLng + fineSpacingLng * 0.5; lngPos < bounds.maxLng; lngPos += fineSpacingLng) {
+      if (pointInPolygon([latPos, lngPos], polygon)) {
+        allCandidates.push([latPos, lngPos]);
       }
     }
   }
-  return spots.slice(0, count);
+  
+  if (allCandidates.length === 0) return [];
+  
+  // Evenly sample from candidates to get exactly `count` spots
+  const spots: L.LatLng[] = [];
+  if (allCandidates.length <= count) {
+    // Fewer candidates than needed — use all
+    for (const [lat, lng] of allCandidates) spots.push(L.latLng(lat, lng));
+  } else {
+    // Evenly space through the candidates list (which is row-ordered)
+    const step = allCandidates.length / count;
+    for (let i = 0; i < count; i++) {
+      const idx = Math.floor(i * step);
+      const [lat, lng] = allCandidates[idx];
+      spots.push(L.latLng(lat, lng));
+    }
+  }
+  return spots;
 }
 
 /** Fallback: generate spots in a grid around center */

@@ -44,9 +44,9 @@ serve(async (req) => {
       bbox.maxLng = center + MIN_SPAN / 2;
     }
 
-    // ArcGIS primary — use 600x600 and imageSR=3857 (known working config)
+    // ArcGIS primary — use 1000x1000 for high-res stall counting, imageSR=3857
     const arcGisUrl = imageUrl ||
-      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=600,600&imageSR=3857&format=png&f=image`;
+      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=1000,1000&imageSR=3857&format=png&f=image`;
 
     // Google Static Maps as fallback — may fail with 403 if key has referrer restrictions
     const GOOGLE_MAPS_KEY = Deno.env.get("GOOGLE_MAPS_KEY");
