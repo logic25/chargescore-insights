@@ -24,8 +24,11 @@ import {
   computeSite,
   computeWaterfall,
   computeExit,
+  computeEffectiveWaterfallSplit,
+  computeGPFees,
 } from '@/lib/waterfallCalc';
 import type { MasterControls as MCType, SiteRow } from '@/lib/waterfallCalc';
+import MSIncomeCard from '@/components/portfolio/MSIncomeCard';
 import { fetchIncentivePrograms, calculateIncentives, resolveUtilityTerritory, nrelToIncentivePrograms, type IncentiveResult, type IncentiveProgram } from '@/lib/incentiveCalc';
 import { fetchStateIncentives } from '@/lib/api/incentives';
 import IncentiveBreakdown from '@/components/incentives/IncentiveBreakdown';
@@ -344,6 +347,14 @@ const Portfolio = () => {
   const totalOOP = useMemo(() => computedSites.reduce((s, c) => s + c.outOfPocket, 0), [computedSites]);
   const waterfallRows = useMemo(() => computeWaterfall(computedSites, controls), [computedSites, controls]);
   const exitAnalysis = useMemo(() => computeExit(waterfallRows, controls, totalOOP), [waterfallRows, controls, totalOOP]);
+  const { effectiveOwnerPct, effectiveMSPct } = useMemo(
+    () => computeEffectiveWaterfallSplit(computedSites, controls),
+    [computedSites, controls]
+  );
+  const gpFees = useMemo(
+    () => computeGPFees(computedSites, controls, waterfallRows),
+    [computedSites, controls, waterfallRows]
+  );
 
   const handleAddFromSizer = useCallback(async (site: Omit<SiteRow, 'id'>) => {
     if (!user) return;
@@ -611,6 +622,12 @@ const Portfolio = () => {
                         <p className={`font-mono text-2xl font-bold ${totals.npv >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.npv)}</p>
                       </div>
                     </div>
+                    <p className="text-[10px] text-muted-foreground text-center mb-4">
+                      Effective Split: Owner {(effectiveOwnerPct * 100).toFixed(1)}% / MS {(effectiveMSPct * 100).toFixed(1)}%
+                      <span className="ml-2 text-muted-foreground/60">
+                        (Below hurdle: {(controls.tier1OwnerSplit * 100).toFixed(0)}% / Above: {(controls.tier2OwnerSplit * 100).toFixed(0)}%)
+                      </span>
+                    </p>
                   </TooltipProvider>
 
                   <div className="rounded-xl border border-border bg-card overflow-x-auto">
@@ -761,9 +778,10 @@ const Portfolio = () => {
             <TabsContent value="financials">
               <div className="space-y-4">
                 <MasterControls controls={controls} onChange={setControls} />
-                <SiteTable sites={editableSites} controls={controls} onSitesChange={setEditableSites} />
+                <MSIncomeCard gpFees={gpFees} controls={controls} />
+                <SiteTable sites={editableSites} controls={controls} onSitesChange={setEditableSites} effectiveOwnerPct={effectiveOwnerPct} effectiveMSPct={effectiveMSPct} />
                 <WaterfallTable rows={waterfallRows} />
-                <ExitAnalysisCard exit={exitAnalysis} controls={controls} totalOOP={totalOOP} />
+                <ExitAnalysisCard exit={exitAnalysis} controls={controls} totalOOP={totalOOP} sites={computedSites} />
                 <WaterfallCharts waterfallRows={waterfallRows} exit={exitAnalysis} sites={computedSites} />
               </div>
             </TabsContent>

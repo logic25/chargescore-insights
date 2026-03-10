@@ -10,6 +10,8 @@ interface Props {
   sites: SiteRow[];
   controls: MasterControls;
   onSitesChange: (sites: SiteRow[]) => void;
+  effectiveOwnerPct: number;
+  effectiveMSPct: number;
 }
 
 const TH = ({ children, tip }: { children?: React.ReactNode; tip?: string }) => (
@@ -45,16 +47,17 @@ const FormulaCell = ({ children, negative }: { children: React.ReactNode; negati
   </TableCell>
 );
 
-export default function SiteTable({ sites, controls, onSitesChange }: Props) {
+export default function SiteTable({ sites, controls, onSitesChange, effectiveOwnerPct, effectiveMSPct }: Props) {
   const computed = sites.map(s => computeSite(s, controls));
+  const totalNOI = computed.reduce((s, c) => s + c.annualNOI, 0);
   const totals = {
     stalls: computed.reduce((s, c) => s + c.stalls, 0),
     totalProjectCost: computed.reduce((s, c) => s + c.totalProjectCost, 0),
     incentives: computed.reduce((s, c) => s + c.incentives, 0),
     outOfPocket: computed.reduce((s, c) => s + c.outOfPocket, 0),
-    annualNOI: computed.reduce((s, c) => s + c.annualNOI, 0),
-    ownerMonthly: computed.reduce((s, c) => s + c.ownerAnnualTier1, 0) / 12,
-    msMonthly: computed.reduce((s, c) => s + c.msAnnualTier1, 0) / 12,
+    annualNOI: totalNOI,
+    ownerMonthly: totalNOI * effectiveOwnerPct / 12,
+    msMonthly: totalNOI * effectiveMSPct / 12,
   };
 
   const updateSite = (idx: number, key: keyof SiteRow, raw: string) => {
@@ -106,7 +109,7 @@ export default function SiteTable({ sites, controls, onSitesChange }: Props) {
       c.name, c.address, c.stalls, c.baseKwhPerStallPerDay, c.effectiveKwhPerDay.toFixed(0),
       c.customerPrice, c.electricityCost, c.teslaFee, c.marginPerKwh.toFixed(3),
       c.bomPerStall, c.installPerStall, c.totalProjectCost, c.incentives, c.outOfPocket,
-      c.annualNOI.toFixed(0), (c.ownerAnnualTier1 / 12).toFixed(0), (c.msAnnualTier1 / 12).toFixed(0),
+      c.annualNOI.toFixed(0), (c.annualNOI * effectiveOwnerPct / 12).toFixed(0), (c.annualNOI * effectiveMSPct / 12).toFixed(0),
       c.cocReturn ? (c.cocReturn * 100).toFixed(1) + '%' : 'N/A',
     ]);
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
@@ -144,8 +147,8 @@ export default function SiteTable({ sites, controls, onSitesChange }: Props) {
               <TH>Incentives</TH>
               <TH tip="Project - Incentives">OOP</TH>
               <TH tip="Stalls×kWh×Margin×365 - Insurance - Rent">NOI/yr</TH>
-              <TH>Owner/mo</TH>
-              <TH>MS/mo</TH>
+              <TH tip="Using effective waterfall split">Owner/mo</TH>
+              <TH tip="Using effective waterfall split">MS/mo</TH>
               <TH tip="Owner Annual / OOP">CoC</TH>
               <TH></TH>
             </TableRow>
@@ -168,8 +171,8 @@ export default function SiteTable({ sites, controls, onSitesChange }: Props) {
                 <EditCell value={c.incentives} onChange={v => updateSite(i, 'incentives', v)} type="number" step={1000} />
                 <FormulaCell>{fmt(c.outOfPocket)}</FormulaCell>
                 <FormulaCell negative={c.annualNOI < 0}>{fmt(Math.round(c.annualNOI))}</FormulaCell>
-                <FormulaCell>{fmt(Math.round(c.ownerAnnualTier1 / 12))}</FormulaCell>
-                <FormulaCell>{fmt(Math.round(c.msAnnualTier1 / 12))}</FormulaCell>
+                <FormulaCell>{fmt(Math.round(c.annualNOI * effectiveOwnerPct / 12))}</FormulaCell>
+                <FormulaCell>{fmt(Math.round(c.annualNOI * effectiveMSPct / 12))}</FormulaCell>
                 <FormulaCell>
                   {c.cocReturn !== null ? (
                     <span className={c.cocReturn >= 0.15 ? 'text-success' : c.cocReturn >= 0.10 ? 'text-amber' : 'text-destructive'}>
