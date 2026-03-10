@@ -260,20 +260,49 @@ const Portfolio = () => {
     };
   }, [scaled]);
 
+  // Stable sort order — only re-rank when user clicks "Re-rank"
+  const [rankOrder, setRankOrder] = useState<string[]>([]);
+
+  // Compute composite ranks without sorting
   const ranked = useMemo(() => {
     if (scaled.length === 0) return [];
     const byNpv = [...scaled].sort((a, b) => (b.npv ?? -Infinity) - (a.npv ?? -Infinity));
     const byCoc = [...scaled].sort((a, b) => (b.coc ?? -Infinity) - (a.coc ?? -Infinity));
     const byScore = [...scaled].sort((a, b) => b.charge_score - a.charge_score);
-    return scaled
-      .map((s) => {
-        const npvRank = byNpv.findIndex((x) => x.id === s.id) + 1;
-        const cocRank = byCoc.findIndex((x) => x.id === s.id) + 1;
-        const scoreRank = byScore.findIndex((x) => x.id === s.id) + 1;
-        return { ...s, compositeRank: (npvRank + cocRank + scoreRank) / 3 };
-      })
-      .sort((a, b) => a.compositeRank - b.compositeRank);
-  }, [scaled]);
+    const withRanks = scaled.map((s) => {
+      const npvRank = byNpv.findIndex((x) => x.id === s.id) + 1;
+      const cocRank = byCoc.findIndex((x) => x.id === s.id) + 1;
+      const scoreRank = byScore.findIndex((x) => x.id === s.id) + 1;
+      return { ...s, compositeRank: (npvRank + cocRank + scoreRank) / 3 };
+    });
+
+    // If we have a locked rank order, use it; otherwise sort by composite
+    if (rankOrder.length > 0) {
+      const orderMap = new Map(rankOrder.map((id, idx) => [id, idx]));
+      return [...withRanks].sort((a, b) => (orderMap.get(a.id) ?? 999) - (orderMap.get(b.id) ?? 999));
+    }
+    return withRanks.sort((a, b) => a.compositeRank - b.compositeRank);
+  }, [scaled, rankOrder]);
+
+  // Lock initial rank order once data loads
+  useEffect(() => {
+    if (scaled.length > 0 && rankOrder.length === 0) {
+      const byNpv = [...scaled].sort((a, b) => (b.npv ?? -Infinity) - (a.npv ?? -Infinity));
+      const byCoc = [...scaled].sort((a, b) => (b.coc ?? -Infinity) - (a.coc ?? -Infinity));
+      const byScore = [...scaled].sort((a, b) => b.charge_score - a.charge_score);
+      const sorted = scaled
+        .map((s) => {
+          const npvRank = byNpv.findIndex((x) => x.id === s.id) + 1;
+          const cocRank = byCoc.findIndex((x) => x.id === s.id) + 1;
+          const scoreRank = byScore.findIndex((x) => x.id === s.id) + 1;
+          return { ...s, compositeRank: (npvRank + cocRank + scoreRank) / 3 };
+        })
+        .sort((a, b) => a.compositeRank - b.compositeRank);
+      setRankOrder(sorted.map(s => s.id));
+    }
+  }, [scaled, rankOrder.length]);
+
+  const handleReRank = () => setRankOrder([]);
 
   // --- Financials tab data ---
   const siteRows = useMemo(() => analyses.map(analysisToSiteRow), [analyses]);
