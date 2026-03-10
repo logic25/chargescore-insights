@@ -10,6 +10,13 @@ export interface MasterControls {
   holdPeriod: number;        // e.g. 5
   exitMultiple: number;      // e.g. 10
   msPromoteAtExit: number;   // e.g. 0.35
+  // GP Fee Structure
+  acquisitionFeePct: number;    // e.g. 0.00
+  cmFeePct: number;             // e.g. 0.04
+  assetMgmtFeePct: number;     // e.g. 0.015
+  dispositionFeePct: number;    // e.g. 0.01
+  scoutCommissionPerSite: number; // e.g. 0
+  incentivesMgrSalary: number;    // e.g. 35000
 }
 
 export interface SiteRow {
@@ -68,6 +75,18 @@ export interface ExitAnalysis {
   msTotalReturn: number;
 }
 
+export interface GPFeeBreakdown {
+  acquisitionFee: number;
+  cmFee: number;
+  assetMgmtFee: number;
+  scoutCommissions: number;
+  incentivesMgr: number;
+  msY1SplitIncome: number;
+  msY1TotalIncome: number;
+  msRecurringAnnual: number;
+  msRecurringMonthly: number;
+}
+
 // ── Defaults ───────────────────────────────────────────────────────────────
 
 export const DEFAULT_CONTROLS: MasterControls = {
@@ -79,6 +98,12 @@ export const DEFAULT_CONTROLS: MasterControls = {
   holdPeriod: 5,
   exitMultiple: 10,
   msPromoteAtExit: 0.35,
+  acquisitionFeePct: 0.00,
+  cmFeePct: 0.04,
+  assetMgmtFeePct: 0.015,
+  dispositionFeePct: 0.01,
+  scoutCommissionPerSite: 0,
+  incentivesMgrSalary: 35000,
 };
 
 // ── Calculations ───────────────────────────────────────────────────────────
@@ -176,6 +201,48 @@ export function computeWaterfall(
   return rows;
 }
 
+export function computeEffectiveWaterfallSplit(
+  sites: ComputedSite[],
+  controls: MasterControls
+): { effectiveOwnerPct: number; effectiveMSPct: number } {
+  const waterfallRows = computeWaterfall(sites, controls, 1);
+  const year1 = waterfallRows[0];
+  if (!year1 || year1.portfolioNOI === 0) {
+    return { effectiveOwnerPct: controls.tier1OwnerSplit, effectiveMSPct: 1 - controls.tier1OwnerSplit };
+  }
+  const effectiveOwnerPct = year1.ownerTotal / year1.portfolioNOI;
+  const effectiveMSPct = year1.msTotal / year1.portfolioNOI;
+  return { effectiveOwnerPct, effectiveMSPct };
+}
+
+export function computeGPFees(
+  sites: ComputedSite[],
+  controls: MasterControls,
+  waterfallRows: WaterfallYearRow[]
+): GPFeeBreakdown {
+  const totalProjectCost = sites.reduce((s, c) => s + c.totalProjectCost, 0);
+  const totalGrossRevenue = sites.reduce((s, c) => {
+    return s + (c.stalls * c.effectiveKwhPerDay * c.marginPerKwh * 365);
+  }, 0);
+  const numSites = sites.length;
+
+  const acquisitionFee = totalProjectCost * controls.acquisitionFeePct;
+  const cmFee = totalProjectCost * controls.cmFeePct;
+  const assetMgmtFee = totalGrossRevenue * controls.assetMgmtFeePct;
+  const scoutCommissions = numSites * controls.scoutCommissionPerSite;
+  const incentivesMgr = controls.incentivesMgrSalary;
+
+  const msY1SplitIncome = waterfallRows.length > 0 ? waterfallRows[0].msTotal : 0;
+  const msY1TotalIncome = msY1SplitIncome + acquisitionFee + cmFee + assetMgmtFee - scoutCommissions - incentivesMgr;
+  const msRecurringAnnual = msY1SplitIncome + assetMgmtFee - incentivesMgr;
+  const msRecurringMonthly = msRecurringAnnual / 12;
+
+  return {
+    acquisitionFee, cmFee, assetMgmtFee, scoutCommissions, incentivesMgr,
+    msY1SplitIncome, msY1TotalIncome, msRecurringAnnual, msRecurringMonthly,
+  };
+}
+
 export function computeExit(
   waterfallRows: WaterfallYearRow[],
   controls: MasterControls,
@@ -188,7 +255,7 @@ export function computeExit(
   }
 
   const exitValue = exitYearRow.portfolioNOI * controls.exitMultiple;
-  const dispositionFee = exitValue * 0.01;
+  const dispositionFee = exitValue * controls.dispositionFeePct;
   const ownerPreferredAtExit = Math.max(0, totalOOP + (totalOOP * controls.hurdleRate * holdYear) - exitYearRow.ownerCumulative);
   const remainingAfterPreferred = Math.max(0, exitValue - dispositionFee - ownerPreferredAtExit);
   const msPromoteAmount = remainingAfterPreferred * controls.msPromoteAtExit;
