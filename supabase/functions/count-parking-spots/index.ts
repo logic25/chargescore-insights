@@ -93,9 +93,19 @@ serve(async (req) => {
       lotSizeSqFt ? `Known lot size: ~${Math.round(lotSizeSqFt).toLocaleString()} sq ft` : '',
     ].filter(Boolean).join('. ');
 
-    const boundaryDescription = parcelBounds
-      ? `The property boundary extends from SW corner (${parcelBounds.minLat.toFixed(6)}, ${parcelBounds.minLng.toFixed(6)}) to NE corner (${parcelBounds.maxLat.toFixed(6)}, ${parcelBounds.maxLng.toFixed(6)}). The satellite image is cropped to show primarily this property with slight padding. Count ONLY spots within this property boundary.`
-      : 'No exact boundary data is available. Use visual cues (fences, walls, curb lines, pavement changes, landscaping) to identify the subject property boundary.';
+    // Build a precise boundary description using polygon coordinates if available
+    let boundaryDescription: string;
+    if (polygonCoords && polygonCoords.length >= 3) {
+      // polygonCoords are [lng, lat][] — describe the polygon vertices for the AI
+      const vertexDescriptions = polygonCoords.slice(0, -1).map((coord: number[], i: number) =>
+        `Point ${i + 1}: (${coord[1].toFixed(6)}, ${coord[0].toFixed(6)})`
+      ).join(', ');
+      boundaryDescription = `The user has drawn a precise parking lot boundary polygon with ${polygonCoords.length - 1} vertices: ${vertexDescriptions}. The satellite image is cropped to this area. Count ONLY the parking spots that fall INSIDE this drawn polygon. The polygon outlines JUST the parking lot — do NOT count spots outside it, and do NOT count the building, driveways, grass, or landscaped areas even if they appear inside the bounding box.`;
+    } else if (parcelBounds) {
+      boundaryDescription = `The property boundary extends from SW corner (${parcelBounds.minLat.toFixed(6)}, ${parcelBounds.minLng.toFixed(6)}) to NE corner (${parcelBounds.maxLat.toFixed(6)}, ${parcelBounds.maxLng.toFixed(6)}). The satellite image is cropped to show primarily this property with slight padding. Count ONLY spots within this property boundary.`;
+    } else {
+      boundaryDescription = 'No exact boundary data is available. Use visual cues (fences, walls, curb lines, pavement changes, landscaping) to identify the subject property boundary.';
+    }
 
     const systemPrompt = `You are an expert parking lot analyst. You will be shown a satellite/aerial image of a specific property. Your job is to count the parking spots that belong ONLY to the subject property.
 
