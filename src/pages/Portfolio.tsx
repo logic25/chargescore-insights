@@ -458,10 +458,7 @@ const Portfolio = () => {
       ? Math.round(site.total_project_cost / site.num_stalls - 62500)
       : 25000;
     const totalCost = (62500 + installPerStall) * stalls;
-    const incentivesPerStall = site.estimated_incentives && site.num_stalls
-      ? site.estimated_incentives / site.num_stalls
-      : 35000;
-    const incentives = incentivesPerStall * stalls;
+    const incentives = computeIncentivesForSite(stalls, totalCost, site.state, site.address);
     const netInv = Math.max(0, totalCost - incentives);
     const insurance = site.annual_insurance ?? 5000;
     const rent = site.monthly_rent ?? 0;
