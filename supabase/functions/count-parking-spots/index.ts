@@ -81,11 +81,15 @@ serve(async (req) => {
       }
     }
 
-    // Try ArcGIS first, then Google Static Maps fallback
-    let dataUri = await fetchImageAsBase64(arcGisUrl);
-    if (!dataUri && googleFallbackUrl) {
-      console.log("ArcGIS failed, trying Google Static Maps fallback");
-      dataUri = await fetchImageAsBase64(googleFallbackUrl);
+    // Try Google first (sharper, higher res with scale=2), then ArcGIS fallback
+    let dataUri: string | null = null;
+    if (googleUrl) {
+      console.log("Trying Google Static Maps (1280x1280 @scale=2, zoom=" + googleZoom + ")");
+      dataUri = await fetchImageAsBase64(googleUrl);
+    }
+    if (!dataUri) {
+      console.log("Google unavailable, trying ArcGIS fallback (1280x1280)");
+      dataUri = await fetchImageAsBase64(arcGisUrl);
     }
 
     if (!dataUri) {
