@@ -43,27 +43,39 @@ function getBoundsFromRings(rings: number[][][]) {
   return { minLat, maxLat, minLng, maxLng };
 }
 
-/** Generate spots constrained to a parcel polygon */
+/** Generate spots constrained to a parcel polygon, placed in parking-lot rows */
 function generateSpotsInParcel(rings: number[][][], count: number): L.LatLng[] {
-  // Convert ArcGIS [lng, lat] to [lat, lng]
+  // Convert ArcGIS [lng, lat] to [lat, lng] for point-in-polygon
   const polygon = rings[0].map(([lng, lat]) => [lat, lng]);
   const bounds = getBoundsFromRings(rings);
   
   const spots: L.LatLng[] = [];
-  const gridSize = Math.ceil(Math.sqrt(count * 6)); // Oversample with higher multiplier
-  const latStep = (bounds.maxLat - bounds.minLat) / gridSize;
-  const lngStep = (bounds.maxLng - bounds.minLng) / gridSize;
-
-  // Multiple passes with offset for better coverage
-  for (let pass = 0; pass < 3 && spots.length < count; pass++) {
-    for (let r = 0; r < gridSize && spots.length < count; r++) {
-      for (let c = 0; c < gridSize && spots.length < count; c++) {
-        const jitter = pass * 0.15;
-        const lat = bounds.minLat + latStep * (r + 0.5 + jitter) + (Math.random() - 0.5) * latStep * 0.3;
-        const lng = bounds.minLng + lngStep * (c + 0.5 + jitter) + (Math.random() - 0.5) * lngStep * 0.3;
-        if (pointInPolygon([lat, lng], polygon)) {
-          spots.push(L.latLng(lat, lng));
-        }
+  
+  // Use parking-row layout: rows spaced ~8m apart, spots ~3m apart within rows
+  const latRange = bounds.maxLat - bounds.minLat;
+  const lngRange = bounds.maxLng - bounds.minLng;
+  
+  // Approximate meters per degree at this latitude
+  const latMeters = latRange * 111320;
+  const lngMeters = lngRange * 111320 * Math.cos(((bounds.minLat + bounds.maxLat) / 2) * Math.PI / 180);
+  
+  // Row spacing ~8m (a parking row + drive aisle), spot spacing ~3m
+  const rowSpacingDeg = 8 / 111320;
+  const spotSpacingDeg = 3 / (111320 * Math.cos(((bounds.minLat + bounds.maxLat) / 2) * Math.PI / 180));
+  
+  const numRows = Math.max(2, Math.ceil(latRange / rowSpacingDeg));
+  const spotsPerRow = Math.max(2, Math.ceil(lngRange / spotSpacingDeg));
+  
+  const actualRowSpacing = latRange / numRows;
+  const actualSpotSpacing = lngRange / spotsPerRow;
+  
+  // Place spots in rows, only if inside polygon
+  for (let r = 0; r < numRows && spots.length < count; r++) {
+    const lat = bounds.minLat + actualRowSpacing * (r + 0.5);
+    for (let c = 0; c < spotsPerRow && spots.length < count; c++) {
+      const lng = bounds.minLng + actualSpotSpacing * (c + 0.5);
+      if (pointInPolygon([lat, lng], polygon)) {
+        spots.push(L.latLng(lat, lng));
       }
     }
   }

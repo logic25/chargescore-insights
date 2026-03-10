@@ -107,24 +107,26 @@ serve(async (req) => {
       boundaryDescription = 'No exact boundary data is available. Use visual cues (fences, walls, curb lines, pavement changes, landscaping) to identify the subject property boundary.';
     }
 
-    const systemPrompt = `You are an expert parking lot analyst. You will be shown a satellite/aerial image of a specific property. Your job is to count the parking spots that belong ONLY to the subject property.
+    const hasDrawnBoundary = polygonCoords && polygonCoords.length >= 3;
+
+    const systemPrompt = `You are an expert parking lot analyst. You will be shown a satellite/aerial image of a specific property. Your job is to count the parking spots.
 
 CRITICAL RULES:
-1. The blue marker pin in the center of the image marks the subject property
+1. ${hasDrawnBoundary ? 'The user has drawn a polygon boundary around ONLY the parking lot area they want counted. Count spots ONLY inside this drawn boundary.' : 'The blue marker pin in the center of the image marks the subject property.'}
 2. ${boundaryDescription}
-3. Count ONLY parking spots INSIDE the subject property's lot boundary
-4. Do NOT count spots on neighboring properties, adjacent businesses, or across streets
-5. Do NOT count street parking or public road spaces
-6. Look for property boundaries: fences, walls, curb lines, different pavement colors, landscaping strips, sidewalks, and roads that separate lots
-7. If the property is a shopping center or strip mall, count all spots within that shopping center's connected lot
-8. Count marked/striped parking stalls. If striping is not clearly visible, estimate based on paved parking area using 1 spot per 170 sq ft (not building footprint)
-9. If spots are partially obscured by vehicles, still count them if the stall lines are visible
-10. Do NOT count driveways, loading zones, fire lanes, or unmarked areas
+3. Count ONLY striped/marked parking stalls visible in the image
+4. Do NOT count the building footprint, grass, driveways, loading zones, fire lanes, or drive aisles as parking
+5. Do NOT count street parking or spots on neighboring properties
+6. If individual stall markings are visible, count each one
+7. If striping is NOT clearly visible but you can see a paved parking area, estimate using 1 spot per 350 sq ft of PAVED PARKING AREA ONLY (exclude building, landscaping, driveways)
+8. If spots are partially obscured by vehicles, still count them
+9. Be conservative — it's better to slightly undercount than to wildly overcount
+10. For a typical suburban shopping center lot, expect roughly 4-5 spots per 1,000 sq ft of paved parking area
 
 Return ONLY a JSON object with these fields:
-- count: number (total parking spots on the SUBJECT property only)
+- count: number (total parking spots in the ${hasDrawnBoundary ? 'drawn boundary area' : 'subject property'} only)
 - confidence: "high" | "medium" | "low"
-- notes: string (brief description of what you see and how you identified the property boundary)`;
+- notes: string (brief description of what you see and how you counted)`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
