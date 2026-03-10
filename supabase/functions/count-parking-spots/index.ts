@@ -16,8 +16,8 @@ serve(async (req) => {
     // Calculate bounding box: use parcel bounds if available, else fixed span
     let bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number };
     if (parcelBounds) {
-      const latPad = (parcelBounds.maxLat - parcelBounds.minLat) * 0.15;
-      const lngPad = (parcelBounds.maxLng - parcelBounds.minLng) * 0.15;
+      const latPad = (parcelBounds.maxLat - parcelBounds.minLat) * 0.05;
+      const lngPad = (parcelBounds.maxLng - parcelBounds.minLng) * 0.05;
       bbox = {
         minLng: parcelBounds.minLng - lngPad,
         minLat: parcelBounds.minLat - latPad,
