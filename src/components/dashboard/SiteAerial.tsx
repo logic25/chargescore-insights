@@ -120,7 +120,10 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
 
   // The effective geometry for AI counting: user-drawn boundary takes priority (parking lot only)
   // Parcel geometry is just a reference — it covers the whole property including buildings
-  const effectiveGeometry = drawnBoundary ? { rings: drawnBoundary } : null;
+  const effectiveGeometry = useMemo(
+    () => drawnBoundary ? { rings: drawnBoundary } : null,
+    [drawnBoundary]
+  );
 
   // Initialize map
   useEffect(() => {
