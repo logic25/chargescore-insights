@@ -98,6 +98,29 @@ export default function MasterControls({ controls, onChange }: Props) {
             <Input type="number" step={0.05} value={controls.kwhMultiplier} onChange={e => set('kwhMultiplier', parseFloat(e.target.value) || 1)} className="bg-amber/10 text-primary font-mono text-sm h-8" />
           </div>
         </div>
+
+        {/* GP Fee Structure */}
+        <div className="mt-4 pt-3 border-t border-border/50">
+          <h4 className="text-xs font-heading font-semibold mb-2 text-muted-foreground uppercase tracking-wide">GP Fee Structure</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+            <PctInput label="Acquisition Fee" tip="One-time fee on total project cost at acquisition" value={controls.acquisitionFeePct} onChange={v => set('acquisitionFeePct', v)} />
+            <PctInput label="CM Fee" tip="Construction management fee on total project cost" value={controls.cmFeePct} onChange={v => set('cmFeePct', v)} />
+            <PctInput label="Asset Mgmt Fee" tip="Annual fee on gross revenue" value={controls.assetMgmtFeePct} onChange={v => set('assetMgmtFeePct', v)} />
+            <PctInput label="Disposition Fee" tip="Fee on exit value at sale" value={controls.dispositionFeePct} onChange={v => set('dispositionFeePct', v)} />
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Scout $/Site<TIP text="Commission per site to scout" /></Label>
+              <div className="relative">
+                <Input type="number" value={controls.scoutCommissionPerSite} onChange={e => set('scoutCommissionPerSite', parseFloat(e.target.value) || 0)} className="bg-amber/10 text-primary font-mono text-sm h-8 pr-1" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Incentives Mgr<TIP text="Annual salary for incentives manager" /></Label>
+              <div className="relative">
+                <Input type="number" value={controls.incentivesMgrSalary} onChange={e => set('incentivesMgrSalary', parseFloat(e.target.value) || 0)} className="bg-amber/10 text-primary font-mono text-sm h-8 pr-1" />
+              </div>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
