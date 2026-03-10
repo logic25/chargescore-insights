@@ -406,12 +406,16 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
         console.log('[AI Count] No boundary — counting full image');
       }
 
+      // Send the actual polygon coordinates so the AI knows the exact boundary shape
+      const polygonCoords = effectiveGeometry?.rings?.[0] ?? undefined;
+
       const { data, error } = await supabase.functions.invoke('count-parking-spots', {
         body: {
           lat, lng,
           lotSizeSqFt: lotSizeSqFt ?? undefined,
           address: address ?? undefined,
           parcelBounds,
+          polygonCoords, // actual polygon vertices [lng, lat][]
         },
       });
 
