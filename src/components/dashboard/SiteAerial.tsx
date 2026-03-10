@@ -50,16 +50,20 @@ function generateSpotsInParcel(rings: number[][][], count: number): L.LatLng[] {
   const bounds = getBoundsFromRings(rings);
   
   const spots: L.LatLng[] = [];
-  const gridSize = Math.ceil(Math.sqrt(count * 4)); // Oversample
+  const gridSize = Math.ceil(Math.sqrt(count * 6)); // Oversample with higher multiplier
   const latStep = (bounds.maxLat - bounds.minLat) / gridSize;
   const lngStep = (bounds.maxLng - bounds.minLng) / gridSize;
 
-  for (let r = 0; r < gridSize && spots.length < count; r++) {
-    for (let c = 0; c < gridSize && spots.length < count; c++) {
-      const lat = bounds.minLat + latStep * (r + 0.5) + (Math.random() - 0.5) * latStep * 0.3;
-      const lng = bounds.minLng + lngStep * (c + 0.5) + (Math.random() - 0.5) * lngStep * 0.3;
-      if (pointInPolygon([lat, lng], polygon)) {
-        spots.push(L.latLng(lat, lng));
+  // Multiple passes with offset for better coverage
+  for (let pass = 0; pass < 3 && spots.length < count; pass++) {
+    for (let r = 0; r < gridSize && spots.length < count; r++) {
+      for (let c = 0; c < gridSize && spots.length < count; c++) {
+        const jitter = pass * 0.15;
+        const lat = bounds.minLat + latStep * (r + 0.5 + jitter) + (Math.random() - 0.5) * latStep * 0.3;
+        const lng = bounds.minLng + lngStep * (c + 0.5 + jitter) + (Math.random() - 0.5) * lngStep * 0.3;
+        if (pointInPolygon([lat, lng], polygon)) {
+          spots.push(L.latLng(lat, lng));
+        }
       }
     }
   }
