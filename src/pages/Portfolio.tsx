@@ -158,6 +158,34 @@ const Portfolio = () => {
     return null;
   };
 
+  // Consistent incentive calculation by utility territory
+  // Con Edison: NYSERDA ($15K + $4K/port) + PowerReady ($200K) + 30C (min(30%×cost, $100K))
+  // PSEG LI: NYSERDA ($15K + $4K/port) + PSEG Make-Ready ($40K/port) + 30C
+  const computeIncentivesForSite = (stalls: number, totalCost: number, state: string, address: string): number => {
+    const addr = address.toLowerCase();
+    const taxCredit30C = Math.min(totalCost * 0.30, 100000);
+
+    if (state === 'NY') {
+      const nyserda = 15000 + 4000 * stalls;
+      if (addr.includes('brooklyn') || addr.includes('queens') || addr.includes('bronx') || addr.includes('manhattan') || addr.includes('staten island')) {
+        // Con Edison territory
+        const powerReady = 200000;
+        return Math.min(nyserda + powerReady + taxCredit30C, totalCost);
+      }
+      if (addr.includes('elmont') || addr.includes('hewlett') || addr.includes('merrick') || addr.includes('lindenhurst') || addr.includes('long island')) {
+        // PSEG LI territory
+        const psegMakeReady = 40000 * stalls;
+        return Math.min(nyserda + psegMakeReady + taxCredit30C, totalCost);
+      }
+      // Default NY to NYSERDA + 30C
+      return Math.min(nyserda + taxCredit30C, totalCost);
+    }
+    if (state === 'MA') return Math.min(taxCredit30C + 15000 * stalls, totalCost);
+    if (state === 'NJ') return Math.min(taxCredit30C + 100000 + 4000 * stalls, totalCost);
+    if (state === 'FL') return Math.min(taxCredit30C + 50000, totalCost);
+    return Math.min(taxCredit30C, totalCost);
+  };
+
   // Fetch incentive programs for an expanded site
   // Always re-fetch incentives when expanding to get latest data
   const handleExpandSite = useCallback(async (site: AnalysisRow) => {
