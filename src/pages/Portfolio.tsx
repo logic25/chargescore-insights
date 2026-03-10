@@ -347,6 +347,14 @@ const Portfolio = () => {
   const totalOOP = useMemo(() => computedSites.reduce((s, c) => s + c.outOfPocket, 0), [computedSites]);
   const waterfallRows = useMemo(() => computeWaterfall(computedSites, controls), [computedSites, controls]);
   const exitAnalysis = useMemo(() => computeExit(waterfallRows, controls, totalOOP), [waterfallRows, controls, totalOOP]);
+  const { effectiveOwnerPct, effectiveMSPct } = useMemo(
+    () => computeEffectiveWaterfallSplit(computedSites, controls),
+    [computedSites, controls]
+  );
+  const gpFees = useMemo(
+    () => computeGPFees(computedSites, controls, waterfallRows),
+    [computedSites, controls, waterfallRows]
+  );
 
   const handleAddFromSizer = useCallback(async (site: Omit<SiteRow, 'id'>) => {
     if (!user) return;
