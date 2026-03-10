@@ -622,6 +622,12 @@ const Portfolio = () => {
                         <p className={`font-mono text-2xl font-bold ${totals.npv >= 0 ? 'text-success' : 'text-destructive'}`}>{fmt(totals.npv)}</p>
                       </div>
                     </div>
+                    <p className="text-[10px] text-muted-foreground text-center mb-4">
+                      Effective Split: Owner {(effectiveOwnerPct * 100).toFixed(1)}% / MS {(effectiveMSPct * 100).toFixed(1)}%
+                      <span className="ml-2 text-muted-foreground/60">
+                        (Below hurdle: {(controls.tier1OwnerSplit * 100).toFixed(0)}% / Above: {(controls.tier2OwnerSplit * 100).toFixed(0)}%)
+                      </span>
+                    </p>
                   </TooltipProvider>
 
                   <div className="rounded-xl border border-border bg-card overflow-x-auto">
