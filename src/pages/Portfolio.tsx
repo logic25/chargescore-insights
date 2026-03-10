@@ -24,8 +24,11 @@ import {
   computeSite,
   computeWaterfall,
   computeExit,
+  computeEffectiveWaterfallSplit,
+  computeGPFees,
 } from '@/lib/waterfallCalc';
 import type { MasterControls as MCType, SiteRow } from '@/lib/waterfallCalc';
+import MSIncomeCard from '@/components/portfolio/MSIncomeCard';
 import { fetchIncentivePrograms, calculateIncentives, resolveUtilityTerritory, nrelToIncentivePrograms, type IncentiveResult, type IncentiveProgram } from '@/lib/incentiveCalc';
 import { fetchStateIncentives } from '@/lib/api/incentives';
 import IncentiveBreakdown from '@/components/incentives/IncentiveBreakdown';
