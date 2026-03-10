@@ -772,9 +772,10 @@ const Portfolio = () => {
             <TabsContent value="financials">
               <div className="space-y-4">
                 <MasterControls controls={controls} onChange={setControls} />
-                <SiteTable sites={editableSites} controls={controls} onSitesChange={setEditableSites} />
+                <MSIncomeCard gpFees={gpFees} controls={controls} />
+                <SiteTable sites={editableSites} controls={controls} onSitesChange={setEditableSites} effectiveOwnerPct={effectiveOwnerPct} effectiveMSPct={effectiveMSPct} />
                 <WaterfallTable rows={waterfallRows} />
-                <ExitAnalysisCard exit={exitAnalysis} controls={controls} totalOOP={totalOOP} />
+                <ExitAnalysisCard exit={exitAnalysis} controls={controls} totalOOP={totalOOP} sites={computedSites} />
                 <WaterfallCharts waterfallRows={waterfallRows} exit={exitAnalysis} sites={computedSites} />
               </div>
             </TabsContent>
