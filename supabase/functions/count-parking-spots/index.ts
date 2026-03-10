@@ -153,7 +153,7 @@ IMPORTANT: Be precise. Count the actual stall lines you can see. Do NOT estimate
             content: [
               {
                 type: "text",
-                text: `Count the parking spots for ONLY the subject property at coordinates ${lat}, ${lng}. The blue pin marks the property. ${propertyContext ? propertyContext + '.' : ''} ${boundaryDescription} Return JSON only.`
+                text: `Count the individual parking stalls visible in this satellite image. Look for painted line markings on the pavement and count the spaces between them, row by row. ${propertyContext ? propertyContext + '.' : ''} ${hasDrawnBoundary ? 'Count ONLY stalls inside the drawn boundary polygon.' : `The blue pin at ${lat}, ${lng} marks the property.`}`
               },
               imageContent
             ]
@@ -164,13 +164,13 @@ IMPORTANT: Be precise. Count the actual stall lines you can see. Do NOT estimate
             type: "function",
             function: {
               name: "report_parking_count",
-              description: "Report the counted parking spots from the satellite image",
+              description: "Report the counted parking stalls. Count by examining painted line markings row by row.",
               parameters: {
                 type: "object",
                 properties: {
-                  count: { type: "number", description: "Total number of parking spots counted" },
-                  confidence: { type: "string", enum: ["high", "medium", "low"], description: "Confidence level of the count" },
-                  notes: { type: "string", description: "Brief description of what was observed" }
+                  count: { type: "number", description: "Total number of individual parking stalls counted by examining line markings" },
+                  confidence: { type: "string", enum: ["high", "medium", "low"], description: "Confidence level" },
+                  notes: { type: "string", description: "Row-by-row breakdown of how you counted (e.g. 'Row 1: 15 stalls, Row 2: 12 stalls...')" }
                 },
                 required: ["count", "confidence", "notes"],
                 additionalProperties: false
