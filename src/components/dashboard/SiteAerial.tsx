@@ -366,9 +366,10 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
   // Boundary drawing controls
   const handleFinishBoundary = useCallback(() => {
     if (boundaryPoints.length >= 3) {
-      // Convert to ArcGIS-style rings [lng, lat]
+      // Convert Leaflet LatLng → ArcGIS-style rings [lng, lat]
       const ring = boundaryPoints.map(p => [p.lng, p.lat]);
       ring.push(ring[0]); // Close the ring
+      console.log('[Boundary] Ring points:', ring.length, 'First:', ring[0], 'Last:', ring[ring.length - 1]);
       setDrawnBoundary([ring]);
       toast.success('Boundary set! Now run AI Count.');
     }
