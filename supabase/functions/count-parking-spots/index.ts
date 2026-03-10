@@ -44,19 +44,18 @@ serve(async (req) => {
       bbox.maxLng = center + MIN_SPAN / 2;
     }
 
-    // Prefer Google Static Maps (sharper imagery, better stall visibility) over ArcGIS
+    // ArcGIS is primary (no API key restrictions on server-side)
+    // Use 800x800 to avoid ArcGIS export size limits
+    const arcGisUrl = imageUrl ||
+      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=800,800&imageSR=4326&format=png&f=image`;
+
+    // Google Static Maps as fallback — may fail with 403 if key has referrer restrictions
     const GOOGLE_MAPS_KEY = Deno.env.get("GOOGLE_MAPS_KEY");
-    
-    // Calculate zoom level from bbox span — tighter bbox = higher zoom
     const maxSpan = Math.max(bbox.maxLat - bbox.minLat, bbox.maxLng - bbox.minLng);
     const googleZoom = maxSpan < 0.001 ? 20 : maxSpan < 0.002 ? 19 : maxSpan < 0.004 ? 18 : 17;
-    
     const googleUrl = GOOGLE_MAPS_KEY
       ? `https://maps.googleapis.com/maps/api/staticmap?center=${(bbox.minLat + bbox.maxLat) / 2},${(bbox.minLng + bbox.maxLng) / 2}&zoom=${googleZoom}&size=640x640&scale=2&maptype=satellite&key=${GOOGLE_MAPS_KEY}`
       : null;
-    
-    const arcGisUrl = imageUrl ||
-      `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${bbox.minLng},${bbox.minLat},${bbox.maxLng},${bbox.maxLat}&bboxSR=4326&size=1280,1280&imageSR=4326&format=png&f=image`;
 
     // Helper to fetch image and convert to base64
     async function fetchImageAsBase64(url: string): Promise<string | null> {
@@ -81,15 +80,13 @@ serve(async (req) => {
       }
     }
 
-    // Try Google first (sharper, higher res with scale=2), then ArcGIS fallback
+    // Try ArcGIS first (no API key restrictions), then Google fallback
     let dataUri: string | null = null;
-    if (googleUrl) {
-      console.log("Trying Google Static Maps (1280x1280 @scale=2, zoom=" + googleZoom + ")");
+    console.log("Trying ArcGIS imagery (800x800)");
+    dataUri = await fetchImageAsBase64(arcGisUrl);
+    if (!dataUri && googleUrl) {
+      console.log("ArcGIS failed, trying Google Static Maps fallback (zoom=" + googleZoom + ")");
       dataUri = await fetchImageAsBase64(googleUrl);
-    }
-    if (!dataUri) {
-      console.log("Google unavailable, trying ArcGIS fallback (1280x1280)");
-      dataUri = await fetchImageAsBase64(arcGisUrl);
     }
 
     if (!dataUri) {
