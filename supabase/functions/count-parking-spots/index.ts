@@ -54,7 +54,14 @@ serve(async (req) => {
       const imgResp = await fetch(satUrl);
       if (imgResp.ok) {
         const imgBuf = await imgResp.arrayBuffer();
-        const b64 = btoa(String.fromCharCode(...new Uint8Array(imgBuf)));
+        const bytes = new Uint8Array(imgBuf);
+        // Chunk the conversion to avoid stack overflow on large images
+        let binary = '';
+        const chunkSize = 8192;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+        }
+        const b64 = btoa(binary);
         imageContent = { type: "image_url", image_url: { url: `data:image/png;base64,${b64}` } };
       } else {
         console.error("ArcGIS image fetch failed:", imgResp.status);
