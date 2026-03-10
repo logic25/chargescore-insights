@@ -401,6 +401,9 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
       let parcelBounds: { minLat: number; maxLat: number; minLng: number; maxLng: number } | undefined;
       if (effectiveGeometry?.rings) {
         parcelBounds = getBoundsFromRings(effectiveGeometry.rings);
+        console.log('[AI Count] Using boundary:', parcelBounds);
+      } else {
+        console.log('[AI Count] No boundary — counting full image');
       }
 
       const { data, error } = await supabase.functions.invoke('count-parking-spots', {
@@ -417,11 +420,14 @@ const SiteAerial = ({ lat, lng, lotSizeSqFt, address, parcelGeometry, onSpotsCou
 
       setAiResult(data);
       if (data?.count > 0) {
-        // Place markers constrained to parcel if geometry available
+        // Place markers constrained to boundary if available
         if (effectiveGeometry?.rings) {
+          console.log('[AI Count] Generating spots inside boundary polygon');
           const grid = generateSpotsInParcel(effectiveGeometry.rings, data.count);
+          console.log(`[AI Count] Generated ${grid.length} spots inside polygon out of ${data.count} AI counted`);
           setSpots(grid);
         } else {
+          console.log('[AI Count] No boundary — using full map grid');
           const map = mapRef.current;
           if (map) {
             const grid = generateSpotGrid(L.latLng(lat, lng), data.count, map);
